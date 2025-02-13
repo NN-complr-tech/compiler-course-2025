@@ -1,8 +1,6 @@
 # Compiler course 2025
 
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/llvm/llvm-project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/llvm/llvm-project)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8273/badge)](https://www.bestpractices.dev/projects/8273)
-[![libc++](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml/badge.svg?branch=main&event=schedule)](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml?query=event%3Aschedule)
+[![Build LLVM](https://github.com/NN-complr-tech/compiler-course-2025/actions/workflows/compiler-course-build.yml/badge.svg)](https://github.com/NN-complr-tech/compiler-course-2025/actions/workflows/compiler-course-build.yml)
 
 # Resources
 - [Telegram сhat][chat]
