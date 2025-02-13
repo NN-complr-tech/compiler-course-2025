@@ -4,6 +4,32 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8273/badge)](https://www.bestpractices.dev/projects/8273)
 [![libc++](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml/badge.svg?branch=main&event=schedule)](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml?query=event%3Aschedule)
 
+# Resources
+- [Telegram сhat][chat]
+- [Telegram сhannel][channel]
+- [Tasks and results][results]
+- Materials
+    - [Lecture recordings][recording]
+    - [Lecture presentations][lecture]
+    - [LLVM][llvm]
+    - [MLIR][mlir]
+    - [Clang][clang]
+    - [Official YouTube channel LLVM][youtube_llvm]
+
+<!-- LINKS -->
+<!-- Tasks and results -->
+[results]: https://docs.google.com/spreadsheets/d/1LiZ5FMd5t61yoGdnpANTFpzqtKD_ejtvLl1cHKZxvXQ/edit?usp=sharing
+<!-- Contacts -->
+[channel]: https://t.me/+TPntKPD8z0E3OWJi
+[chat]: https://t.me/+JG3n1jeSAiIxZjMy
+<!-- Materials -->
+[recording]: https://disk.yandex.ru/d/52gu5vJTSt1VFg
+[lecture]: https://github.com/NN-complr-tech/Complr-course-lectures
+[llvm]: https://llvm.org/
+[mlir]: https://mlir.llvm.org/
+[clang]: https://clang.llvm.org/
+[youtube_llvm]: https://www.youtube.com/@LLVMPROJ
+
 # What is LLVM?
 LLLVM is a set of compiler and toolchain technologies that can be used to develop a frontend for any programming language and a backend for any instruction set architecture. LLVM is designed around a language-independent intermediate representation (IR) that serves as a portable, high-level assembly language that can be optimized with a variety of transformations over multiple passes. The name LLVM originally stood for Low Level Virtual Machine, though the project has expanded and the name is no longer officially an initialism.
 
@@ -105,26 +131,3 @@ For one test
 ```bash
 ./build/bin/llvm-lit -v /path/to/test_file
 ```
-# 6. Resources
-- [Telegram сhat][chat]
-- [Telegram сhannel][channel]
-- [Tasks and results][results]
-- Materials
-    - [Lectures][lecture]
-    - [LLVM][llvm]
-    - [MLIR][mlir]
-    - [Clang][clang]
-    - [Official YouTube channel LLVM][youtube_llvm]
-
-<!-- LINKS -->
-<!-- Tasks and results -->
-[results]: https://docs.google.com/spreadsheets/d/1LiZ5FMd5t61yoGdnpANTFpzqtKD_ejtvLl1cHKZxvXQ/edit?usp=sharing
-<!-- Contacts -->
-[channel]: https://t.me/+TPntKPD8z0E3OWJi
-[chat]: https://t.me/+JG3n1jeSAiIxZjMy
-<!-- Materials -->
-[lecture]: https://github.com/NN-complr-tech/Complr-course-lectures
-[llvm]: https://llvm.org/
-[mlir]: https://mlir.llvm.org/
-[clang]: https://clang.llvm.org/
-[youtube_llvm]: https://www.youtube.com/@LLVMPROJ
