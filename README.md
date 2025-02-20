@@ -51,7 +51,7 @@ Recommended OS - Linux (WSL).
 1. Create fork this repository
 2. Clone local fork
 ```bash
-git clone https://github.com/<your-github-name>/llvm.git
+git clone https://github.com/<your-github-name>/compiler-course-2025.git
 cd llvm/
 git checkout -b <name-your-branch>
 ```
