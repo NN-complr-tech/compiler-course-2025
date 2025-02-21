@@ -26,6 +26,7 @@
 [llvm]: https://llvm.org/
 [mlir]: https://mlir.llvm.org/
 [clang]: https://clang.llvm.org/
+[file_check]: https://llvm.org/docs/CommandGuide/FileCheck.html
 [youtube_llvm]: https://www.youtube.com/@LLVMPROJ
 
 # What is LLVM?
