@@ -52,7 +52,7 @@ Recommended OS - Linux (WSL).
 2. Clone local fork
 ```bash
 git clone https://github.com/<your-github-name>/compiler-course-2025.git
-cd llvm/
+cd compiler-course-2025/
 git checkout -b <name-your-branch>
 ```
 
