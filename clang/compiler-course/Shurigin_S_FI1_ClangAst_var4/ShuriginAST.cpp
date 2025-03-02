@@ -1,4 +1,4 @@
-#include "clang/AST/ASTConsumer.h"
+ï»¿#include "clang/AST/ASTConsumer.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
@@ -13,8 +13,8 @@ public:
   explicit ExampleVisitor(clang::ASTContext *Context, clang::Rewriter &Rewriter)
       : MRewriter(Rewriter) {}
 
-  // Îáðàáîòêà îáúÿâëåíèé ïåðåìåííûõ
-  bool visitVarDecl(clang::VarDecl *Var) {
+  // ÃŽÃ¡Ã°Ã Ã¡Ã®Ã²ÃªÃ  Ã®Ã¡ÃºÃ¿Ã¢Ã«Ã¥Ã­Ã¨Ã© Ã¯Ã¥Ã°Ã¥Ã¬Ã¥Ã­Ã­Ã»Ãµ
+  bool VisitVarDecl(clang::VarDecl *Var) {
     if (Var->getName().empty()) {
       return true;
     }
@@ -33,27 +33,25 @@ public:
       std::string NewName = Prefix + OldName;
       MRenamedVars[OldName] = NewName;
       MRewriter.ReplaceText(Var->getLocation(), OldName.size(), NewName);
-      llvm::errs() << "Renamed variable: " << OldName << " to " << NewName
-                   << "\n";
     }
     return true;
   }
 
-  // Îáðàáîòêà ïàðàìåòðîâ ôóíêöèé
-  bool visitParmVarDecl(clang::ParmVarDecl *Param) {
-    if (Param->getName().empty()) {
+  // ÃŽÃ¡Ã°Ã Ã¡Ã®Ã²ÃªÃ  Ã¯Ã Ã°Ã Ã¬Ã¥Ã²Ã°Ã®Ã¢ Ã´Ã³Ã­ÃªÃ¶Ã¨Ã©
+  bool VisitParmVarDecl(clang::ParmVarDecl *param) {
+    if (param->getName().empty()) {
       return true;
     }
 
-    std::string OldName = Param->getName().str();
+    std::string OldName = param->getName().str();
     std::string NewName = "param_" + OldName;
     MRenamedVars[OldName] = NewName;
-    MRewriter.ReplaceText(Param->getLocation(), OldName.size(), NewName);
+    MRewriter.ReplaceText(param->getLocation(), OldName.size(), NewName);
     return true;
   }
 
-  // Îáðàáîòêà èñïîëüçîâàíèÿ ïåðåìåííûõ
-  bool visitDeclRefExpr(clang::DeclRefExpr *Expr) {
+  // ÃŽÃ¡Ã°Ã Ã¡Ã®Ã²ÃªÃ  Ã¨Ã±Ã¯Ã®Ã«Ã¼Ã§Ã®Ã¢Ã Ã­Ã¨Ã¿ Ã¯Ã¥Ã°Ã¥Ã¬Ã¥Ã­Ã­Ã»Ãµ
+  bool VisitDeclRefExpr(clang::DeclRefExpr *Expr) {
     clang::ValueDecl *Decl = Expr->getDecl();
     if (Decl->getName().empty()) {
       return true;
@@ -98,14 +96,13 @@ public:
   }
 
   bool ParseArgs(const clang::CompilerInstance &Ci,
-                 const std::vector<std::string> &Args) override {
+                 const std::vector<std::string> &args) override {
     return true;
   }
 
   void EndSourceFileAction() override {
     MRewriter.getEditBuffer(MRewriter.getSourceMgr().getMainFileID())
         .write(llvm::outs());
-    llvm::errs() << "Changes applied successfully!\n";
   }
 
 private:
