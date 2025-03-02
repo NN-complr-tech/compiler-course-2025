@@ -9,7 +9,6 @@
 // CHECK-NEXT: }
 
 int Var1 = 0;
-
 int foo(int a, int b) {
   static int Var2 = 0;
   int Var3 = 123;
