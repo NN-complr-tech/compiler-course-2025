@@ -38,15 +38,15 @@ public:
   }
 
   // Îáðàáîòêà ïàðàìåòðîâ ôóíêöèé
-  bool VisitParmVarDecl(clang::ParmVarDecl *param) {
-    if (param->getName().empty()) {
+  bool VisitParmVarDecl(clang::ParmVarDecl *Param) {
+    if (Param->getName().empty()) {
       return true;
     }
 
-    std::string OldName = param->getName().str();
+    std::string OldName = Param->getName().str();
     std::string NewName = "param_" + OldName;
     MRenamedVars[OldName] = NewName;
-    MRewriter.ReplaceText(param->getLocation(), OldName.size(), NewName);
+    MRewriter.ReplaceText(Param->getLocation(), OldName.size(), NewName);
     return true;
   }
 
@@ -96,7 +96,7 @@ public:
   }
 
   bool ParseArgs(const clang::CompilerInstance &Ci,
-                 const std::vector<std::string> &args) override {
+                 const std::vector<std::string> &Args) override {
     return true;
   }
 
