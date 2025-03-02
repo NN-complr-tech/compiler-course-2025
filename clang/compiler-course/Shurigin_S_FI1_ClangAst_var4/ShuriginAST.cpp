@@ -21,11 +21,11 @@ public:
 
     std::string Prefix;
     if (Var->isStaticLocal()) {
-      Prefix = "static_"; 
+      Prefix = "static_";
     } else if (Var->isLocalVarDecl()) {
-      Prefix = "local_"; 
+      Prefix = "local_";
     } else if (Var->hasGlobalStorage()) {
-      Prefix = "global_"; 
+      Prefix = "global_";
     }
 
     if (!Prefix.empty()) {
@@ -33,6 +33,8 @@ public:
       std::string NewName = Prefix + OldName;
       MRenamedVars[OldName] = NewName;
       MRewriter.ReplaceText(Var->getLocation(), OldName.size(), NewName);
+      llvm::errs() << "Renamed variable: " << OldName << " to " << NewName
+                   << "\n";
     }
     return true;
   }
@@ -103,6 +105,7 @@ public:
   void EndSourceFileAction() override {
     MRewriter.getEditBuffer(MRewriter.getSourceMgr().getMainFileID())
         .write(llvm::outs());
+    llvm::errs() << "Changes applied successfully!\n";
   }
 
 private:
