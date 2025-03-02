@@ -10,103 +10,103 @@ namespace Shurigin_S_FI1_var4 {
 
 class ExampleVisitor final : public clang::RecursiveASTVisitor<ExampleVisitor> {
 public:
-  explicit ExampleVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
-      : m_rewriter(rewriter) {}
+  explicit ExampleVisitor(clang::ASTContext *Context, clang::Rewriter &Rewriter)
+      : MRewriter(Rewriter) {}
 
   // ќбработка объ€влений переменных
-  bool VisitVarDecl(clang::VarDecl *var) {
-    if (var->getName().empty()) {
+  bool visitVarDecl(clang::VarDecl *Var) {
+    if (Var->getName().empty()) {
       return true;
     }
 
-    std::string prefix;
-    if (var->isStaticLocal()) {
-      prefix = "static_"; 
-    } else if (var->isLocalVarDecl()) {
-      prefix = "local_"; 
-    } else if (var->hasGlobalStorage()) {
-      prefix = "global_"; 
+    std::string Prefix;
+    if (Var->isStaticLocal()) {
+      Prefix = "static_"; 
+    } else if (Var->isLocalVarDecl()) {
+      Prefix = "local_"; 
+    } else if (Var->hasGlobalStorage()) {
+      Prefix = "global_"; 
     }
 
-    if (!prefix.empty()) {
-      std::string oldName = var->getName().str();
-      std::string newName = prefix + oldName;
-      m_renamedVars[oldName] = newName;
-      m_rewriter.ReplaceText(var->getLocation(), oldName.size(), newName);
+    if (!Prefix.empty()) {
+      std::string OldName = Var->getName().str();
+      std::string NewName = Prefix + OldName;
+      MRenamedVars[OldName] = NewName;
+      MRewriter.ReplaceText(Var->getLocation(), OldName.size(), NewName);
     }
     return true;
   }
 
   // ќбработка параметров функций
-  bool VisitParmVarDecl(clang::ParmVarDecl *param) {
-    if (param->getName().empty()) {
+  bool visitParmVarDecl(clang::ParmVarDecl *Param) {
+    if (Param->getName().empty()) {
       return true;
     }
 
-    std::string oldName = param->getName().str();
-    std::string newName = "param_" + oldName;
-    m_renamedVars[oldName] = newName;
-    m_rewriter.ReplaceText(param->getLocation(), oldName.size(), newName);
+    std::string OldName = Param->getName().str();
+    std::string NewName = "param_" + OldName;
+    MRenamedVars[OldName] = NewName;
+    MRewriter.ReplaceText(Param->getLocation(), OldName.size(), NewName);
     return true;
   }
 
   // ќбработка использовани€ переменных
-  bool VisitDeclRefExpr(clang::DeclRefExpr *expr) {
-    clang::ValueDecl *decl = expr->getDecl();
-    if (decl->getName().empty()) {
+  bool visitDeclRefExpr(clang::DeclRefExpr *Expr) {
+    clang::ValueDecl *Decl = Expr->getDecl();
+    if (Decl->getName().empty()) {
       return true;
     }
 
-    std::string oldName = decl->getName().str();
+    std::string OldName = Decl->getName().str();
 
-    auto it = m_renamedVars.find(oldName);
-    if (it != m_renamedVars.end()) {
-      std::string newName = it->second;
-      m_rewriter.ReplaceText(expr->getLocation(), oldName.size(), newName);
+    auto It = MRenamedVars.find(OldName);
+    if (It != MRenamedVars.end()) {
+      std::string NewName = It->second;
+      MRewriter.ReplaceText(Expr->getLocation(), OldName.size(), NewName);
     }
     return true;
   }
 
 private:
-  clang::Rewriter &m_rewriter;
-  std::unordered_map<std::string, std::string> m_renamedVars;
+  clang::Rewriter &MRewriter;
+  std::unordered_map<std::string, std::string> MRenamedVars;
 };
 
 class ExampleConsumer final : public clang::ASTConsumer {
 public:
-  explicit ExampleConsumer(clang::ASTContext *context,
-                           clang::Rewriter &rewriter)
-      : m_rewriter(rewriter), m_visitor(context, rewriter) {}
+  explicit ExampleConsumer(clang::ASTContext *Context,
+                           clang::Rewriter &Rewriter)
+      : MRewriter(Rewriter), MVisitor(Context, Rewriter) {}
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    m_visitor.TraverseDecl(context.getTranslationUnitDecl());
+  void HandleTranslationUnit(clang::ASTContext &Context) override {
+    MVisitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
 private:
-  clang::Rewriter &m_rewriter;
-  ExampleVisitor m_visitor;
+  clang::Rewriter &MRewriter;
+  ExampleVisitor MVisitor;
 };
 
 class ExampleAction final : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
-    return std::make_unique<ExampleConsumer>(&ci.getASTContext(), m_rewriter);
+  CreateASTConsumer(clang::CompilerInstance &Ci, llvm::StringRef) override {
+    MRewriter.setSourceMgr(Ci.getSourceManager(), Ci.getLangOpts());
+    return std::make_unique<ExampleConsumer>(&Ci.getASTContext(), MRewriter);
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &Ci,
+                 const std::vector<std::string> &Args) override {
     return true;
   }
 
   void EndSourceFileAction() override {
-    m_rewriter.getEditBuffer(m_rewriter.getSourceMgr().getMainFileID())
+    MRewriter.getEditBuffer(MRewriter.getSourceMgr().getMainFileID())
         .write(llvm::outs());
   }
 
 private:
-  clang::Rewriter m_rewriter;
+  clang::Rewriter MRewriter;
 };
 
 } // namespace Shurigin_S_FI1_var4
