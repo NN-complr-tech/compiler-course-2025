@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/ClangAST_1_ShuriginS_FIIT1_ClangAST%pluginext -plugin ClangAST_1_ShuriginS_FIIT1_ClangAST -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s
+﻿// RUN: %clang_cc1 -load %llvmshlibdir/ClangAST_1_ShuriginS_FIIT1_ClangAST%pluginext -plugin ClangAST_1_ShuriginS_FIIT1_ClangAST -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s
 
 // CHECK: int static global_Var1 = 0;
 // CHECK-NEXT: int static foo(int param_A, int param_B) {
