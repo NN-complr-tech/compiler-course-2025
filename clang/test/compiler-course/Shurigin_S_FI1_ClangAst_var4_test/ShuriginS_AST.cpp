@@ -15,4 +15,6 @@ int static foo(int A, int B) {
   ++Var2;
   return A + B + Var1 + Var2 + Var3;
 }
+int x=foo(1, 2);
+
 
