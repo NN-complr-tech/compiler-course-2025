@@ -13,7 +13,6 @@ public:
   explicit ExampleVisitor(clang::ASTContext *Context, clang::Rewriter &Rewriter)
       : MRewriter(Rewriter) {}
 
-  // Îáðàáîòêà îáúÿâëåíèé ïåðåìåííûõ
   bool VisitVarDecl(clang::VarDecl *Var) {
     if (Var->getName().empty()) {
       return true;
@@ -37,7 +36,6 @@ public:
     return true;
   }
 
-  // Îáðàáîòêà ïàðàìåòðîâ ôóíêöèé
   bool VisitParmVarDecl(clang::ParmVarDecl *Param) {
     if (Param->getName().empty()) {
       return true;
@@ -50,7 +48,6 @@ public:
     return true;
   }
 
-  // Îáðàáîòêà èñïîëüçîâàíèÿ ïåðåìåííûõ
   bool VisitDeclRefExpr(clang::DeclRefExpr *Expr) {
     clang::ValueDecl *Decl = Expr->getDecl();
     if (Decl->getName().empty()) {
