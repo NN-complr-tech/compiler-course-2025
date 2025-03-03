@@ -68,11 +68,6 @@ public:
       if (M->isPureVirtual()) Specs.push_back("pure");
       if (M->hasAttr<clang::OverrideAttr>()) Specs.push_back("override");
       if (M->isConst()) Specs.push_back("const");
-      if (const auto *FPT = M->getType()->getAs<clang::FunctionProtoType>()) {
-      if (FPT->getExceptionSpecType() == clang::EST_NoexceptTrue) {
-          Specs.push_back("noexcept");
-        }
-      }
 
       m_os << "| |_ " << M->getNameAsString() << " (" << TypeStr << "|"
            << lopatin_i_user_data_type::getAccessSpelling(M->getAccess());
