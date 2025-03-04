@@ -1,23 +1,32 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/UserDataTypePlugin_LopatinIlya_FIIT3_ClangAST%pluginext -plugin UserDataTypePlugin_LopatinIlya_FIIT3_ClangAST %s -fsyntax-only 2>&1 | FileCheck %s
 
 // CHECK: Base1
-// CHECK: |_Fields
-// CHECK: |_Methods
-// CHECK: | |_ virtualMethod (void()|public|virtual|pure)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (no fields)
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ virtualMethod (void()|public|virtual|pure)
+
 // CHECK: Base2
-// CHECK: |_Fields
-// CHECK: |_Methods
-// CHECK: | |_ baseMethod (void()|public|virtual)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (no fields)
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ baseMethod (void()|public|virtual)
+
 // CHECK: Derived -> Base1, Base2
-// CHECK: |_Fields
-// CHECK: | |_ publicField (int|public)
-// CHECK: | |_ protectedField (float|protected)
-// CHECK: | |_ privateField (char|private)
-// CHECK: |_Methods
-// CHECK: | |_ virtualMethod (void()|public|override)
-// CHECK: | |_ baseMethod (void()|public|override)
-// CHECK: | |_ constMethod (int()|private|const)
-// CHECK: | |_ anotherMethod (void(int)|protected)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ publicField (int|public)
+// CHECK-NEXT: | |_ protectedField (float|protected)
+// CHECK-NEXT: | |_ privateField (char|private)
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ virtualMethod (void()|public|override)
+// CHECK-NEXT: | |_ baseMethod (void()|public|override)
+// CHECK-NEXT: | |_ constMethod (int()|private|const)
+// CHECK-NEXT: | |_ anotherMethod (void(int)|protected)
+
+// CHECK: Array
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ ptr (T[SZ]|public)
+
 
 struct Base1 {
   virtual void virtualMethod() = 0;
@@ -45,3 +54,9 @@ private:
 protected:
   void anotherMethod(int) {}
 };
+
+template <typename T, unsigned SZ>
+struct Array {
+  T ptr[SZ]{};
+};
+
