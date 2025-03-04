@@ -6,7 +6,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include <unordered_map>
 
-namespace Shurigin_S_FI1_var4 {
+namespace {
 
 class ExampleVisitor final : public clang::RecursiveASTVisitor<ExampleVisitor> {
 public:
@@ -29,9 +29,12 @@ public:
 
     if (!Prefix.empty()) {
       std::string OldName = Var->getName().str();
-      std::string NewName = Prefix + OldName;
-      MRenamedVars[OldName] = NewName;
-      MRewriter.ReplaceText(Var->getLocation(), OldName.size(), NewName);
+      if (OldName.find(Prefix) != 0) {
+        std::string NewName = Prefix + OldName;
+        MRenamedVars[OldName] = NewName;
+        clang::SourceLocation Loc = Var->getLocation();
+        MRewriter.ReplaceText(Loc, OldName.length(), NewName);
+      }
     }
     return true;
   }
@@ -56,10 +59,25 @@ public:
 
     std::string OldName = Decl->getName().str();
 
+    if (llvm::isa<clang::FunctionDecl>(Decl)) {
+      return true;
+    }
+
+    if (auto VD = llvm::dyn_cast<clang::VarDecl>(Decl)) {
+      VD = VD->getCanonicalDecl();
+
+      if (VD->hasExternalStorage()) {
+        std::string NewName = "global_" + OldName;
+        MRenamedVars[OldName] = NewName;
+        MRewriter.ReplaceText(Expr->getLocation(), OldName.length(), NewName);
+        return true;
+      }
+    }
+
     auto It = MRenamedVars.find(OldName);
     if (It != MRenamedVars.end()) {
-      std::string NewName = It->second;
-      MRewriter.ReplaceText(Expr->getLocation(), OldName.size(), NewName);
+      clang::SourceLocation Loc = Expr->getLocation();
+      MRewriter.ReplaceText(Loc, OldName.length(), It->second);
     }
     return true;
   }
@@ -106,7 +124,7 @@ private:
   clang::Rewriter MRewriter;
 };
 
-} // namespace Shurigin_S_FI1_var4
+} // namespace
 
-static clang::FrontendPluginRegistry::Add<Shurigin_S_FI1_var4::ExampleAction>
+static clang::FrontendPluginRegistry::Add<ExampleAction>
     X("ClangAST_1_ShuriginS_FIIT1_ClangAST", "Adds prefixes to variables");
