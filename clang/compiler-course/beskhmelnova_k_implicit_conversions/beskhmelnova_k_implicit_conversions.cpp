@@ -22,6 +22,24 @@ public:
 
      return true;
  }
+ 
+ bool VisitCXXConstructExpr(clang::CXXConstructExpr *Ctor) {
+    if (Ctor->getNumArgs() < 1) {
+        return true;
+    }
+
+    std::string FromType = Ctor->getArg(0)->getType().getAsString();
+    std::string ToType = Ctor->getType().getAsString();
+
+    if (FromType == ToType) {
+        return true;
+    }
+
+    unsigned LineNumber = Context->getSourceManager().getSpellingLineNumber(Ctor->getExprLoc());
+    unsigned FunctionIndex = FunctionOrder[CurrentFunction];
+    CastList.push_back({FunctionIndex, LineNumber, CastCounter++, CurrentFunction, FromType + " -> " + ToType});
+    return true;
+}
 
  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Cast) {
      std::string FromType = Cast->getSubExpr()->getType().getAsString();
@@ -48,6 +66,7 @@ public:
          }
          llvm::outs() << Entry.CastDescription << ": 1\n";
      }
+	 llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
  }
 
 private:
@@ -59,8 +78,10 @@ private:
      std::string CastDescription;
 
      bool operator<(const CastEntry &Other) const {
-         return std::tie(FunctionIndex, Line, Order) < std::tie(Other.FunctionIndex, Other.Line, Other.Order);
-     }
+		return std::tie(FunctionIndex, Line, Order) < std::tie(Other.FunctionIndex, Other.Line, Other.Order);
+	 }
+
+
  };
 
  clang::ASTContext *Context;
