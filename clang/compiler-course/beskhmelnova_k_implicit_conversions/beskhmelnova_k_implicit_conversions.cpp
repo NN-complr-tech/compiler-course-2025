@@ -11,8 +11,7 @@ namespace {
 
 	class ImplicitCastVisitor final : public clang::RecursiveASTVisitor<ImplicitCastVisitor> {
 	public:
-		explicit ImplicitCastVisitor(clang::ASTContext* Context)
-			: Context(Context) {}
+		explicit ImplicitCastVisitor() = default;
 
 		bool VisitFunctionDecl(clang::FunctionDecl* Func) {
 			CurrentFunction = Func->getNameInfo().getName().getAsString();
@@ -35,10 +34,7 @@ namespace {
 				return true;
 			}
 
-			unsigned LineNumber = Context->getSourceManager().getSpellingLineNumber(Ctor->getExprLoc());
-			unsigned FunctionIndex = FunctionOrder[CurrentFunction];
-			CastEntry Entry{ FunctionIndex, LineNumber, CastCounter++, CurrentFunction, FromType.getAsString(), ToType.getAsString() };
-			CastList.push_back(Entry);
+			CastList.emplace_back(CastEntry{ CurrentFunction, FromType.getAsString(), ToType.getAsString() });
 			return true;
 		}
 
@@ -62,10 +58,8 @@ namespace {
 			if (FromType == ToType) {
 				return true;
 			}
-			unsigned LineNumber = Context->getSourceManager().getSpellingLineNumber(Cast->getExprLoc());
-			unsigned FunctionIndex = FunctionOrder[CurrentFunction];
-			CastEntry Entry{ FunctionIndex, LineNumber, CastCounter++, CurrentFunction, FromType.getAsString(), ToType.getAsString() };
-			CastList.push_back(Entry);
+
+			CastList.emplace_back(CastEntry{ CurrentFunction, FromType.getAsString(), ToType.getAsString() });
 			return true;
 		}
 
@@ -76,18 +70,13 @@ namespace {
 					llvm::outs() << "Function " << Entry.FunctionName << "\n";
 					LastFunction = Entry.FunctionName;
 				}
-				if (Entry.FromType != Entry.ToType) {
-					llvm::outs() << Entry.getCastDescription() << ": 1\n";
-				}
+				llvm::outs() << Entry.getCastDescription() << ": 1\n";
 			}
 			llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
 		}
 
 	private:
 		struct CastEntry {
-			unsigned FunctionIndex;
-			unsigned Line;
-			unsigned Order;
 			std::string FunctionName;
 			std::string FromType;
 			std::string ToType;
@@ -97,17 +86,14 @@ namespace {
 			}
 		};
 
-		clang::ASTContext* Context;
 		std::string CurrentFunction;
 		std::map<std::string, unsigned> FunctionOrder;
 		std::vector<CastEntry> CastList;
-		unsigned CastCounter = 0;
 	};
 
 	class ImplicitCastConsumer final : public clang::ASTConsumer {
 	public:
-		explicit ImplicitCastConsumer(clang::ASTContext* Context)
-			: Visitor(Context) {}
+		explicit ImplicitCastConsumer() = default;
 
 		void HandleTranslationUnit(clang::ASTContext& Context) override {
 			Visitor.TraverseDecl(Context.getTranslationUnitDecl());
@@ -121,7 +107,7 @@ namespace {
 	class ImplicitCastAction final : public clang::PluginASTAction {
 	public:
 		std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& CI, llvm::StringRef) override {
-			return std::make_unique<ImplicitCastConsumer>(&CI.getASTContext());
+			return std::make_unique<ImplicitCastConsumer>();
 		}
 
 		bool ParseArgs(const clang::CompilerInstance& CI, const std::vector<std::string>& Args) override {
