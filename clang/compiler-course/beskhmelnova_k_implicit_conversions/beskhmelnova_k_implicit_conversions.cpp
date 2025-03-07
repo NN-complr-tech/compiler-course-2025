@@ -9,114 +9,127 @@
 
 namespace {
 
-class ImplicitCastVisitor final : public clang::RecursiveASTVisitor<ImplicitCastVisitor> {
-public:
- explicit ImplicitCastVisitor(clang::ASTContext *Context)
-     : Context(Context) {}
+	class ImplicitCastVisitor final : public clang::RecursiveASTVisitor<ImplicitCastVisitor> {
+	public:
+		explicit ImplicitCastVisitor(clang::ASTContext* Context)
+			: Context(Context) {}
 
- bool VisitFunctionDecl(clang::FunctionDecl *Func) {
-     CurrentFunction = Func->getNameInfo().getName().getAsString();
-     if (FunctionOrder.find(CurrentFunction) == FunctionOrder.end()) {
-         FunctionOrder[CurrentFunction] = FunctionOrder.size();
-     }
+		bool VisitFunctionDecl(clang::FunctionDecl* Func) {
+			CurrentFunction = Func->getNameInfo().getName().getAsString();
+			if (FunctionOrder.find(CurrentFunction) == FunctionOrder.end()) {
+				FunctionOrder[CurrentFunction] = FunctionOrder.size();
+			}
 
-     return true;
- }
- 
- bool VisitCXXConstructExpr(clang::CXXConstructExpr *Ctor) {
-    if (Ctor->getNumArgs() < 1) {
-        return true;
-    }
+			return true;
+		}
 
-    std::string FromType = Ctor->getArg(0)->getType().getAsString();
-    std::string ToType = Ctor->getType().getAsString();
+		bool VisitCXXConstructExpr(clang::CXXConstructExpr* Ctor) {
+			if (Ctor->getNumArgs() < 1) {
+				return true;
+			}
 
-    if (FromType == ToType) {
-        return true;
-    }
+			clang::QualType FromType = Ctor->getArg(0)->getType();
+			clang::QualType ToType = Ctor->getType();
 
-    unsigned LineNumber = Context->getSourceManager().getSpellingLineNumber(Ctor->getExprLoc());
-    unsigned FunctionIndex = FunctionOrder[CurrentFunction];
-    CastList.push_back({FunctionIndex, LineNumber, CastCounter++, CurrentFunction, FromType + " -> " + ToType});
-    return true;
-}
+			if (FromType == ToType) {
+				return true;
+			}
 
- bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Cast) {
-     std::string FromType = Cast->getSubExpr()->getType().getAsString();
-     std::string ToType = Cast->getType().getAsString();
+			unsigned LineNumber = Context->getSourceManager().getSpellingLineNumber(Ctor->getExprLoc());
+			unsigned FunctionIndex = FunctionOrder[CurrentFunction];
+			CastEntry Entry{ FunctionIndex, LineNumber, CastCounter++, CurrentFunction, FromType.getAsString(), ToType.getAsString() };
+			CastList.push_back(Entry);
+			return true;
+		}
 
-     if (FromType == ToType || FromType.find("(*)") != std::string::npos || ToType.find("(*)") != std::string::npos) {
-         return true;
-     }
+		clang::QualType getRealType(clang::QualType Type) {
+			Type = Type.getCanonicalType();
+			if (auto* TST = Type->getAs<clang::TypedefType>()) {
+				return TST->getDecl()->getUnderlyingType().getCanonicalType();
+			}
+			return Type;
+		}
 
-     unsigned LineNumber = Context->getSourceManager().getSpellingLineNumber(Cast->getExprLoc());
-     unsigned FunctionIndex = FunctionOrder[CurrentFunction];
-     CastList.push_back({FunctionIndex, LineNumber, CastCounter++, CurrentFunction, FromType + " -> " + ToType});
-     return true;
- }
+		bool VisitImplicitCastExpr(clang::ImplicitCastExpr* Cast) {
+			clang::CastKind Kind = Cast->getCastKind();
+			if (Kind == clang::CK_NoOp || Kind == clang::CK_LValueToRValue || Kind == clang::CK_FunctionToPointerDecay) {
+				return true;
+			}
 
- void PrintResults() {
-     std::sort(CastList.begin(), CastList.end());
+			clang::QualType FromType = getRealType(Cast->getSubExpr()->getType());
+			clang::QualType ToType = getRealType(Cast->getType());
 
-     std::string LastFunction;
-     for (const auto &Entry : CastList) {
-         if (Entry.FunctionName != LastFunction) {
-             llvm::outs() << "Function " << Entry.FunctionName << "\n";
-             LastFunction = Entry.FunctionName;
-         }
-         llvm::outs() << Entry.CastDescription << ": 1\n";
-     }
-	 llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
- }
+			if (FromType == ToType) {
+				return true;
+			}
+			unsigned LineNumber = Context->getSourceManager().getSpellingLineNumber(Cast->getExprLoc());
+			unsigned FunctionIndex = FunctionOrder[CurrentFunction];
+			CastEntry Entry{ FunctionIndex, LineNumber, CastCounter++, CurrentFunction, FromType.getAsString(), ToType.getAsString() };
+			CastList.push_back(Entry);
+			return true;
+		}
 
-private:
- struct CastEntry {
-     unsigned FunctionIndex;
-     unsigned Line;
-     unsigned Order;
-     std::string FunctionName;
-     std::string CastDescription;
+		void PrintResults() {
+			std::string LastFunction;
+			for (const auto& Entry : CastList) {
+				if (Entry.FunctionName != LastFunction) {
+					llvm::outs() << "Function " << Entry.FunctionName << "\n";
+					LastFunction = Entry.FunctionName;
+				}
+				if (Entry.FromType != Entry.ToType) {
+					llvm::outs() << Entry.getCastDescription() << ": 1\n";
+				}
+			}
+			llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
+		}
 
-     bool operator<(const CastEntry &Other) const {
-		return std::tie(FunctionIndex, Line, Order) < std::tie(Other.FunctionIndex, Other.Line, Other.Order);
-	 }
+	private:
+		struct CastEntry {
+			unsigned FunctionIndex;
+			unsigned Line;
+			unsigned Order;
+			std::string FunctionName;
+			std::string FromType;
+			std::string ToType;
 
+			std::string getCastDescription() const {
+				return FromType + " -> " + ToType;
+			}
+		};
 
- };
+		clang::ASTContext* Context;
+		std::string CurrentFunction;
+		std::map<std::string, unsigned> FunctionOrder;
+		std::vector<CastEntry> CastList;
+		unsigned CastCounter = 0;
+	};
 
- clang::ASTContext *Context;
- std::string CurrentFunction;
- std::map<std::string, unsigned> FunctionOrder;
- std::vector<CastEntry> CastList;
- unsigned CastCounter = 0;
-};
+	class ImplicitCastConsumer final : public clang::ASTConsumer {
+	public:
+		explicit ImplicitCastConsumer(clang::ASTContext* Context)
+			: Visitor(Context) {}
 
-class ImplicitCastConsumer final : public clang::ASTConsumer {
-public:
- explicit ImplicitCastConsumer(clang::ASTContext *Context)
-     : Visitor(Context) {}
+		void HandleTranslationUnit(clang::ASTContext& Context) override {
+			Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+			Visitor.PrintResults();
+		}
 
- void HandleTranslationUnit(clang::ASTContext &Context) override {
-     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
-     Visitor.PrintResults();
- }
+	private:
+		ImplicitCastVisitor Visitor;
+	};
 
-private:
- ImplicitCastVisitor Visitor;
-};
+	class ImplicitCastAction final : public clang::PluginASTAction {
+	public:
+		std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& CI, llvm::StringRef) override {
+			return std::make_unique<ImplicitCastConsumer>(&CI.getASTContext());
+		}
 
-class ImplicitCastAction final : public clang::PluginASTAction {
-public:
- std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
-     return std::make_unique<ImplicitCastConsumer>(&CI.getASTContext());
- }
-
- bool ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &Args) override {
-     return true;
- }
-};
+		bool ParseArgs(const clang::CompilerInstance& CI, const std::vector<std::string>& Args) override {
+			return true;
+		}
+	};
 
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<ImplicitCastAction>
- X("ClangAST_1_BeskhmelnovaK_FIIT1_ClangAST", "Counts implicit type conversions"); 
+X("ClangAST_1_BeskhmelnovaK_FIIT1_ClangAST", "Counts implicit type conversions");
