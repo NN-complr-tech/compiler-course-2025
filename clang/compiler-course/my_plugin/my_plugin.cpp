@@ -128,9 +128,10 @@ public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(CompilerInstance &Compiler,
                     llvm::StringRef InFile) override {
-    Rewriter.setSourceMgr(Compiler.getSourceManager(), Compiler.getLangOpts());
+    m_rewriter.setSourceMgr(Compiler.getSourceManager(),
+                            Compiler.getLangOpts());
     return std::make_unique<FindNamedClassConsumer>(&Compiler.getASTContext(),
-                                                    Rewriter);
+                                                    m_rewriter);
   }
 
   bool ParseArgs(const CompilerInstance &CI,
@@ -139,7 +140,7 @@ public:
   }
 
 private:
-  Rewriter Rewriter;
+  Rewriter m_rewriter;
 };
 
 static clang::FrontendPluginRegistry::Add<FindNamedClassAction>
