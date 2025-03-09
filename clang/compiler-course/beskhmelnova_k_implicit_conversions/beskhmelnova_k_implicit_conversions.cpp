@@ -15,10 +15,6 @@ namespace {
 
 		bool VisitFunctionDecl(clang::FunctionDecl* Func) {
 			CurrentFunction = Func->getNameInfo().getName().getAsString();
-			if (FunctionOrder.find(CurrentFunction) == FunctionOrder.end()) {
-				FunctionOrder[CurrentFunction] = FunctionOrder.size();
-			}
-
 			return true;
 		}
 
@@ -87,7 +83,6 @@ namespace {
 		};
 
 		std::string CurrentFunction;
-		std::map<std::string, unsigned> FunctionOrder;
 		std::vector<CastEntry> CastList;
 	};
 
