@@ -14,33 +14,40 @@ public:
   explicit FindNamedClassVisitor(ASTContext *Context, Rewriter &R)
       : Context(Context), Rewrite(R) {}
 
+  std::string getVarPrefix(const VarDecl *Decl) {
+    if (Decl->isFileVarDecl() && !Decl->isStaticLocal()) {
+      return "global_";
+    } else if (Decl->isStaticLocal()) {
+      return "static_";
+    } else if (Decl->isLocalVarDecl() && !isa<ParmVarDecl>(Decl)) {
+      return "local_";
+    } else if (isa<ParmVarDecl>(Decl)) {
+      return "param_";
+    }
+    return "";
+  }
+
+  void renameVariable(Decl *Decl, SourceLocation StartLocation, const std::string &VarPrefix) {
+    std::string NewID = VarPrefix + cast<VarDecl>(Decl)->getNameAsString();
+    SourceLocation EndLocation =
+        StartLocation.getLocWithOffset(cast<VarDecl>(Decl)->getNameAsString().length());
+    Rewrite.ReplaceText(SourceRange(StartLocation, EndLocation), NewID);
+
+    FullSourceLoc FullLocation = Context->getFullLoc(StartLocation);
+    if (FullLocation.isValid()) {
+      llvm::outs() << "Found variable: " << cast<VarDecl>(Decl)->getNameAsString() << " -> "
+                   << NewID << " at " << FullLocation.getSpellingLineNumber() << ":"
+                   << FullLocation.getSpellingColumnNumber() << "\n";
+    }
+  }
+
   bool VisitVarDecl(VarDecl *Decl) {
     if (!Decl)
       return false;
 
-    std::string VarPrefix;
-    if (Decl->isFileVarDecl() && !Decl->isStaticLocal()) {
-      VarPrefix = "global_";
-    } else if (Decl->isStaticLocal()) {
-      VarPrefix = "static_";
-    } else if (Decl->isLocalVarDecl() && !isa<ParmVarDecl>(Decl)) {
-      VarPrefix = "local_";
-    }
-
+    std::string VarPrefix = getVarPrefix(Decl);
     if (!VarPrefix.empty()) {
-      std::string NewID = VarPrefix + Decl->getNameAsString();
-      SourceLocation StartLocation = Decl->getLocation();
-      SourceLocation EndLocation =
-          StartLocation.getLocWithOffset(Decl->getNameAsString().length());
-      Rewrite.ReplaceText(SourceRange(StartLocation, EndLocation), NewID);
-
-      FullSourceLoc FullLocation = Context->getFullLoc(StartLocation);
-      if (FullLocation.isValid()) {
-        llvm::outs() << "Found variable: " << Decl->getNameAsString() << " -> "
-                     << NewID << " at "
-                     << FullLocation.getSpellingLineNumber() << ":"
-                     << FullLocation.getSpellingColumnNumber() << "\n";
-      }
+      renameVariable(Decl, Decl->getLocation(), VarPrefix);
     }
 
     return true;
@@ -50,18 +57,9 @@ public:
     if (!Decl)
       return false;
 
-    std::string VarParmPrefix = "param_";
-    std::string NewID = VarParmPrefix + Decl->getNameAsString();
-    SourceLocation StartLocation = Decl->getLocation();
-    SourceLocation EndLocation =
-        StartLocation.getLocWithOffset(Decl->getNameAsString().length());
-    Rewrite.ReplaceText(SourceRange(StartLocation, EndLocation), NewID);
-
-    FullSourceLoc FullLocation = Context->getFullLoc(StartLocation);
-    if (FullLocation.isValid()) {
-      llvm::outs() << "Found parameter: " << Decl->getNameAsString() << " -> "
-                   << NewID << " at " << FullLocation.getSpellingLineNumber()
-                   << ":" << FullLocation.getSpellingColumnNumber() << "\n";
+    std::string VarPrefix = getVarPrefix(Decl);
+    if (!VarPrefix.empty()) {
+      renameVariable(Decl, Decl->getLocation(), VarPrefix);
     }
 
     return true;
@@ -75,31 +73,9 @@ public:
     if (!Decl)
       return false;
 
-    std::string VarPrefix;
-    if (Decl->isFileVarDecl() && !Decl->isStaticLocal()) {
-      VarPrefix = "global_";
-    } else if (Decl->isStaticLocal()) {
-      VarPrefix = "static_";
-    } else if (Decl->isLocalVarDecl() && !isa<ParmVarDecl>(Decl)) {
-      VarPrefix = "local_";
-    } else if (isa<ParmVarDecl>(Decl)) {
-      VarPrefix = "param_";
-    }
-
+    std::string VarPrefix = getVarPrefix(Decl);
     if (!VarPrefix.empty()) {
-      std::string NewID = VarPrefix + Decl->getNameAsString();
-      SourceLocation StartLocation = Expr->getLocation();
-      SourceLocation EndLocation =
-          StartLocation.getLocWithOffset(Decl->getNameAsString().length());
-      Rewrite.ReplaceText(SourceRange(StartLocation, EndLocation), NewID);
-
-      FullSourceLoc FullLocation = Context->getFullLoc(StartLocation);
-      if (FullLocation.isValid()) {
-        llvm::outs() << "Found reference: " << Decl->getNameAsString() << " -> "
-                     << NewID << " at "
-                     << FullLocation.getSpellingLineNumber() << ":"
-                     << FullLocation.getSpellingColumnNumber() << "\n";
-      }
+      renameVariable(Decl, Expr->getLocation(), VarPrefix);
     }
 
     return true;
