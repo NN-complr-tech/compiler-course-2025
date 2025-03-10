@@ -24,6 +24,7 @@
 //CHECK-NEXT: | |_ a2 (float|private)
 //CHECK-NEXT: |
 //CHECK-NEXT: |_Methods
+//CHECK-NEXT: | |_ somefunc (int(float)|private)
 
 //CHECK: B
 //CHECK-NEXT: |_Fields
@@ -36,6 +37,7 @@
 //CHECK-NEXT: |
 //CHECK-NEXT: |_Methods
 //CHECK-NEXT: | |_ b1 (void(int,int)|private|override)
+//CHECK-NEXT: | |_ somefunc (int(float)|private)
 
 //CHECK: D
 //CHECK-NEXT: |_Fields
@@ -62,6 +64,7 @@ struct Engineer : Human {
 class A {
   int a1;
   float a2;
+  int somefunc(float);
 };
 
 class B {
@@ -70,6 +73,7 @@ class B {
 
 class C : A,B{
   void b1(int b2, int b3) override;
+  int somefunc(float);
 };
 
 template <typename T>

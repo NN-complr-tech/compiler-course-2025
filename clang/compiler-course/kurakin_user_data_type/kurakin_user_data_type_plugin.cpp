@@ -5,6 +5,14 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
+
+std::string getAccessModifier(clang::AccessSpecifier am){
+  if(am == clang::AS_public) return "|public";
+  else if(am == clang::AS_private) return "|private";
+  else if(am == clang::AS_protected) return "|protected";
+  return "";
+}
+
 class UserDataTypeVisitor final : public clang::RecursiveASTVisitor<UserDataTypeVisitor> {
 public:
   explicit UserDataTypeVisitor(clang::ASTContext *context) : m_context(context) {}
@@ -20,9 +28,7 @@ public:
     llvm::outs() << "|_Fields\n";
     for(auto f : rd->fields()){
       llvm::outs() << "| |_ " << f->getName() << " (" << f->getType().getAsString();
-      if(f->getAccess() == clang::AS_public) llvm::outs() << "|public";
-      else if(f->getAccess() == clang::AS_private) llvm::outs() << "|private";
-      else if(f->getAccess() == clang::AS_protected) llvm::outs() << "|protected";
+      llvm::outs() << getAccessModifier(f->getAccess());
       llvm::outs() << ")\n";
     }
 
@@ -38,9 +44,7 @@ public:
         llvm::outs() << m->parameters()[i]->getType().getAsString();
       }
       llvm::outs() << ")";
-      if(m->getAccess() == clang::AS_public) llvm::outs() << "|public";
-      else if(m->getAccess() == clang::AS_private) llvm::outs() << "|private";
-      else if(m->getAccess() == clang::AS_protected) llvm::outs() << "|protected";
+      llvm::outs() << getAccessModifier(m->getAccess());
 
       if(m->hasAttr<clang::OverrideAttr>()) llvm::outs() << "|override";
       else if(m->isVirtual()) llvm::outs() << "|virtual";
