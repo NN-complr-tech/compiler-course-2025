@@ -6,6 +6,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include <fstream>
 #include <optional>
+#include <set>
 
 using namespace clang;
 
@@ -74,9 +75,17 @@ public:
     if (!Decl)
       return false;
 
-    std::optional<std::string> VarPrefix = getVarPrefix(Decl);
-    if (VarPrefix.has_value()) {
-      renameVariable(Decl, Expr->getLocation(), VarPrefix.value());
+    if (isa<ParmVarDecl>(Decl) && Flag.count(Decl) == 0) {
+      std::optional<std::string> VarPrefix = getVarPrefix(Decl);
+      if (VarPrefix.has_value()) {
+        renameVariable(Decl, Expr->getLocation(), VarPrefix.value());
+        Flag.insert(Decl);
+      }
+    } else if (!isa<ParmVarDecl>(Decl)) {
+      std::optional<std::string> VarPrefix = getVarPrefix(Decl);
+      if (VarPrefix.has_value()) {
+        renameVariable(Decl, Expr->getLocation(), VarPrefix.value());
+      }
     }
 
     return true;
@@ -85,6 +94,7 @@ public:
 private:
   ASTContext *Context;
   Rewriter &Rewrite;
+  std::set<const VarDecl *> Flag;
 };
 
 class FindNamedClassConsumer : public clang::ASTConsumer {
