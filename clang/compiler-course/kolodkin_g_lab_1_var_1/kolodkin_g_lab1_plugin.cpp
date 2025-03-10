@@ -8,7 +8,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace kolodkin_g_lab1 {
-std::string getAccessSpelling(clang::AccessSpecifier access) {
+std::string changeToString(clang::AccessSpecifier access) {
     if (access == clang::AS_public) {
         return "public";
     } else if (access == clang::AS_protected) {
@@ -39,7 +39,7 @@ public:
             for (const auto *field : record->fields()) {
                 llvm::outs() << "| |_ " << field->getName() << " ("
                               << field->getType().getAsString()
-                              << "|" << kolodkin_g_lab1::getAccessSpelling(field->getAccess()) << ")\n";
+                              << "|" << kolodkin_g_lab1::changeToString(field->getAccess()) << ")\n";
             }
         }
 
@@ -64,7 +64,7 @@ public:
             oss << ")";
 
             llvm::outs() << "| |_ " << method->getName() << " (" << oss.str() << "|"
-                          << kolodkin_g_lab1::getAccessSpelling(method->getAccess());
+                          << kolodkin_g_lab1::changeToString(method->getAccess());
 
             for (const auto &s : specs) {
                 llvm::outs() << "|" << s;
