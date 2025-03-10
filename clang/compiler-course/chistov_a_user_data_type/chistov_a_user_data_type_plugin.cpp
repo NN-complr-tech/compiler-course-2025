@@ -5,6 +5,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
+
 class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisitor> {
   clang::ASTContext *class_context_;
 
@@ -24,11 +25,15 @@ class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisito
 
   void PrintMember(const clang::ValueDecl *member, const std::string &member_type) {
     llvm::outs() << "| |_ " << member->getNameAsString() << ' ';
+    llvm::outs() << '(';
+
     if (member_type == "method") {
-      llvm::outs() << '(';
       if (const auto *method = llvm::dyn_cast<clang::CXXMethodDecl>(member)) {
         llvm::outs() << method->getReturnType().getAsString();
         llvm::outs() << '|' << AccessSpecifierToString(member->getAccess());
+        if (method->isStatic()) {
+          llvm::outs() << "|static";
+        }
         if (method->isVirtual()) {
           llvm::outs() << "|virtual";
         }
@@ -40,9 +45,10 @@ class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisito
         }
       }
     } else {
-      llvm::outs() << '(' << member->getType().getAsString() << '|'
+      llvm::outs() << member->getType().getAsString() << '|'
                    << AccessSpecifierToString(member->getAccess());
     }
+
     llvm::outs() << ")\n";
   }
 
