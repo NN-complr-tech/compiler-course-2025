@@ -17,14 +17,14 @@ public:
       : Context(Context), Rewrite(R) {}
 
   std::optional<std::string> getVarPrefix(const VarDecl *Decl) {
-    if (Decl->isFileVarDecl() && !Decl->isStaticLocal()) {
-      return "global_";
-    } else if (Decl->isStaticLocal()) {
+    if (Decl->isStaticLocal()) {
       return "static_";
-    } else if (Decl->isLocalVarDecl() && !isa<ParmVarDecl>(Decl)) {
-      return "local_";
+    } else if (Decl->isFileVarDecl()) {
+      return "global_";
     } else if (isa<ParmVarDecl>(Decl)) {
       return "param_";
+    } else if (Decl->isLocalVarDecl()) {
+      return "local_";
     }
     return std::nullopt;
   }
