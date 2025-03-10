@@ -5,7 +5,6 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-
 class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisitor> {
   clang::ASTContext *class_context_;
 
@@ -23,71 +22,70 @@ class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisito
     }
   }
 
-  void PrintMember(const clang::ValueDecl *member, const std::string &member_type) {
-    llvm::outs() << "| |_ " << member->getNameAsString() << ' ';
-    llvm::outs() << '(';
+  void PrintMember(const clang::ValueDecl *member) {
+    auto &os = llvm::outs();
+    os << "| |_ " << member->getNameAsString() << ' ';
+    os << '(';
 
-    if (member_type == "method") {
-      if (const auto *method = llvm::dyn_cast<clang::CXXMethodDecl>(member)) {
-        llvm::outs() << method->getReturnType().getAsString();
-        llvm::outs() << '|' << AccessSpecifierToString(member->getAccess());
-        if (method->isStatic()) {
-          llvm::outs() << "|static";
-        }
-        if (method->isVirtual()) {
-          llvm::outs() << "|virtual";
-        }
-        if (method->isOverloadedOperator()) {
-          llvm::outs() << "|override";
-        }
-        if (method->isPureVirtual()) {
-          llvm::outs() << "|pure";
-        }
+    if (const auto *method = llvm::dyn_cast<clang::CXXMethodDecl>(member)) {
+      os << method->getReturnType().getAsString();
+      os << '|' << AccessSpecifierToString(member->getAccess());
+      if (method->isStatic()) {
+        os << "|static";
+      }
+      if (method->isVirtual()) {
+        os << "|virtual";
+      }
+      if (method->isOverloadedOperator()) {
+        os << "|override";
+      }
+      if (method->isPureVirtual()) {
+        os << "|pure";
       }
     } else {
-      llvm::outs() << member->getType().getAsString() << '|'
-                   << AccessSpecifierToString(member->getAccess());
+      os << member->getType().getAsString() << '|'
+         << AccessSpecifierToString(member->getAccess());
     }
 
-    llvm::outs() << ")\n";
+    os << ")\n";
   }
 
 public:
   explicit PrintDataVisitor(clang::ASTContext *context) : class_context_(context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *declaration) {
-    llvm::outs() << declaration->getNameAsString()
-                 << (declaration->isStruct() ? "(struct" : "(class")
-                 << (declaration->isTemplated() ? "|template)" : ")") << '\n';
+    auto &os = llvm::outs();
+    os << declaration->getNameAsString()
+       << (declaration->isStruct() ? "(struct" : "(class")
+       << (declaration->isTemplated() ? "|template)" : ")") << '\n';
 
     if (!declaration->bases().empty()) {
       for (const auto &base : declaration->bases()) {
-        const clang::CXXRecordDecl *baseDecl = base.getType()->getAsCXXRecordDecl();
-        if (baseDecl) {
+        if (auto *baseDecl = base.getType()->getAsCXXRecordDecl()) {
           clang::AccessSpecifier accessSpecifier = base.getAccessSpecifier();
-          llvm::outs() << declaration->getName() << " -> "
-                       << AccessSpecifierToString(accessSpecifier) << " "
-                       << baseDecl->getName() << "\n";
+          os << declaration->getName() << " -> "
+             << AccessSpecifierToString(accessSpecifier) << " "
+             << baseDecl->getName() << "\n";
         }
       }
     }
 
     if (!declaration->field_empty()) {
-      llvm::outs() << "|_Fields\n";
+      os << "|_Fields\n";
       for (const auto *decl : declaration->decls()) {
         if (auto *field = llvm::dyn_cast<clang::FieldDecl>(decl)) {
-          PrintMember(field, "field");
+          PrintMember(field);
         }
       }
     }
 
     if (!declaration->methods().empty()) {
-      llvm::outs() << "|_Methods\n";
+      os << "|_Methods\n";
       for (const auto *method : declaration->methods()) {
-        PrintMember(method, "method");
+        PrintMember(method);
       }
     }
-    llvm::outs() << '\n';
+    os << '\n';
     return true;
   }
 };
@@ -115,7 +113,7 @@ public:
   }
 };
 
-}  // namespace
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<PrintDataAction>
     X("PrintDataPlugin", "Print information about a custom data type");

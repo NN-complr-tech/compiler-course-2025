@@ -27,7 +27,6 @@ struct Simple {
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ method (void|private|static)
 class Static {
-    static int y;
     static void method() {}
 };
 

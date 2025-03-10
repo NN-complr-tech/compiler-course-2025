@@ -9,7 +9,7 @@ def main():
     moscow_tz = ZoneInfo("Europe/Moscow")
     current_date = datetime.now(moscow_tz)
     deadline_date = {
-        "lab:clang": datetime(2025, 6, 1, hour=19, tzinfo=moscow_tz),
+        "lab:clang": datetime(2025, 3, 19, hour=19, tzinfo=moscow_tz),
         "lab:llvm ir": datetime(2025, 6, 1, hour=19, tzinfo=moscow_tz),
         "lab:backend": datetime(2025, 6, 1, hour=19, tzinfo=moscow_tz),
         "lab:mlir": datetime(2025, 6, 1, hour=19, tzinfo=moscow_tz),
