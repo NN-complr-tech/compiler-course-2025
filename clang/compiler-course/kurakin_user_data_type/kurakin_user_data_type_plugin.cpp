@@ -3,6 +3,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/STLExtras.h"
 
 namespace {
 
@@ -17,41 +18,60 @@ class UserDataTypeVisitor final : public clang::RecursiveASTVisitor<UserDataType
 public:
   explicit UserDataTypeVisitor(clang::ASTContext *context) : m_context(context) {}
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *rd) {
-    llvm::outs() << rd->getNameAsString();
-    for (auto it = rd->bases_begin(); it != rd->bases_end(); ++it) {
-      if(it!=rd->bases_begin()) llvm::outs() << ",";
-      if(it == rd->bases_begin()) llvm::outs() << " -> ";
-      llvm::outs() << it->getType().getAsString();
+    auto &os = llvm::outs();
+
+    os << rd->getNameAsString();
+    if(rd->getNumBases()) {
+      os << " -> ";
+      llvm::interleave(
+        rd->bases(),
+        os,
+        [&](const clang::CXXBaseSpecifier &x) { 
+          os << x.getType().getAsString(); 
+        },
+        ","
+      );
     }
-    llvm::outs() << "\n";
+    os << "\n";
 
-    llvm::outs() << "|_Fields\n";
-    for(auto f : rd->fields()){
-      llvm::outs() << "| |_ " << f->getName() << " (" << f->getType().getAsString();
-      llvm::outs() << getAccessModifier(f->getAccess());
-      llvm::outs() << ")\n";
+    os << "|_Fields\n";
+    for(const auto &f : rd->fields()) {
+      os << "| |_ " << f->getName() << " (" << f->getType().getAsString();
+      os << getAccessModifier(f->getAccess());
+      os << ")\n";
     }
+    if(rd->fields().empty())
+      os << "| |_ (hasn't fields)\n";
 
-    llvm::outs() << "|\n";
+    os << "|\n";
 
-    llvm::outs() << "|_Methods\n";
-    for(auto m : rd->methods()){
+    os << "|_Methods\n";
+    for(const auto &m : rd->methods()) {
       if(m->isImplicit()) continue;
 
-      llvm::outs() << "| |_ " << m->getNameAsString() << " (" << m->getReturnType().getAsString() << "(";
-      for(size_t i=0; i < m->getNumParams(); ++i){
-        if(i!=0) llvm::outs() << ",";
-        llvm::outs() << m->parameters()[i]->getType().getAsString();
+      os << "| |_ " << m->getNameAsString() << " (" << m->getReturnType().getAsString() << "(";
+      if(m->getNumParams()) {
+        llvm::interleave(
+          m->parameters(),
+          os,
+          [&](const clang::ParmVarDecl* x) {
+            os << x->getType().getAsString();
+          },
+          ","
+        );
       }
-      llvm::outs() << ")";
-      llvm::outs() << getAccessModifier(m->getAccess());
+      os << ")";
+      os << getAccessModifier(m->getAccess());
 
-      if(m->hasAttr<clang::OverrideAttr>()) llvm::outs() << "|override";
-      else if(m->isVirtual()) llvm::outs() << "|virtual";
-      if(m->isPureVirtual())llvm::outs() << "|pure";
+      if(m->hasAttr<clang::OverrideAttr>()) os << "|override";
+      else if(m->isVirtual()) os << "|virtual";
+      if(m->isPureVirtual()) os << "|pure";
+      if(m->isStatic()) os << "|static";
 
-      llvm::outs() << ")\n";
+      os << ")\n";
     }
+    if(rd->methods().empty())
+      os << "| |_ (hasn't methods)\n";
 
     return true;
   }
