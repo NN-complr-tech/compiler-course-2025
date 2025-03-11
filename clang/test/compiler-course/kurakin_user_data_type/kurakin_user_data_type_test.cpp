@@ -48,7 +48,7 @@ class A {
 
 //CHECK: B
 //CHECK-NEXT: |_Fields
-//CHECK-NEXT: | |_ (hasn't fields)
+//CHECK-NEXT: | |_ (has no fields)
 //CHECK-NEXT: |
 //CHECK-NEXT: |_Methods
 //CHECK-NEXT: | |_ b1 (void(int,int)|private|virtual)
@@ -59,7 +59,7 @@ class B {
 
 //CHECK: C -> A,B
 //CHECK-NEXT: |_Fields
-//CHECK-NEXT: | |_ (hasn't fields)
+//CHECK-NEXT: | |_ (has no fields)
 //CHECK-NEXT: |
 //CHECK-NEXT: |_Methods
 //CHECK-NEXT: | |_ b1 (void(int,int)|private|override)
@@ -91,7 +91,7 @@ public:
 
 //CHECK: E
 //CHECK-NEXT: |_Fields
-//CHECK-NEXT: | |_ (hasn't fields)
+//CHECK-NEXT: | |_ (has no fields)
 //CHECK-NEXT: |
 //CHECK-NEXT: |_Methods
 //CHECK-NEXT: | |_ e2 (char(char)|public|static)
@@ -105,7 +105,7 @@ struct E{
 //CHECK-NEXT: | |_ f1 (int|private)
 //CHECK-NEXT: |
 //CHECK-NEXT: |_Methods
-//CHECK-NEXT: | |_ (hasn't methods)
+//CHECK-NEXT: | |_ (has no methods)
 
 class F{
   int f1;

@@ -41,7 +41,7 @@ public:
       os << ")\n";
     }
     if(rd->fields().empty())
-      os << "| |_ (hasn't fields)\n";
+      os << "| |_ (has no fields)\n";
 
     os << "|\n";
 
@@ -71,7 +71,7 @@ public:
       os << ")\n";
     }
     if(rd->methods().empty())
-      os << "| |_ (hasn't methods)\n";
+      os << "| |_ (has no methods)\n";
 
     return true;
   }
