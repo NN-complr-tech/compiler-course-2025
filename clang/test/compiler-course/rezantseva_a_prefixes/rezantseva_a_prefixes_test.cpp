@@ -1,13 +1,16 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST%pluginext -plugin PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: int global_var1 = 0;
-// CHECK-NEXT: int static foo(int param_a, int param_b) {
+// CHECK-NEXT: int foo(int param_a, int param_b) {
 // CHECK-NEXT:   static int static_var2 = 0;
 // CHECK-NEXT:   int local_var3 = 123;
 // CHECK-NEXT:   ++static_var2;
 // CHECK-NEXT:   return param_a + param_b + global_var1 + static_var2 + local_var3;
 // CHECK-NEXT: }
-// CHECK-NEXT: int static global_check = foo(1, a(var3));
+// CHECK-NEXT: int static global_var4 = 3;
+//CHECK-NEXT:  int static glocbal_var5 = foo(1, global_var4);
+
+
 
 
 int var1 = 0;
@@ -19,4 +22,5 @@ int foo(int a, int b) {
     return a + b + var1 + var2 + var3;
 }
 
-int static check = foo(1, a(var3));
+int static var4 = 3;
+int static var5 = foo(1, var4);

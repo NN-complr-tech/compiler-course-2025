@@ -2,46 +2,98 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-class ExampleVisitor final : public clang::RecursiveASTVisitor<ExampleVisitor> {
-public:
-  explicit ExampleVisitor(clang::ASTContext *context) : m_context(context) {}
-  bool VisitFunctionDecl(clang::FunctionDecl *func) {
-    func->dump();
-    return true;
-  }
+    class PrefixVisitor : public clang::RecursiveASTVisitor<PrefixVisitor> {
+    public:
+        explicit PrefixVisitor(clang::ASTContext* context, clang::Rewriter& rewriter)
+            : m_rewriter(rewriter) {}
 
-private:
-  clang::ASTContext *m_context;
-};
+        bool VisitVarDecl(clang::VarDecl* var) {
+            if (var->isLocalVarDecl()) {
+                renameVar(var, "local_");
+            }
+            else if (var->isStaticLocal()) {
+                renameVar(var, "static_");
+            }
+            else if (var->hasGlobalStorage()) {
+                renameVar(var, "global_");
+            }
+            return true;
+        }
 
-class ExampleConsumer final : public clang::ASTConsumer {
-public:
-  explicit ExampleConsumer(clang::ASTContext *context) : m_visitor(context) {}
+        bool VisitParmVarDecl(clang::ParmVarDecl* param) {
+            renameVar(param, "param_");
+            return true;
+        }
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    m_visitor.TraverseDecl(context.getTranslationUnitDecl());
-  }
+        bool VisitCallExpr(clang::CallExpr* call) {
+            for (auto* arg : call->arguments()) {
+                if (auto* declRef = clang::dyn_cast<clang::DeclRefExpr>(arg)) {
+                    if (auto* var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
+                        renameVar(var, getPrefixForVar(var));
+                    }
+                }
+            }
+            return true;
+        }
 
-private:
-  ExampleVisitor m_visitor;
-};
+    private:
+        clang::Rewriter& m_rewriter;
 
-class ExampleAction final : public clang::PluginASTAction {
-public:
-  std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ExampleConsumer>(&ci.getASTContext());
-  }
+        void renameVar(clang::VarDecl* var, const std::string& prefix) {
+            std::string newName = prefix + var->getName().str();
+            m_rewriter.ReplaceText(var->getLocation(), var->getName().size(), newName);
+        }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
-    return true;
-  }
-};
-} // namespace
+        std::string getPrefixForVar(clang::VarDecl* var) {
+            if (var->isLocalVarDecl()) {
+                return "local_";
+            }
+            else if (var->isStaticLocal()) {
+                return "static_";
+            }
+            else if (var->hasGlobalStorage()) {
+                return "global_";
+            }
+            return "";
+        }
+    };
 
-static clang::FrontendPluginRegistry::Add<ExampleAction>
-    X("example_plugin", "Description plugin");
+    class PrefixConsumer : public clang::ASTConsumer {
+    public:
+        explicit PrefixConsumer(clang::ASTContext* context, clang::Rewriter& rewriter)
+            : m_visitor(context, rewriter), m_rewriter(rewriter) {}
+
+        void HandleTranslationUnit(clang::ASTContext& context) override {
+            m_visitor.TraverseDecl(context.getTranslationUnitDecl());
+            m_rewriter.getEditBuffer(context.getSourceManager().getMainFileID()).write(llvm::outs());
+        }
+
+    private:
+        PrefixVisitor m_visitor;
+        clang::Rewriter& m_rewriter;
+    };
+
+    class PrefixAction : public clang::PluginASTAction {
+    public:
+        std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
+            clang::CompilerInstance& ci, llvm::StringRef) override {
+            m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
+            return std::make_unique<PrefixConsumer>(&ci.getASTContext(), m_rewriter);
+        }
+
+        bool ParseArgs(const clang::CompilerInstance& ci,
+                       const std::vector<std::string>& args) override {
+            return true;
+        }
+
+    private:
+        clang::Rewriter m_rewriter;
+    };
+}// namespace
+
+static clang::FrontendPluginRegistry::Add<PrefixAction>
+X("PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST", "Adds appropriate prefixes to objects and parameters");
