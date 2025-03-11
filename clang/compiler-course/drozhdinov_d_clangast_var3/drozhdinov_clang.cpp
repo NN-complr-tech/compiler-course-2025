@@ -1,93 +1,98 @@
 #include "clang/AST/ASTConsumer.h"
-#include "clang/AST/ASTTypeTraits.h"
-#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
+#include <vector>
+#include <string>
 
+using namespace std;
 using namespace clang;
+using namespace llvm;
 
 namespace {
-class CastCounter : public clang::RecursiveASTVisitor<CastCounter> {
-private:
-  clang::ASTContext *m_context;
-  std::string CurrentFunc;
-  std::map<std::string, std::map<std::string, int>> transformations;
-  std::map<const clang::FunctionDecl*, std::map<std::pair<std::string, std::string>, int>> tr;
-public:
-  explicit CastCounter(clang::ASTContext *context) : m_context(context) {}
-  bool CheckImplicitCast(clang::ImplicitCastExpr *Expr) {
-  	auto CastType = Expr->getCastKind();
-  	/*
-  	if (CastType == clang::CK_LValueToRValue ||
-  		CastType == clang::CK_NoOp ||
-  		CastType == clang::CK_FunctionToPointerDecay ||
-  		CastType == clang::CK_ArrayToPointerDecay ||
-  		CastType == clang::CK_NullToPointer) {
-  		return true;
-  	}*/
-    clang::QualType SourceType = Expr->getSubExpr()->getType();
-    clang::QualType DestType = Expr->getType();
-    
-    if (SourceType.getAsString() == DestType.getAsString()){
-    	return true;
-    }
-    
-    auto CurrentScope = clang::DynTypedNode::create<clang::ImplicitCastExpr>(*Expr);
-    auto PrevScope = m_context->getParents(CurrentScope);
-    
-    while (!PrevScope.empty()) {
-    	if (const clang::FunctionDecl *Decl = PrevScope[0].get<clang::FunctionDecl>()) {
-    		std::string source = SourceType.getAsString();
-    		std::string dest = DestType.getAsString();
-    		tr[Decl][std::make_pair(source, dest)]++;
-    		break;
-    	}
-    	CurrentScope = PrevScope[0];
-    	PrevScope = m_context->getParents(CurrentScope);
-    }
-    return true;
-  }
-  
-  void GetResult(){
-  	for (const auto &t : tr) {
-  		llvm::errs() << "Function `" << t.first->getName() << "`\n";
-  		for (const auto &c : t.second) {
-  			llvm::errs() << c.first.first << " -> " << c.first.second << ": " << c.second << "\n";
-  		}
-  	}
-  }
+	class CastCounter final : public RecursiveASTVisitor<CastCounter> {
+	public:
+		explicit CastCounter() = default;
+		bool VisitFunctionDecl(FunctionDecl* Expr) {
+			CurrentFunction = Expr->getNameAsString();
+			return true;
+		}
 
-};
+		bool VisitCXXConstructExpr(CXXConstructExpr* Expr) {
+			if (Expr->getNumArgs() < 1) {
+				return true;
+			}
 
-class CastConsumer : public clang::ASTConsumer {
-public:
-  explicit CastConsumer(clang::ASTContext *context) : Counter(context) {}
+			QualType SourceType = Expr->getArg(0)->getType();
+			QualType DestType = Expr->getType();
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    Counter.TraverseDecl(context.getTranslationUnitDecl());
-    Counter.GetResult();
-  }
+			if (SourceType == DestType) {
+				return true;
+			}
+			CastMap[CurrentFunction][make_pair(SourceType.getAsString(), DestType.getAsString())]++;
+			return true;
+		}
 
-private:
-	CastCounter Counter;
-};
+		bool VisitImplicitCastExpr(ImplicitCastExpr* Expr) {
+			CastKind Kind = Expr->getCastKind();
+			
+			if (Kind == CK_LValueToRValue || Kind == CK_FunctionToPointerDecay){
+				return true;
+			}
+			
+			QualType SourceType = Expr->getSubExpr()->getType();
+			QualType DestType = Expr->getType();
 
-class CastCounterAction final : public clang::PluginASTAction {
-public:
-  std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<CastConsumer>(&ci.getASTContext());
-  }
+			if (SourceType == DestType) {
+				return true;
+			}
+			CastMap[CurrentFunction][make_pair(SourceType.getAsString(), DestType.getAsString())]++;
+			return true;
+		}
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
-    return true;
-  }
-};
+		bool getResult() {
+			for (auto iter = CastMap.rbegin(); iter != CastMap.rend(); iter++){
+				outs() << "Function " << (*iter).first << "\n";
+				for (auto [cast, val] : (*iter).second){
+					outs() << cast.first << " -> " << cast.second << ": " << val << "\n";
+				}
+			}
+			return true;
+		}
+
+	private:
+		map<string, map<pair<string, string>, int>> CastMap;
+		string CurrentFunction;
+	};
+
+	class CastCounterConsumer final : public ASTConsumer {
+	private:
+		CastCounter cc;
+	public:
+		explicit CastCounterConsumer() = default;
+
+		void HandleTranslationUnit(ASTContext& Context) override {
+			cc.TraverseDecl(Context.getTranslationUnitDecl());
+			cc.getResult();
+		}
+
+	
+	};
+
+	class CastCounterAction final : public PluginASTAction {
+	public:
+		unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& CI, StringRef) override {
+			return make_unique<CastCounterConsumer>();
+		}
+
+		bool ParseArgs(const CompilerInstance& CI, const vector<string>& Args) override {
+			return true;
+		}
+	};
+
 } // namespace
 
-static clang::FrontendPluginRegistry::Add<CastCounterAction>
-	X("CastCounter", "This plugin counts number of implicit casts");
+static FrontendPluginRegistry::Add<CastCounterAction>
+X("CastCounter", "Counts implicit casts");
