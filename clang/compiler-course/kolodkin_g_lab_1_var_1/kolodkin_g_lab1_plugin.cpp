@@ -113,9 +113,6 @@ public:
 
     return true;
     }
-
-private:
-	std::vector<const clang::CXXRecordDecl*> pendingFriends;
 };
 
 class LabPluginConsumer final : public clang::ASTConsumer {
