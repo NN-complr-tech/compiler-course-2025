@@ -21,48 +21,75 @@ public:
   explicit ImplicitConvVisitor(clang::ASTContext *context) 
     : m_context(context) {}
 
-  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
-	auto castKind = ICE->getCastKind();
+bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
+
+    auto castKind = ICE->getCastKind();
     if (castKind == clang::CK_LValueToRValue || 
-      castKind == clang::CK_NoOp ||
-      castKind == clang::CK_FunctionToPointerDecay) {
-      return true;
+        castKind == clang::CK_NoOp ||
+        castKind == clang::CK_FunctionToPointerDecay) {
+        return true;
     }
     clang::QualType SourceType = ICE->getSubExpr()->getType();
     clang::QualType TargetType = ICE->getType();
-	
-	if (SourceType.getAsString() == TargetType.getAsString()) {
-      return true;
+
+    if (SourceType.getCanonicalType() == TargetType.getCanonicalType()) {
+        return true;
     }
 
-    auto Node = clang::DynTypedNode::create<clang::ImplicitCastExpr>(*ICE);
-    auto Parents = m_context->getParents(Node);
-    
-    while (!Parents.empty()) {
-      if (const clang::FunctionDecl *FD = 
-          Parents[0].get<clang::FunctionDecl>()) {
-          std::string From = SourceType.getAsString();
-          std::string To = TargetType.getAsString();
-            
-          m_functionStats[FD][std::make_pair(From, To)]++;
-          m_totalConversions++;
-          break;
-        }
-
-      Node = Parents[0];
-      Parents = m_context->getParents(Node);
-    }
+	auto Parents = m_context->getParents(*ICE);
+	while (!Parents.empty()) {
+		if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
+			recordConversion(FD, SourceType, TargetType);
+			break;
+		} else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
+			if (const auto *CallOp = Lambda->getCallOperator()) {
+				recordConversion(CallOp, SourceType, TargetType);
+				break;
+			}
+		} else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
+			recordConversion(ME, SourceType, TargetType);
+			break;
+		}
+		Parents = m_context->getParents(Parents[0]);
+	}
     return true;
-  }
+}
+
+std::string normalizeTypeName(std::string typeName) {
+    const std::vector<std::string> prefixes = {"struct ", "class "};
+    for (const auto &prefix : prefixes) {
+        size_t pos = typeName.find(prefix);
+        if (pos == 0) {
+            typeName.erase(0, prefix.length());
+            break;
+        }
+    }
+    typeName.erase(
+        std::remove_if(typeName.begin(), typeName.end(), ::isspace),
+        typeName.end()
+    );
+    size_t pos;
+    while ((pos = typeName.find("_Bool")) != std::string::npos) {
+        typeName.replace(pos, 5, "bool");
+    }
+    return typeName;
+}
+		
+void recordConversion(const clang::FunctionDecl *FD, clang::QualType From, clang::QualType To) {
+        std::string FromStr = normalizeTypeName(From.getCanonicalType().getAsString());
+        std::string ToStr = normalizeTypeName(To.getCanonicalType().getAsString());
+        m_functionStats[FD][std::make_pair(FromStr, ToStr)]++;
+        m_totalConversions++;
+    }
 
 
   void printStats(llvm::raw_ostream &OS) {
-    for (const auto &funcEntry : m_functionStats) {
-      OS << "Function `" << funcEntry.first->getName() << "`\n";
-      for (const auto &conv : funcEntry.second) {
-        OS << conv.first.first << " -> " 
-           << conv.first.second << ": " 
-           << conv.second << "\n";
+    for (const auto &[func, convs] : m_functionStats) {
+      OS << "Function `" << func->getName() << "`\n";
+      for (const auto &[conv, num] : convs) {
+        OS << conv.first << " -> " 
+           << conv.second << ": " 
+           << num << "\n";
       }
     }
     OS << "Total implicit conversions: " 
