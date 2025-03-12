@@ -1,6 +1,6 @@
-set(Title "ClassInfoVisitorPlugin")
-set(Student "Ionova_Ekaterina")
-set(Group "FIIT1")
+set(Title "ExamplePlugin")
+set(Student "Ivanov_Ivan")
+set(Group "FIIT0")
 set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
