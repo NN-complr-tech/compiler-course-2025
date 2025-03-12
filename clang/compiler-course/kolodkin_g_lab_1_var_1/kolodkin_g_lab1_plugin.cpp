@@ -9,14 +9,14 @@
 namespace {
 std::string getAccessLevel(clang::AccessSpecifier access) {
     switch (static_cast<int>(access)) {
-        case static_cast<int>(clang::AccessSpecifier::AS_public):
-            return "public";
-        case static_cast<int>(clang::AccessSpecifier::AS_protected):
-            return "protected";
-        case static_cast<int>(clang::AccessSpecifier::AS_private):
-            return "private";
-        default:
-            return "";
+      case clang::AccessSpecifier::AS_public:
+          return "public";
+      case clang::AccessSpecifier::AS_protected:
+          return "protected";
+      case clang::AccessSpecifier::AS_private:
+          return "private";
+      default:
+          return "";
     }
 }
 
@@ -24,37 +24,38 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
 public:
     explicit LabPluginVisitor(clang::ASTContext *context) {}
     bool VisitCXXRecordDecl(const clang::CXXRecordDecl *record) {
-    if (!record->isCompleteDefinition()) 
-	return true;
-    llvm::outs() << record->getName();
-    if (!record->bases().empty()) {
-         llvm::outs() << " -> ";
-         for (auto base = record->bases_begin(); base != record->bases_end(); ++base) {
-             if (base != record->bases_begin()) {
-                 llvm::outs() << ", ";
-             }
-             llvm::outs() << base->getType()->getAsCXXRecordDecl()->getName();
-         }
-     }
+        if (!record->isCompleteDefinition())
+            return true;
+
+        llvm::outs() << record->getName();
+
+        if (!record->bases().empty()) {
+            llvm::outs() << " -> ";
+            for (auto base = record->bases_begin(); base != record->bases_end(); ++base) {
+                if (base != record->bases_begin()) {
+                    llvm::outs() << ", ";
+                }
+                llvm::outs() << base->getType()->getAsCXXRecordDecl()->getName();
+            }
+        }
 
         llvm::outs() << "\n";
 
-	    llvm::outs() << "|_Friends\n";
-	    if (record->friend_begin()==record->friend_end()) {
-	        llvm::outs() << "| |_ (no friends)\n";
-	    } else {
-		for (const auto *friendDecl : record->friends()) {
-			const clang::Decl *friendDeclType = friendDecl->getFriendDecl();
-		        if (const auto *friendClass = llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
-		            llvm::outs() << "| |_ " << friendClass->getName() << "\n";
-		        } 
-		        else if (const auto *friendFunction = llvm::dyn_cast<clang::FunctionDecl>(friendDeclType)) {
-		            llvm::outs() << "| |_ " << friendFunction->getName() << "\n";
-		        } else {
-		            llvm::outs() << "| |_ (unknown friend kind)\n";
-		        }
-		 }
-	     }
+        llvm::outs() << "|_Friends\n";
+        if (record->friend_begin() == record->friend_end()) {
+            llvm::outs() << "| |_ (no friends)\n";
+        } else {
+            for (const auto *friendDecl : record->friends()) {
+                const clang::Decl *friendDeclType = friendDecl->getFriendDecl();
+                if (const auto *friendClass = llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
+                    llvm::outs() << "| |_ " << friendClass->getName() << "\n";
+                } else if (const auto *friendFunction = llvm::dyn_cast<clang::FunctionDecl>(friendDeclType)) {
+                    llvm::outs() << "| |_ " << friendFunction->getName() << "\n";
+                } else {
+                    llvm::outs() << "| |_ (unknown friend kind)\n";
+                }
+            }
+        }
 
         llvm::outs() << "|_Fields\n";
         if (record->field_empty()) {
@@ -66,6 +67,7 @@ public:
                               << "|" << ::getAccessLevel(field->getAccess()) << ")\n";
             }
         }
+
         llvm::outs() << "|_Methods\n";
         if (record->methods().empty()) {
             llvm::outs() << "| |_ (no methods)\n";
@@ -77,7 +79,7 @@ public:
 
                 if (method->isVirtual() && !method->hasAttr<clang::OverrideAttr>()) {
                     specs.push_back("virtual");
-                } 
+                }
                 if (method->isPureVirtual()) {
                     specs.push_back("pure");
                 }
@@ -109,9 +111,10 @@ public:
                 llvm::outs() << ")\n";
             }
         }
-    llvm::outs() << "\n";
 
-    return true;
+        llvm::outs() << "\n";
+
+        return true;
     }
 };
 
