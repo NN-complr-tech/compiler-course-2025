@@ -1,4 +1,6 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/DataTypes_BARANOV_ALEKSEY_FIIT1_ClangAST%pluginext -plugin BaranovDataPlugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load
+// %llvmshlibdir/DataTypes_BARANOV_ALEKSEY_FIIT1_ClangAST%pluginext -plugin
+// BaranovDataPlugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: myClass(class|template)
 // CHECK-NEXT: |_Fields
@@ -7,10 +9,9 @@
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
 
-template <class T>
-class myClass {
-	T x;
-	int inner;
+template <class T> class myClass {
+  T x;
+  int inner;
 };
 
 // CHECK: A(struct)
@@ -55,7 +56,6 @@ class myClassPubl : public myClassBase {};
 // CHECK-NEXT: | |_ (has no methods)
 class myClassPriv : private myClassBase {};
 
-
 // CHECK: publPriv(struct)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ i (long long|public)
@@ -63,12 +63,11 @@ class myClassPriv : private myClassBase {};
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
 struct publPriv {
-	long long i;
+  long long i;
+
 private:
-	float x;
-
+  float x;
 };
-
 
 // CHECK: Person(struct)
 // CHECK-NEXT: |_Fields
@@ -78,19 +77,18 @@ private:
 // CHECK-NEXT: | |_ sleep (void|public|virtual|pure)
 // CHECK-NEXT: | |_ eat (void|public|virtual|pure)
 struct Person {
-	unsigned age;
-	unsigned height;
+  unsigned age;
+  unsigned height;
 
-	virtual void sleep() = 0;
-	virtual void eat() = 0;
+  virtual void sleep() = 0;
+  virtual void eat() = 0;
 };
 
 // CHECK: twoTemplates(class|template)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ first (T|private)
 // CHECK-NEXT: | |_ second (U|private)
-template <class T, typename U>
-class twoTemplates {
-	T first;
-	U second;
+template <class T, typename U> class twoTemplates {
+  T first;
+  U second;
 };
