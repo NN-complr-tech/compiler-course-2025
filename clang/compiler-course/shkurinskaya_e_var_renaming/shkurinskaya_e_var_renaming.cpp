@@ -37,7 +37,7 @@ public:
 
     std::string newName = "param_" + PVD->getNameAsString();
     m_rewriter.ReplaceText(PVD->getLocation(), PVD->getNameAsString().size(),
-	                   newName);
+	                    newName);
     return true;
   }
 
