@@ -7,92 +7,91 @@
 #include <vector>
 #include <string>
 
-using namespace std;
-using namespace clang;
-using namespace llvm;
+using std::vector;
+using std::map;
+using std::string;
+using llvm::outs;
 
 namespace {
-	class CastCounter final : public RecursiveASTVisitor<CastCounter> {
+	class CastCounter final : public clang::RecursiveASTVisitor<CastCounter> {
 	public:
-		explicit CastCounter() = default;
-		bool VisitFunctionDecl(FunctionDecl* Expr) {
+		CastCounter() = default;
+		bool VisitFunctionDecl(clang::FunctionDecl* Expr) {
 			CurrentFunction = Expr->getNameAsString();
 			return true;
 		}
 
-		bool VisitCXXConstructExpr(CXXConstructExpr* Expr) {
+		bool VisitCXXConstructExpr(clang::CXXConstructExpr* Expr) {
 			if (Expr->getNumArgs() < 1) {
 				return true;
 			}
 
-			QualType SourceType = Expr->getArg(0)->getType();
-			QualType DestType = Expr->getType();
+			clang::QualType SourceType = Expr->getArg(0)->getType();
+			clang::QualType DestType = Expr->getType();
 
 			if (SourceType == DestType) {
 				return true;
 			}
-			CastMap[CurrentFunction][make_pair(SourceType.getAsString(), DestType.getAsString())]++;
+			CastMap[CurrentFunction][std::make_pair(SourceType.getAsString(), DestType.getAsString())]++;
 			return true;
 		}
 
-		bool VisitImplicitCastExpr(ImplicitCastExpr* Expr) {
-			CastKind Kind = Expr->getCastKind();
+		bool VisitImplicitCastExpr(clang::ImplicitCastExpr* Expr) {
+			clang::CastKind Kind = Expr->getCastKind();
 			
-			if (Kind == CK_LValueToRValue || Kind == CK_FunctionToPointerDecay){
+			if (Kind == clang::CK_LValueToRValue || Kind == clang::CK_FunctionToPointerDecay){
 				return true;
 			}
 			
-			QualType SourceType = Expr->getSubExpr()->getType();
-			QualType DestType = Expr->getType();
+			clang::QualType SourceType = Expr->getSubExpr()->getType();
+			clang::QualType DestType = Expr->getType();
 
 			if (SourceType == DestType) {
 				return true;
 			}
-			CastMap[CurrentFunction][make_pair(SourceType.getAsString(), DestType.getAsString())]++;
+			CastMap[CurrentFunction][std::make_pair(SourceType.getAsString(), DestType.getAsString())]++;
 			return true;
 		}
 
-		bool getResult() {
+		void getResult() {
 			for (auto iter = CastMap.rbegin(); iter != CastMap.rend(); iter++){
-				outs() << "Function " << (*iter).first << "\n";
-				for (auto [cast, val] : (*iter).second){
+				outs() << "Function " << iter->first << "\n";
+				for (auto [cast, val] : iter->second){
 					outs() << cast.first << " -> " << cast.second << ": " << val << "\n";
 				}
 			}
-			return true;
 		}
 
 	private:
-		map<string, map<pair<string, string>, int>> CastMap;
+		map<string, map<std::pair<string, string>, int>> CastMap;
 		string CurrentFunction;
 	};
 
-	class CastCounterConsumer final : public ASTConsumer {
+	class CastCounterConsumer final : public clang::ASTConsumer {
 	private:
 		CastCounter cc;
 	public:
-		explicit CastCounterConsumer() = default;
+		CastCounterConsumer() = default;
 
-		void HandleTranslationUnit(ASTContext& Context) override {
+		void HandleTranslationUnit(clang::ASTContext& Context) override {
 			cc.TraverseDecl(Context.getTranslationUnitDecl());
 			cc.getResult();
 		}
 
-	
 	};
 
-	class CastCounterAction final : public PluginASTAction {
+	class CastCounterAction final : public clang::PluginASTAction {
 	public:
-		unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& CI, StringRef) override {
-			return make_unique<CastCounterConsumer>();
+		std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& CI, llvm::StringRef) override {
+			return std::make_unique<CastCounterConsumer>();
 		}
 
-		bool ParseArgs(const CompilerInstance& CI, const vector<string>& Args) override {
+		bool ParseArgs(const clang::CompilerInstance& CI, const vector<string>& Args) override {
 			return true;
 		}
 	};
 
 } // namespace
 
-static FrontendPluginRegistry::Add<CastCounterAction>
-X("CastCounter", "Counts implicit casts");
+static clang::FrontendPluginRegistry::Add<CastCounterAction>
+X("CastCounter_DrozhdinovD_FIIT1_ClangAST", "Detects and counts implicit casts in function bodies and constructor conversions");
