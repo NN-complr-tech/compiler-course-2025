@@ -26,7 +26,7 @@ public:
 
     if (newName != VD->getNameAsString()) {
       m_rewriter.ReplaceText(VD->getLocation(), VD->getNameAsString().size(),
-                        	 newName);
+                             newName);
     }
     return true;
   }
@@ -37,7 +37,7 @@ public:
 
     std::string newName = "param_" + PVD->getNameAsString();
     m_rewriter.ReplaceText(PVD->getLocation(), PVD->getNameAsString().size(),
-	                       newName);
+	                   newName);
     return true;
   }
 
@@ -73,7 +73,7 @@ public:
 
   void EndSourceFileAction() override {
     m_rewriter.getEditBuffer(m_rewriter.getSourceMgr().getMainFileID())
-	    .write(llvm::outs());
+        .write(llvm::outs());
   }
 
 private:
