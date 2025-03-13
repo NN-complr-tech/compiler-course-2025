@@ -13,11 +13,11 @@ class ImplicitConvVisitor
 
 private:
   clang::ASTContext *m_context;
-  std::map<const clang::FunctionDecl*,
+  std::map<const clang::FunctionDecl *,
            std::map<std::pair<std::string, std::string>, int>>
       m_functionStats;
   int m_totalConversions = 0;
-  
+
 public:
   explicit ImplicitConvVisitor(clang::ASTContext *context)
       : m_context(context) {}
@@ -47,7 +47,7 @@ public:
           break;
         }
       } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
-		recordConversion(ME, SourceType, TargetType);
+        recordConversion(ME, SourceType, TargetType);
         break;
       }
       Parents = m_context->getParents(Parents[0]);
