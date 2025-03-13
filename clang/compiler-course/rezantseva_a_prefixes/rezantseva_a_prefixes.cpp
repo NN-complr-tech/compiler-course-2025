@@ -4,6 +4,7 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
+#include <unordered_map>
 
 namespace {
     class PrefixVisitor : public clang::RecursiveASTVisitor<PrefixVisitor> {
@@ -12,29 +13,38 @@ namespace {
             : m_rewriter(rewriter) {}
 
         bool VisitVarDecl(clang::VarDecl* var) {
-            if (var->isLocalVarDecl()) {
-                renameVar(var, "local_");
+            std::string prefix;
+            if (var->isStaticLocal()) {
+                prefix = "static_";
             }
-            else if (var->isStaticLocal()) {
-                renameVar(var, "static_");
+            else if (var->isLocalVarDecl()) {
+                prefix = "local_";
             }
             else if (var->hasGlobalStorage()) {
-                renameVar(var, "global_");
+                prefix = "global_";
+            }
+
+            if (!prefix.empty()) {
+                std::string newName = prefix + var->getName().str();
+                renameVar(var, newName);
+                m_renamedVars[var] = newName;
             }
             return true;
         }
 
         bool VisitParmVarDecl(clang::ParmVarDecl* param) {
-            renameVar(param, "param_");
+            std::string newName = "param_" + param->getName().str();
+            renameVar(param, newName);
+            m_renamedVars[param] = newName;
             return true;
         }
 
-        bool VisitCallExpr(clang::CallExpr* call) {
-            for (auto* arg : call->arguments()) {
-                if (auto* declRef = clang::dyn_cast<clang::DeclRefExpr>(arg)) {
-                    if (auto* var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
-                        renameVar(var, getPrefixForVar(var));
-                    }
+        bool VisitDeclRefExpr(clang::DeclRefExpr* expr) {
+            if (auto* var = clang::dyn_cast<clang::VarDecl>(expr->getDecl())) {
+                auto it = m_renamedVars.find(var);
+                if (it != m_renamedVars.end()) {
+
+                    m_rewriter.ReplaceText(expr->getLocation(), var->getName().size(), it->second);
                 }
             }
             return true;
@@ -42,23 +52,10 @@ namespace {
 
     private:
         clang::Rewriter& m_rewriter;
+        std::unordered_map<clang::VarDecl*, std::string> m_renamedVars;
 
-        void renameVar(clang::VarDecl* var, const std::string& prefix) {
-            std::string newName = prefix + var->getName().str();
+        void renameVar(clang::VarDecl* var, const std::string& newName) {
             m_rewriter.ReplaceText(var->getLocation(), var->getName().size(), newName);
-        }
-
-        std::string getPrefixForVar(clang::VarDecl* var) {
-            if (var->isLocalVarDecl()) {
-                return "local_";
-            }
-            else if (var->isStaticLocal()) {
-                return "static_";
-            }
-            else if (var->hasGlobalStorage()) {
-                return "global_";
-            }
-            return "";
         }
     };
 
@@ -81,19 +78,33 @@ namespace {
     public:
         std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
             clang::CompilerInstance& ci, llvm::StringRef) override {
+
+            if (m_shouldExit) {
+                return nullptr;
+            }
+
             m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
             return std::make_unique<PrefixConsumer>(&ci.getASTContext(), m_rewriter);
         }
-
         bool ParseArgs(const clang::CompilerInstance& ci,
                        const std::vector<std::string>& args) override {
+            for (const auto& arg : args) {
+                if (arg == "--help") {
+                    llvm::outs() << "PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST:\n"
+                        << "This plugin adds appropriate prefixes to variables and parameters in the code.\n"
+                        << "Usage: -Xclang -plugin-arg-PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST --help\n";
+                    m_shouldExit = true;
+                    return true;
+                }
+            }
             return true;
         }
 
     private:
         clang::Rewriter m_rewriter;
+        bool m_shouldExit = false;
     };
-}// namespace
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<PrefixAction>
 X("PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST", "Adds appropriate prefixes to objects and parameters");
