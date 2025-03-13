@@ -1,5 +1,5 @@
-#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
@@ -8,18 +8,18 @@
 
 namespace {
 
-class ImplicitConvVisitor 
+class ImplicitConvVisitor
     : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
-	  
+
 private:
   clang::ASTContext *m_context;
-  std::map<const clang::FunctionDecl*, 
+  std::map<const clang::FunctionDecl*,
            std::map<std::pair<std::string, std::string>, int>>
-	  m_functionStats;
+      m_functionStats;
   int m_totalConversions = 0;
   
 public:
-  explicit ImplicitConvVisitor(clang::ASTContext *context) 
+  explicit ImplicitConvVisitor(clang::ASTContext *context)
       : m_context(context) {}
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
@@ -38,19 +38,19 @@ public:
 
     auto Parents = m_context->getParents(*ICE);
     while (!Parents.empty()) {
-	    if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
-		    recordConversion(FD, SourceType, TargetType);
-		    break;
-          } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
-            if (const auto *CallOp = Lambda->getCallOperator()) {
-                recordConversion(CallOp, SourceType, TargetType);
-                break;
-            }
-          } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
-			recordConversion(ME, SourceType, TargetType);
-            break;
+      if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
+        recordConversion(FD, SourceType, TargetType);
+        break;
+      } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
+        if (const auto *CallOp = Lambda->getCallOperator()) {
+          recordConversion(CallOp, SourceType, TargetType);
+          break;
         }
-        Parents = m_context->getParents(Parents[0]);
+      } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
+		recordConversion(ME, SourceType, TargetType);
+        break;
+      }
+      Parents = m_context->getParents(Parents[0]);
     }
     return true;
   }
@@ -65,24 +65,22 @@ public:
       }
     }
     typeName.erase(std::remove_if(typeName.begin(), typeName.end(), ::isspace),
-                   typeName.end()
-    );
+                   typeName.end());
     size_t pos;
     while ((pos = typeName.find("_Bool")) != std::string::npos) {
       typeName.replace(pos, 5, "bool");
     }
     return typeName;
   }
-	
+
   void recordConversion(const clang::FunctionDecl *FD, clang::QualType From,
                         clang::QualType To) {
     std::string FromStr =
-	    normalizeTypeName(From.getCanonicalType().getAsString());
+        normalizeTypeName(From.getCanonicalType().getAsString());
     std::string ToStr = normalizeTypeName(To.getCanonicalType().getAsString());
     m_functionStats[FD][std::make_pair(FromStr, ToStr)]++;
     m_totalConversions++;
   }
-
 
   void printStats(llvm::raw_ostream &OS) {
     for (const auto &[func, convs] : m_functionStats) {
@@ -112,7 +110,7 @@ public:
 
 class ImplicitConvAction : public clang::PluginASTAction {
 public:
-  std::unique_ptr<clang::ASTConsumer> 
+  std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     return std::make_unique<ImplicitConvConsumer>(&ci.getASTContext());
   }
