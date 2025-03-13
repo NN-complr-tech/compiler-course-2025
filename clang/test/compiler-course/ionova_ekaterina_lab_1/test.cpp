@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/ClassInfoVisitorPlugin%pluginext -plugin classInfoPlugin %s 1>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/ClassInfoVisitorPlugin_Ionova_Ekaterina_FIIT1_ClangAST%pluginext -plugin classInfoPlugin %s 1>&1 | FileCheck %s
 
 // CHECK: Point3D
 // CHECK-NEXT: |_Fields
