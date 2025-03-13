@@ -16,7 +16,6 @@ public:
       return true;
 
     std::string newName = VD->getNameAsString();
-	   llvm::outs() << "Checking variable: " << oldName << "\n";
     if (VD->isStaticLocal()) {
       newName = "static_" + newName;
     } else if (VD->hasGlobalStorage() && !VD->isStaticLocal()) {
@@ -26,8 +25,8 @@ public:
     }
 
     if (newName != VD->getNameAsString()) {
-      llvm::outs() << "Renaming " << VD->getNameAsString() << " to " << newName << "\n";
-      m_rewriter.ReplaceText(VD->getLocation(), VD->getNameAsString().size(), newName);
+      m_rewriter.ReplaceText(VD->getLocation(), VD->getNameAsString().size(),
+                        	 newName);
     }
     return true;
   }
@@ -37,8 +36,8 @@ public:
       return true;
 
     std::string newName = "param_" + PVD->getNameAsString();
-    llvm::outs() << "Renaming " << PVD->getNameAsString() << " to " << newName << "\n";
-    m_rewriter.ReplaceText(PVD->getLocation(), PVD->getNameAsString().size(), newName);
+    m_rewriter.ReplaceText(PVD->getLocation(), PVD->getNameAsString().size(),
+	                       newName);
     return true;
   }
 
@@ -73,7 +72,8 @@ public:
   }
 
   void EndSourceFileAction() override {
-    m_rewriter.getEditBuffer(m_rewriter.getSourceMgr().getMainFileID()).write(llvm::outs());
+    m_rewriter.getEditBuffer(m_rewriter.getSourceMgr().getMainFileID())
+	    .write(llvm::outs());
   }
 
 private:
