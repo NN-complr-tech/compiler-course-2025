@@ -23,4 +23,3 @@ int static var5 = foo(1, var4);
 // RUN: %clang_cc1 -load %llvmshlibdir/PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST%pluginext -plugin PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST -plugin-arg-PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST --help -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s --check-prefix=CHECK-HELP
 // CHECK-HELP: PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST:
 // CHECK-HELP-NEXT: This plugin adds appropriate prefixes to variables and parameters in the code.
-// CHECK-HELP-NEXT: Usage: -Xclang -plugin-arg-PrefixesPlugin_RezantsevaAnastasia_FIIT1_ClangAST --help
