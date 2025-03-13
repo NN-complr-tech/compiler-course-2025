@@ -1,18 +1,24 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/ClangAST_4_Shkurinskaya_Elena_FIIT2_ClangAST%pluginext -plugin ClangAST_4 -fsyntax-only %s 2>&1 | FileCheck %s
 
-// Проверка глобальных переменных
 // CHECK: int global_var = 42;
-// CHECK: float global_pi = 3.1415;
-// CHECK: static double global_static_value = 2.71828;
-
-// Проверка параметров функций
-// CHECK: void process(param_int a, param_float b, param_char c)
-
-// Проверка локальных и статических переменных внутри функций
-// CHECK: int local_sum = a + b;
-// CHECK: static int static_counter = 0;
-// CHECK: for (int local_i = 0; local_i < 5; ++local_i)
-// CHECK: char local_buf[10];
+// CHECK-NEXT: float global_pi = 3.1415;
+// CHECK-NEXT: static double global_static_value = 2.71828;
+// CHECK-NEXT: void process(param_int param_a, param_float param_b, param_char param_c) {
+// CHECK-NEXT:   int local_sum = param_a + param_b;
+// CHECK-NEXT:   static int static_counter = 0;
+// CHECK-NEXT:   for (int local_i = 0; local_i < 5; ++local_i) {
+// CHECK-NEXT:     char local_buf[10];
+// CHECK-NEXT:   }
+// CHECK-NEXT: }
+// CHECK-NEXT: void anotherFunction() {
+// CHECK-NEXT:   static int static_flag = 1;
+// CHECK-NEXT:   int local_value = static_flag + 10;
+// CHECK-NEXT: }
+// CHECK-NEXT: void testLoop() {
+// CHECK-NEXT:   for (int local_j = 0; local_j < 3; ++local_j) {
+// CHECK-NEXT:     int local_temp = local_j * 2;
+// CHECK-NEXT:   }
+// CHECK-NEXT: }
 
 int var = 42;
 float pi = 3.1415;
