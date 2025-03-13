@@ -1,6 +1,4 @@
-// RUN: %clang_cc1 -load
-// %llvmshlibdir/DataTypes_BARANOV_ALEKSEY_FIIT1_ClangAST%pluginext -plugin
-// BaranovDataPlugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/DataTypes_BARANOV_ALEKSEY_FIIT1_ClangAST%pluginext -plugin BaranovDataPlugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: myClass(class|template)
 // CHECK-NEXT: |_Fields
