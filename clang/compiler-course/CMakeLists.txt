@@ -1,5 +1,22 @@
-if (CLANG_PLUGIN_SUPPORT)
-    list_subdirs(subdirs ${CMAKE_CURRENT_SOURCE_DIR})
-    add_subdirs(subdirs "COMPILER COURSE (ClangAST)")
-    set(CLANG_TEST_DEPS ${CLANG_TEST_DEPS} PARENT_SCOPE)
-endif()
+cmake_minimum_required(VERSION 3.14)
+project(ImplicitCastPlugin)
+
+find_package(LLVM REQUIRED CONFIG)
+find_package(Clang REQUIRED CONFIG)
+
+include_directories(${LLVM_INCLUDE_DIRS})
+include_directories(${CLANG_INCLUDE_DIRS})
+
+add_library(ImplicitCastPlugin MODULE
+    ImplicitCastPlugin.cpp
+)
+
+target_link_libraries(ImplicitCastPlugin
+    PRIVATE
+    clangAST
+    clangBasic
+    clangFrontend
+    clangSerialization
+)
+
+install(TARGETS ImplicitCastPlugin DESTINATION lib)
