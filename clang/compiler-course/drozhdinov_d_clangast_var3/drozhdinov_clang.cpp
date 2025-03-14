@@ -53,7 +53,7 @@ public:
       return true;
     }
     CastMap[CurrentFunction]
-    			[std::make_pair(SourceType.getAsString(), DestType.getAsString())]++;
+    			 [std::make_pair(SourceType.getAsString(), DestType.getAsString())]++;
     return true;
   }
 
