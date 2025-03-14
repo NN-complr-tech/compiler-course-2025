@@ -125,4 +125,3 @@ public:
 
 static clang::FrontendPluginRegistry::Add<ImplicitConvAction>
     X("ImplicitConvPlugin", "Count implicit type conversions");
-
