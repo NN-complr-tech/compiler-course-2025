@@ -3,7 +3,7 @@
 // CHECK: int global_var = 42;
 // CHECK-NEXT: float global_pi = 3.1415;
 // CHECK-NEXT: static double global_static_value = 2.71828;
-// CHECK-NEXT: void process(param_int param_a, param_float param_b, param_char param_c) {
+// CHECK-NEXT: void process(int param_a, float param_b, char param_c) {
 // CHECK-NEXT:   int local_sum = param_a + param_b;
 // CHECK-NEXT:   static int static_counter = 0;
 // CHECK-NEXT:   for (int local_i = 0; local_i < 5; ++local_i) {
