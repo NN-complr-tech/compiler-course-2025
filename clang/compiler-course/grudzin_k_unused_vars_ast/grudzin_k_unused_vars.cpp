@@ -6,21 +6,21 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-  class MyUnVarsVisitor final
+class MyUnVarsVisitor final
       : public clang::RecursiveASTVisitor<MyUnVarsVisitor> {
-   public:
-     explicit MyUnVarsVisitor(clang::ASTContext *context) : m_context(context) {}
+public:
+  explicit MyUnVarsVisitor(clang::ASTContext *context) : m_context(context) {}
 
   // (check https://compiler-explorer.com/z/M3vxY6P15 for correct type)
   bool VisitParamVarDecl(clang::ParmVarDecl *parametr) {
     if(!parametr->isUsed() && !parametr->hasAttr<clang::UnusedAttr>()){
-        parametr->addAttr(clang::UnusedAttr::Create(*m_context));
+      parametr->addAttr(clang::UnusedAttr::Create(*m_context));
     }
     return true;
   }
   bool VisitVarDecl(clang::VarDecl *variable) {
     if(!variable->isUsed() && !variable->hasAttr<clang::UnusedAttr>()){
-        variable->addAttr(clang::UnusedAttr::Create(*m_context));
+      variable->addAttr(clang::UnusedAttr::Create(*m_context));
     }
     return true;
   }
@@ -37,6 +37,7 @@ public:
     function->dump();
     return true;
   }
+
 private:
   clang::ASTContext *m_context;
 };
@@ -44,7 +45,7 @@ private:
 class MyUnVarsConsumer final : public clang::ASTConsumer {
 public:
   explicit MyUnVarsConsumer(clang::ASTContext *context)
-       : m_visitor(context),d_visitor(context) {}
+      : m_visitor(context),d_visitor(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
