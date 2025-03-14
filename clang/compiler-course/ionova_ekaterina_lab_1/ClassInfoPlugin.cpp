@@ -8,7 +8,8 @@ namespace {
 class ClassInfoVisitor final
     : public clang::RecursiveASTVisitor<ClassInfoVisitor> {
 public:
-  explicit ClassInfoVisitor(clang::ASTContext *context) : m_context(context) {}
+  explicit ClassInfoVisitor(clang::ASTContext *context)
+      : m_context(context), m_os(llvm::outs()) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *declaration) {
     if (!declaration->isThisDeclarationADefinition() ||
@@ -25,69 +26,74 @@ public:
 
 private:
   void printClassInfo(const clang::CXXRecordDecl *userType) {
-    llvm::outs() << userType->getNameAsString() << ' ';
-    llvm::outs() << (userType->isStruct() ? "(struct" : "(class");
-    llvm::outs() << (userType->isTemplated() ? "|template)" : ")") << '\n';
+    m_os << userType->getNameAsString() << ' '
+         << (userType->isStruct() ? "(struct" : "(class")
+         << (userType->isTemplated() ? "|template)" : ")") << '\n';
   }
 
   void printBaseClasses(const clang::CXXRecordDecl *declaration) {
     if (declaration->getNumBases() == 0)
       return;
-    llvm::outs() << "|_Base Classes: ";
-    bool first = true;
-    for (const auto &base : declaration->bases()) {
-      if (!first)
-        llvm::outs() << ", ";
-      first = false;
-      if (auto baseDecl = base.getType()->getAsCXXRecordDecl())
-        llvm::outs() << baseDecl->getNameAsString();
-    }
-    llvm::outs() << "\n";
+
+    m_os << "|_Base Classes: ";
+
+    llvm::interleaveComma(
+        declaration->bases(), m_os, [&](const clang::CXXBaseSpecifier &base) {
+          if (auto baseDecl = base.getType()->getAsCXXRecordDecl())
+            m_os << baseDecl->getNameAsString();
+        });
+
+    m_os << "\n";
   }
 
   void printFields(const clang::CXXRecordDecl *declaration) {
-    llvm::outs() << "|_Fields\n";
+    m_os << "|_Fields\n";
+
     bool hasFields = false;
     for (const auto *field : declaration->fields()) {
       hasFields = true;
-      llvm::outs() << "| |_ " << field->getNameAsString() << " ("
-                   << field->getType().getAsString() << "|"
-                   << getAccessSpecifierAsString(field) << ")\n";
+      m_os << "| |_ " << field->getNameAsString() << " ("
+           << field->getType().getAsString() << "|"
+           << getAccessSpecifierAsString(field) << ")\n";
     }
 
     for (const auto *decl : declaration->decls()) {
       if (const auto *varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
         if (varDecl->isStaticDataMember()) {
           hasFields = true;
-          llvm::outs() << "| |_ " << varDecl->getNameAsString() << " ("
-                       << varDecl->getType().getAsString() << "|"
-                       << getAccessSpecifierAsString(varDecl) << "|static)\n";
+          m_os << "| |_ " << varDecl->getNameAsString() << " ("
+               << varDecl->getType().getAsString() << "|"
+               << getAccessSpecifierAsString(varDecl) << "|static)\n";
         }
       }
     }
 
     if (!hasFields)
-      llvm::outs() << "| |_ (no fields)\n";
+      m_os << "| |_ (no fields)\n";
   }
 
   void printMethods(const clang::CXXRecordDecl *declaration) {
     if (declaration->method_begin() == declaration->method_end())
       return;
-    llvm::outs() << "|_Methods\n";
+
+    m_os << "|_Methods\n";
+
     for (const auto *method : declaration->methods()) {
       if (method->isImplicit())
         continue;
 
-      llvm::outs() << "| |_ " << method->getNameAsString() << " ("
-                   << method->getReturnType().getAsString() << "|"
-                   << getAccessSpecifierAsString(method);
+      m_os << "| |_ " << method->getNameAsString() << " ("
+           << method->getReturnType().getAsString() << "|"
+           << getAccessSpecifierAsString(method);
+
       if (method->isVirtual())
-        llvm::outs() << "|virtual";
+        m_os << "|virtual";
       if (method->isPureVirtual())
-        llvm::outs() << "|pure";
+        m_os << "|pure";
       if (method->isConst())
-        llvm::outs() << "|const";
-      llvm::outs() << ")\n";
+        m_os << "|const";
+
+      m_os << ")\n";
     }
   }
 
@@ -108,6 +114,7 @@ private:
   }
 
   clang::ASTContext *m_context;
+  llvm::raw_ostream &m_os;
 };
 
 class ClassInfoConsumer final : public clang::ASTConsumer {
@@ -137,4 +144,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<ClassInfoAction>
-    X("classInfoPlugin", "Prints detailed info about user-defined types");
+    X("ClassInfoVisitorPlugin_Ionova_Ekaterina_FIIT1_ClangAST",
+      "Prints detailed info about user-defined types");

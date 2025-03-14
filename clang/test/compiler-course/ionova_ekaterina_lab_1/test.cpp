@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/ClassInfoVisitorPlugin_Ionova_Ekaterina_FIIT1_ClangAST%pluginext -plugin classInfoPlugin %s 1>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/ClassInfoVisitorPlugin_Ionova_Ekaterina_FIIT1_ClangAST%pluginext -plugin ClassInfoVisitorPlugin_Ionova_Ekaterina_FIIT1_ClangAST %s 1>&1 | FileCheck %s
 
 // CHECK: Point3D
 // CHECK-NEXT: |_Fields
@@ -91,3 +91,27 @@ class CheckStaticConstTemplate {
 };
 template <typename T>
 const T CheckStaticConstTemplate<T>::m_member{};
+
+// CHECK: MultipleInheritance
+// CHECK-NEXT: |_Base Classes: Base1, Base2, Base3
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ m_value (int|public)
+class Base1 {
+public:
+  int base1Value{};
+};
+
+class Base2 {
+public:
+  double base2Value{};
+};
+
+class Base3 {
+public:
+  char base3Value{};
+};
+
+class MultipleInheritance : public Base1, public Base2, private Base3 {
+public:
+  int m_value{};
+};
