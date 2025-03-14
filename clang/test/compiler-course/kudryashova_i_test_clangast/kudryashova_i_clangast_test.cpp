@@ -50,3 +50,4 @@ void boo() {
 }
 
 // CHECK: Total implicit conversions: 10
+
