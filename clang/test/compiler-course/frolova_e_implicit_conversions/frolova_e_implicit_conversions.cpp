@@ -1,5 +1,4 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/ImplicitConvPlugin_Frolova_Elizaveta_FIIT3_ClangAST%pluginext -plugin ImplicitConvPlugin -fsyntax-only %s 2>&1 | FileCheck %s
-
 using ll = long long;
 #define long long ll
 
@@ -64,7 +63,6 @@ void callProcessPointer() {
 
 // CHECK: Function: createAndReturnObject
 // CHECK-NEXT: int -> MyClass: 1
-
 class MyClass {
     int x;
  public:

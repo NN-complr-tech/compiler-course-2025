@@ -8,7 +8,8 @@
 #include <vector>
 
 namespace {
-class ImplicitConvVisitor final : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
+class ImplicitConvVisitor final 
+    : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
   void handleTypeConversion(const clang::QualType &fromType, const clang::QualType &toType) {
     std::string fromTypeStr = fromType.getAsString();
     std::string toTypeStr = toType.getAsString();
@@ -17,21 +18,21 @@ class ImplicitConvVisitor final : public clang::RecursiveASTVisitor<ImplicitConv
     toTypeStr = (toTypeStr == "_Bool") ? "bool" : toTypeStr;
 
     if (fromTypeStr != toTypeStr) {
-        std::string conversion = fromTypeStr + " -> " + toTypeStr;
-        auto &convList = conversions[currentFunction];
+      std::string conversion = fromTypeStr + " -> " + toTypeStr;
+      auto &convList = conversions[currentFunction];
 
-        bool found = false;
-        for (auto &entry : convList) {
-            if (entry.first == conversion) {
-                entry.second++;
-                found = true;
-                break;
-            }
+      bool found = false;
+      for (auto &entry : convList) {
+        if (entry.first == conversion) {
+            entry.second++;
+            found = true;
+            break;
         }
+      }
 
-        if (!found) {
-            convList.push_back({conversion, 1});
-        }
+      if (!found) {
+        convList.push_back({conversion, 1});
+      }
     }
   }
 
@@ -48,17 +49,17 @@ public:
 
   bool VisitCXXConstructExpr(clang::CXXConstructExpr *expr) {
     if (expr->getNumArgs() == 1) {
-        clang::QualType fromType = expr->getArg(0)->getType();
-        clang::QualType toType = expr->getType();
-        handleTypeConversion(fromType, toType);
+      clang::QualType fromType = expr->getArg(0)->getType();
+      clang::QualType toType = expr->getType();
+      handleTypeConversion(fromType, toType);
     }
     return true;
   }
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *cast) {
-    if (!cast || !cast->getSubExpr() || 
+    if (!cast || !cast->getSubExpr() ||
         cast->getCastKind() == clang::CK_FunctionToPointerDecay) {
-        return true;
+      return true;
     }
 
     clang::QualType fromType = cast->getSubExpr()->getType();
@@ -70,11 +71,11 @@ public:
   void printResults() {
     auto &os = llvm::outs();
     for (const auto &funcName : functionOrder) {
-        os << "Function: " << funcName << "\n";
-        for (const auto &conversion : conversions[funcName]) {
-            os << "  " << conversion.first << ": " << conversion.second << "\n";
-        }
-        os << "\n";
+      os << "Function: " << funcName << "\n";
+      for (const auto &conversion : conversions[funcName]) {
+        os << "  " << conversion.first << ": " << conversion.second << "\n";
+      }
+      os << "\n";
     }
   }
 
@@ -113,4 +114,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<ConversionAction>
-    X("ImplicitConvPlugin", "Output the number of implicit conversions in the entire file");
+    X("ImplicitConvPlugin",
+       "Output the number of implicit conversions in the entire file");
