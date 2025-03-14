@@ -8,7 +8,7 @@
 // CHECK-NEXT:   return param_a + param_b + global_var1 + static_var2 + local_var3;
 // CHECK-NEXT: }
 // CHECK-NEXT: int static global_var4 = 3;
-//CHECK:  int static global_var5 = foo(1, global_var4);
+// CHECK-NEXT:  int static global_var5 = foo(1, global_var4);
 
 int var1 = 0;
 int foo(int a, int b) {
