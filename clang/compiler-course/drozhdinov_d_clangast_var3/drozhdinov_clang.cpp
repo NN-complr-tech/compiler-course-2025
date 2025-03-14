@@ -27,8 +27,7 @@ public:
       return true;
     }
 
-    clang::QualType SourceType =
-        Expr->getArg(0)->getType();
+    clang::QualType SourceType = Expr->getArg(0)->getType();
     clang::QualType DestType = Expr->getType();
 
     if (SourceType == DestType) {
@@ -47,7 +46,8 @@ public:
       return true;
     }
 
-    clang::QualType SourceType = Expr->getSubExpr()->getType().getCanonicalType();
+    clang::QualType SourceType =
+        Expr->getSubExpr()->getType().getCanonicalType();
     clang::QualType DestType = Expr->getType().getCanonicalType();
 
     if (SourceType == DestType) {
