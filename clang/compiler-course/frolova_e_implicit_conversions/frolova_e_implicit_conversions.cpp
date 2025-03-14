@@ -8,9 +8,10 @@
 #include <vector>
 
 namespace {
-class ImplicitConvVisitor final 
+class ImplicitConvVisitor final
     : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
-  void handleTypeConversion(const clang::QualType &fromType, const clang::QualType &toType) {
+  void handleTypeConversion(const clang::QualType &fromType,
+                            const clang::QualType &toType) {
     std::string fromTypeStr = fromType.getAsString();
     std::string toTypeStr = toType.getAsString();
 
@@ -24,9 +25,9 @@ class ImplicitConvVisitor final
       bool found = false;
       for (auto &entry : convList) {
         if (entry.first == conversion) {
-            entry.second++;
-            found = true;
-            break;
+          entry.second++;
+          found = true;
+          break;
         }
       }
 
@@ -115,4 +116,4 @@ public:
 
 static clang::FrontendPluginRegistry::Add<ConversionAction>
     X("ImplicitConvPlugin",
-       "Output the number of implicit conversions in the entire file");
+      "Output the number of implicit conversions in the entire file");
