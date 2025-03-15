@@ -86,7 +86,7 @@ public:
         std::vector<std::string> paramTypes;
         for (unsigned i = 0; i < method->getNumParams(); ++i) {
           const auto *param = method->getParamDecl(i);
-          paramTypes.push_back(param->getType().getAsString());
+          paramTypes.push_back(param->getType().getAsString().str());
         }
 
         llvm::interleaveComma(paramTypes, oss,
