@@ -33,7 +33,7 @@ public:
 
     if (!record->bases().empty()) {
       llvm::outs() << " -> ";
-      for (auto base = record->bases_begin(); base != record->bases_end(); 
+      for (auto base = record->bases_begin(); base != record->bases_end();
            ++base) {
         if (base != record->bases_begin()) {
           llvm::outs() << ", ";
@@ -50,7 +50,7 @@ public:
     } else {
       for (const auto *friendDecl : record->friends()) {
         const clang::Decl *friendDeclType = friendDecl->getFriendDecl();
-        if (const auto* friendClass =
+        if (const auto *friendClass =
                 llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
           llvm::outs() << "| |_ " << friendClass->getName() << "\n";
         } else if (const auto *friendFunction =
@@ -78,7 +78,8 @@ public:
       llvm::outs() << "| |_ (no methods)\n";
     } else {
       for (const auto *method : record->methods()) {
-        if (method->isImplicit()) continue;
+        if (method->isImplicit()) 
+          continue;
 
         llvm::SmallVector<std::string, 4> specs;
 
@@ -103,7 +104,7 @@ public:
         }
 
         llvm::interleaveComma(paramTypes, oss,
-                              [&](const std::string& type) { return type; });
+                              [&](const std::string &type) { return type; });
         oss << ")";
 
         llvm::outs() << "| |_ " << method->getName() << " (" << oss.str() << "|"
