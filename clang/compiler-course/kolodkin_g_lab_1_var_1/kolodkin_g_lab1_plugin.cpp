@@ -78,7 +78,7 @@ public:
       llvm::outs() << "| |_ (no methods)\n";
     } else {
       for (const auto *method : record->methods()) {
-        if (method->isImplicit()) 
+        if (method->isImplicit())
           continue;
 
         llvm::SmallVector<std::string, 4> specs;
@@ -143,7 +143,7 @@ public:
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string>& args) override {
+                 const std::vector<std::string> &args) override {
     return true;
   }
 };
