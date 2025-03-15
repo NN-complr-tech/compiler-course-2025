@@ -4,91 +4,84 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
-#include <string>
 #include <vector>
+#include <algorithm>
 
-using namespace clang;
+namespace {
 
-class MyClangVisitor : public RecursiveASTVisitor<MyClangVisitor> {
+class MyClangVisitor final : public clang::RecursiveASTVisitor<MyClangVisitor> {
 public:
-    explicit MyClangVisitor(ASTContext *Context) : Context(Context) {}
+    explicit MyClangVisitor() = default;
 
-    bool VisitFunctionDecl(FunctionDecl *Func) {
-        currentFunction = Func->getNameInfo().getName().getAsString();
-        if (conversions.find(currentFunction) == conversions.end()) {
-            functionOrder.push_back(currentFunction);
-        }
+    bool VisitFunctionDecl(clang::FunctionDecl* Func) {
+        CurrentFunction = Func->getNameInfo().getName().getAsString();
         return true;
     }
 
-    bool VisitImplicitCastExpr(ImplicitCastExpr *Expr) {
-        if (!Expr || !Expr->getSubExpr()) {
+    bool VisitImplicitCastExpr(clang::ImplicitCastExpr* Cast) {
+        clang::CastKind Kind = Cast->getCastKind();
+        if (Kind == clang::CK_NoOp || Kind == clang::CK_LValueToRValue || Kind == clang::CK_FunctionToPointerDecay) {
             return true;
         }
 
-        // Игнорируем преобразования, связанные с указателями на функции
-        if (Expr->getCastKind() == clang::CK_FunctionToPointerDecay) {
+        clang::QualType FromType = getRealType(Cast->getSubExpr()->getType());
+        clang::QualType ToType = getRealType(Cast->getType());
+
+        if (FromType == ToType) {
             return true;
         }
 
-        QualType SourceType = Expr->getSubExpr()->getType();
-        QualType TargetType = Expr->getType();
-
-        // Игнорируем тривиальные преобразования
-        if (SourceType.getAsString() == TargetType.getAsString()) {
-            return true;
-        }
-
-        std::string SourceTypeStr = SourceType.getAsString();
-        std::string TargetTypeStr = TargetType.getAsString();
+        std::string FromTypeStr = FromType.getAsString();
+        std::string ToTypeStr = ToType.getAsString();
 
         // Заменяем "_Bool" на "bool" для читаемости
-        SourceTypeStr = (SourceTypeStr == "_Bool") ? "bool" : SourceTypeStr;
-        TargetTypeStr = (TargetTypeStr == "_Bool") ? "bool" : TargetTypeStr;
+        FromTypeStr = (FromTypeStr == "_Bool") ? "bool" : FromTypeStr;
+        ToTypeStr = (ToTypeStr == "_Bool") ? "bool" : ToTypeStr;
 
-        std::string Conversion = SourceTypeStr + " -> " + TargetTypeStr;
-
-        // Увеличиваем счетчик для данного преобразования в текущей функции
-        auto &convList = conversions[currentFunction];
-        bool found = false;
-        for (auto &entry : convList) {
-            if (entry.first == Conversion) {
-                entry.second++;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            convList.push_back({Conversion, 1});
-        }
-
+        CastList.emplace_back(CastEntry{CurrentFunction, FromTypeStr, ToTypeStr});
         return true;
+    }
+
+    clang::QualType getRealType(clang::QualType Type) {
+        Type = Type.getCanonicalType();
+        if (auto* TST = Type->getAs<clang::TypedefType>()) {
+            return TST->getDecl()->getUnderlyingType().getCanonicalType();
+        }
+        return Type;
     }
 
     void PrintResults() {
-        auto &os = llvm::outs();
-        for (const auto &funcName : functionOrder) {
-            os << "Function " << funcName << "\n";
-            for (const auto &conv : conversions[funcName]) {
-                os << "  " << conv.first << ": " << conv.second << "\n";
+        std::string LastFunction;
+        for (const auto& Entry : CastList) {
+            if (Entry.FunctionName != LastFunction) {
+                llvm::outs() << "Function " << Entry.FunctionName << "\n";
+                LastFunction = Entry.FunctionName;
             }
-            os << "\n";
+            llvm::outs() << Entry.getCastDescription() << ": 1\n";
         }
+        llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
     }
 
 private:
-    ASTContext *Context;
-    std::string currentFunction;
-    std::vector<std::string> functionOrder;
-    std::map<std::string, std::vector<std::pair<std::string, int>>> conversions;
+    struct CastEntry {
+        std::string FunctionName;
+        std::string FromType;
+        std::string ToType;
+
+        std::string getCastDescription() const {
+            return FromType + " -> " + ToType;
+        }
+    };
+
+    std::string CurrentFunction;
+    std::vector<CastEntry> CastList;
 };
 
-class MyClangConsumer : public ASTConsumer {
+class MyClangConsumer final : public clang::ASTConsumer {
 public:
-    explicit MyClangConsumer(ASTContext *Context) : Visitor(Context) {}
+    explicit MyClangConsumer() = default;
 
-    void HandleTranslationUnit(ASTContext &Context) override {
+    void HandleTranslationUnit(clang::ASTContext& Context) override {
         Visitor.TraverseDecl(Context.getTranslationUnitDecl());
         Visitor.PrintResults();
     }
@@ -97,16 +90,18 @@ private:
     MyClangVisitor Visitor;
 };
 
-class MyClangPlugin : public PluginASTAction {
-protected:
-    std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI, llvm::StringRef) override {
-        return std::make_unique<MyClangConsumer>(&CI.getASTContext());
+class MyClangPlugin final : public clang::PluginASTAction {
+public:
+    std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& CI, llvm::StringRef) override {
+        return std::make_unique<MyClangConsumer>();
     }
 
-    bool ParseArgs(const CompilerInstance &CI, const std::vector<std::string> &Args) override {
+    bool ParseArgs(const clang::CompilerInstance& CI, const std::vector<std::string>& Args) override {
         return true;
     }
 };
 
-static FrontendPluginRegistry::Add<MyClangPlugin>
-    X("myClangPlugin", "Counts implicit type conversions");
+} // namespace
+
+static clang::FrontendPluginRegistry::Add<MyClangPlugin>
+X("myClangPlugin", "Counts implicit type conversions");
