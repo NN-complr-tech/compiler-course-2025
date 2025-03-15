@@ -5,6 +5,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include <map>
 #include <string>
+#include <vector>
+#include <tuple>
 
 namespace {
 
@@ -35,13 +37,17 @@ namespace {
             }
         }
 
-        void PrintReport() const {
-            llvm::outs() << "Implicit Conversions in File:\n";
-            for (const auto& [Func, Convs] : ConvData) {
-                llvm::outs() << "Function " << Func << "\n";
-                for (const auto& [ConvDesc, Count] : Convs) {
-                    llvm::outs() << ConvDesc << ": " << Count << "\n";
+        void PrintReport(bool includeTotal = false) const {
+            std::set<std::string> processedFunctions;
+            for (const auto& entry : CastList) {
+                const auto& [FunctionName, FromType, ToType] = entry;
+
+                if (processedFunctions.find(FunctionName) == processedFunctions.end()) {
+                    llvm::outs() << "CHECK: Function " << FunctionName << "\n";
+                    processedFunctions.insert(FunctionName);
                 }
+
+                llvm::outs() << "CHECK-NEXT: " << FromType + " -> " + ToType << ": 1\n";
             }
         }
 
@@ -51,16 +57,7 @@ namespace {
             To = ResolveType(To);
             if (From == To) return;
 
-            for (auto& [Func, Convs] : ConvData) {
-                if (Func == CurrentFunction) {
-                    Convs[From.getAsString() + " -> " + To.getAsString()]++;
-                    return;
-                }
-            }
-
-            ConvData.emplace_back(CurrentFunction, std::map<std::string, int>{
-                {From.getAsString() + " -> " + To.getAsString(), 1}
-            });
+            CastList.emplace_back(CurrentFunction, From.getAsString(), To.getAsString());
         }
 
         clang::QualType ResolveType(clang::QualType Type) {
@@ -75,7 +72,7 @@ namespace {
         }
 
         std::string CurrentFunction;
-        std::map<std::string, std::map<std::string, int>> ConvData;
+        std::vector<std::tuple<std::string, std::string, std::string>> CastList;
     };
 
     class ImplicitConversionsConsumer final : public clang::ASTConsumer {
@@ -84,7 +81,7 @@ namespace {
 
         void HandleTranslationUnit(clang::ASTContext& context) override {
             m_visitor.TraverseDecl(context.getTranslationUnitDecl());
-            m_visitor.PrintReport();
+            m_visitor.PrintReport(true);
         }
 
     private:
