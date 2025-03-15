@@ -9,19 +9,20 @@
 namespace {
 std::string getAccessLevel(clang::AccessSpecifier access) {
   switch (static_cast<int>(access)) {
-    case clang::AccessSpecifier::AS_public:
-      return "public";
-    case clang::AccessSpecifier::AS_protected:
-      return "protected";
-    case clang::AccessSpecifier::AS_private:
-      return "private";
-    default:
-      return "";
+  case clang::AccessSpecifier::AS_public:
+    return "public";
+  case clang::AccessSpecifier::AS_protected:
+    return "protected";
+  case clang::AccessSpecifier::AS_private:
+    return "private";
+  default:
+    return "";
   }
 }
 
-class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisitor> {
- public:
+class LabPluginVisitor final 
+    : public clang::RecursiveASTVisitor<LabPluginVisitor> {
+public:
   explicit LabPluginVisitor(clang::ASTContext *context) {}
 
   bool VisitCXXRecordDecl(const clang::CXXRecordDecl *record) {
@@ -32,7 +33,8 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
 
     if (!record->bases().empty()) {
       llvm::outs() << " -> ";
-      for (auto base = record->bases_begin(); base != record->bases_end(); ++base) {
+      for (auto base = record->bases_begin(); base != record->bases_end(); 
+		   ++base) {
         if (base != record->bases_begin()) {
           llvm::outs() << ", ";
         }
@@ -46,9 +48,11 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
     } else {
       for (const auto *friendDecl : record->friends()) {
         const clang::Decl *friendDeclType = friendDecl->getFriendDecl();
-        if (const auto *friendClass = llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
+        if (const auto *friendClass = 
+				llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
           llvm::outs() << "| |_ " << friendClass->getName() << "\n";
-        } else if (const auto *friendFunction = llvm::dyn_cast<clang::FunctionDecl>(friendDeclType)) {
+        } else if (const auto *friendFunction = 
+					   llvm::dyn_cast<clang::FunctionDecl>(friendDeclType)) {
           llvm::outs() << "| |_ " << friendFunction->getName() << "\n";
         } else {
           llvm::outs() << "| |_ (unknown friend kind)\n";
@@ -76,7 +80,8 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
         llvm::SmallVector<std::string, 4> specs;
 
         std::ostringstream oss;
-        oss << method->getReturnType().getAsString() << " " << method->getName() << "(";
+        oss << method->getReturnType().getAsString() << " " << method->getName() 
+			<< "(";
 
         std::vector<std::string> paramTypes;
         for (unsigned i = 0; i < method->getNumParams(); ++i) {
@@ -84,7 +89,8 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
           paramTypes.push_back(param->getType().getAsString());
         }
 
-        llvm::interleaveComma(paramTypes, oss, [&](const std::string &type) { return type; });
+        llvm::interleaveComma(paramTypes, oss, 
+							  [&](const std::string &type) { return type; });
         oss << ")";
 
         llvm::outs() << "| |_ " << method->getName() << " (" << oss.str() << "|"
@@ -102,19 +108,19 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
 };
 
 class LabPluginConsumer final : public clang::ASTConsumer {
- public:
+public:
   explicit LabPluginConsumer(clang::ASTContext *context) : m_visitor(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
   }
 
- private:
+private:
   LabPluginVisitor m_visitor;
 };
 
 class LabPluginAction final : public clang::PluginASTAction {
- public:
+public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     return std::make_unique<LabPluginConsumer>(&ci.getASTContext());
@@ -126,7 +132,7 @@ class LabPluginAction final : public clang::PluginASTAction {
   }
 };
 
-}  // namespace
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<::LabPluginAction>
     X("LabPlugin_KolodkinGrigorii_FIIT3_ClangAST",
