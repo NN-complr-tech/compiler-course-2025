@@ -33,7 +33,7 @@ public:
 
     if (!record->bases().empty()) {
       llvm::outs() << " -> ";
-      for (auto base = record->bases_begin(); base != record->bases_end(); 
+      for (auto base = record->bases_begin(); base != record->bases_end();
 	    ++base) {
         if (base != record->bases_begin()) {
           llvm::outs() << ", ";
@@ -80,7 +80,7 @@ public:
         llvm::SmallVector<std::string, 4> specs;
 
         std::ostringstream oss;
-        oss << method->getReturnType().getAsString() << " " << method->getName() 
+        oss << method->getReturnType().getAsString() << " " << method->getName()
 	     << "(";
 
         std::vector<std::string> paramTypes;
