@@ -38,7 +38,7 @@ namespace {
         void PrintReport() const {
             llvm::outs() << "Implicit Conversions in File:\n";
             for (const auto& [Func, Convs] : ConvData) {
-                llvm::outs() << "Function `" << Func << "`\n";
+                llvm::outs() << "Function " << Func << "\n";
                 for (const auto& [ConvDesc, Count] : Convs) {
                     llvm::outs() << ConvDesc << ": " << Count << "\n";
                 }
