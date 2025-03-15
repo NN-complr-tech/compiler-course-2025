@@ -34,7 +34,7 @@ public:
     if (!record->bases().empty()) {
       llvm::outs() << " -> ";
       for (auto base = record->bases_begin(); base != record->bases_end(); 
-	  ++base) {
+	    ++base) {
         if (base != record->bases_begin()) {
           llvm::outs() << ", ";
         }
@@ -48,10 +48,10 @@ public:
     } else {
       for (const auto *friendDecl : record->friends()) {
         const clang::Decl *friendDeclType = friendDecl->getFriendDecl();
-        if (const auto *friendClass = 
+        if (const auto *friendClass =
 		 llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
           llvm::outs() << "| |_ " << friendClass->getName() << "\n";
-        } else if (const auto *friendFunction = 
+        } else if (const auto *friendFunction =
 			llvm::dyn_cast<clang::FunctionDecl>(friendDeclType)) {
           llvm::outs() << "| |_ " << friendFunction->getName() << "\n";
         } else {
@@ -81,7 +81,7 @@ public:
 
         std::ostringstream oss;
         oss << method->getReturnType().getAsString() << " " << method->getName() 
-	   << "(";
+	     << "(";
 
         std::vector<std::string> paramTypes;
         for (unsigned i = 0; i < method->getNumParams(); ++i) {
@@ -90,7 +90,7 @@ public:
         }
 
         llvm::interleaveComma(paramTypes, oss, 
-			     [&](const std::string &type) { return type; });
+			       [&](const std::string &type) { return type; });
         oss << ")";
 
         llvm::outs() << "| |_ " << method->getName() << " (" << oss.str() << "|"
