@@ -90,7 +90,7 @@ public:
         }
 
         llvm::interleaveComma(paramTypes, oss,
-                              [&](const std::string &type) { return type; });
+                              [&](const std::string &type) { oss << type; });
         oss << ")";
 
         llvm::outs() << "| |_ " << method->getName() << " (" << oss.str() << "|"
