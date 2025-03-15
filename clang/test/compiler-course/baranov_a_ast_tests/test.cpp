@@ -11,13 +11,11 @@ template <class T> class myClass {
   T x;
   int inner;
 };
-
 // CHECK: A(struct)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ (has no fields)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
-
 struct A {};
 // CHECK: B(struct)
 // CHECK-NEXT: |_Fields
@@ -26,7 +24,7 @@ struct A {};
 // CHECK-NEXT: | |_ (has no methods)
 struct B {};
 
-// CHECK: C(class) -> public A,public B
+// CHECK: C(class) -> public A, public B
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ (has no fields)
 // CHECK-NEXT: |_Methods
@@ -72,8 +70,8 @@ private:
 // CHECK-NEXT: | |_ age (unsigned int|public)
 // CHECK-NEXT: | |_ height (unsigned int|public)
 // CHECK-NEXT: |_Methods
-// CHECK-NEXT: | |_ sleep (void|public|virtual|pure)
-// CHECK-NEXT: | |_ eat (void|public|virtual|pure)
+// CHECK-NEXT: | |_ sleep (void()|public|virtual|pure)
+// CHECK-NEXT: | |_ eat (void()|public|virtual|pure)
 struct Person {
   unsigned age;
   unsigned height;
@@ -89,4 +87,38 @@ struct Person {
 template <class T, typename U> class twoTemplates {
   T first;
   U second;
+};
+
+// reviewers request
+
+struct vi {
+  virtual void foo() = 0;
+};
+// CHECK: overrideCheck(class) -> public vi
+//  CHECK: |_Methods
+//  CHECK-NEXT: | |_ foo (void()|private|override)
+class overrideCheck : public vi {
+  void foo() override;
+};
+
+// CHECK: staticCheck(struct)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ r (long long|static|public)
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ bbbb (int(double)|static|public)
+struct staticCheck {
+  static long long int r;
+  static int bbbb(double arg);
+};
+
+// CHECK: E(union)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ F (int|public)
+// CHECK-NEXT: | |_ I (float|public)
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ t (float(int, double *)|static|public)
+union E {
+  static float t(int i, double *d);
+  int F;
+  float I;
 };
