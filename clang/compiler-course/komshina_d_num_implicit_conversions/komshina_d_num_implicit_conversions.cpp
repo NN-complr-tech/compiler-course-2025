@@ -50,7 +50,17 @@ namespace {
             From = ResolveType(From);
             To = ResolveType(To);
             if (From == To) return;
-            ConvData[CurrentFunction][From.getAsString() + " -> " + To.getAsString()]++;
+
+            for (auto& [Func, Convs] : ConvData) {
+                if (Func == CurrentFunction) {
+                    Convs[From.getAsString() + " -> " + To.getAsString()]++;
+                    return;
+                }
+            }
+
+            ConvData.emplace_back(CurrentFunction, std::map<std::string, int>{
+                {From.getAsString() + " -> " + To.getAsString(), 1}
+            });
         }
 
         clang::QualType ResolveType(clang::QualType Type) {
