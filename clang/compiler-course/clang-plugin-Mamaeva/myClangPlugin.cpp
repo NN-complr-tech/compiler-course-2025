@@ -8,7 +8,6 @@
 #include <algorithm>
 
 namespace {
-
 class MyClangVisitor final : public clang::RecursiveASTVisitor<MyClangVisitor> {
 public:
     explicit MyClangVisitor() = default;
@@ -17,20 +16,17 @@ public:
         CurrentFunction = Func->getNameInfo().getName().getAsString();
         return true;
     }
-
     bool VisitImplicitCastExpr(clang::ImplicitCastExpr* Cast) {
         clang::CastKind Kind = Cast->getCastKind();
         if (Kind == clang::CK_NoOp || Kind == clang::CK_LValueToRValue || Kind == clang::CK_FunctionToPointerDecay) {
             return true;
         }
-
         clang::QualType FromType = getRealType(Cast->getSubExpr()->getType());
         clang::QualType ToType = getRealType(Cast->getType());
 
         if (FromType == ToType) {
             return true;
         }
-
         std::string FromTypeStr = FromType.getAsString();
         std::string ToTypeStr = ToType.getAsString();
 
@@ -41,7 +37,6 @@ public:
         CastList.emplace_back(CastEntry{CurrentFunction, FromTypeStr, ToTypeStr});
         return true;
     }
-
     clang::QualType getRealType(clang::QualType Type) {
         Type = Type.getCanonicalType();
         if (auto* TST = Type->getAs<clang::TypedefType>()) {
@@ -49,7 +44,6 @@ public:
         }
         return Type;
     }
-
     void PrintResults() {
         std::string LastFunction;
         for (const auto& Entry : CastList) {
@@ -61,35 +55,28 @@ public:
         }
         llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
     }
-
 private:
     struct CastEntry {
         std::string FunctionName;
         std::string FromType;
         std::string ToType;
-
         std::string getCastDescription() const {
             return FromType + " -> " + ToType;
         }
     };
-
     std::string CurrentFunction;
     std::vector<CastEntry> CastList;
 };
-
 class MyClangConsumer final : public clang::ASTConsumer {
 public:
     explicit MyClangConsumer() = default;
-
     void HandleTranslationUnit(clang::ASTContext& Context) override {
         Visitor.TraverseDecl(Context.getTranslationUnitDecl());
         Visitor.PrintResults();
     }
-
 private:
     MyClangVisitor Visitor;
 };
-
 class MyClangPlugin final : public clang::PluginASTAction {
 public:
     std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& CI, llvm::StringRef) override {
@@ -100,8 +87,6 @@ public:
         return true;
     }
 };
-
-} // namespace
-
+}
 static clang::FrontendPluginRegistry::Add<MyClangPlugin>
 X("myClangPlugin", "Counts implicit type conversions");
