@@ -80,8 +80,8 @@ public:
         llvm::SmallVector<std::string, 4> specs;
 
         std::ostringstream oss;
-        oss << method->getReturnType().getAsString() << " " << method->getName().str()
-            << "(";
+        oss << method->getReturnType().getAsString() << " " 
+            << method->getName().str() << "(";
 
         std::vector<std::string> paramTypes;
         for (unsigned i = 0; i < method->getNumParams(); ++i) {
