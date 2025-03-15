@@ -89,7 +89,7 @@ public:
           paramTypes.push_back(param->getType().getAsString());
         }
 
-        llvm::interleaveComma(paramTypes, oss, 
+        llvm::interleaveComma(paramTypes, oss,
                               [&](const std::string &type) { return type; });
         oss << ")";
 
