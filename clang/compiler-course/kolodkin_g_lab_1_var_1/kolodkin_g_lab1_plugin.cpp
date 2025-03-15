@@ -22,13 +22,13 @@ std::string getAccessLevel(clang::AccessSpecifier access) {
 
 class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisitor> {
  public:
-  explicit LabPluginVisitor(clang::ASTContext* context) {}
+  explicit LabPluginVisitor(clang::ASTContext *context) {}
 
-  bool VisitCXXRecordDecl(const clang::CXXRecordDecl* record) {
+  bool VisitCXXRecordDecl(const clang::CXXRecordDecl *record) {
     if (!record->isCompleteDefinition())
       return true;
 
-    llvm::outs() << record->getName();
+    llvm::outs() << "Class: " << record->getName() << "\n";
 
     if (!record->bases().empty()) {
       llvm::outs() << " -> ";
@@ -36,21 +36,19 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
         if (base != record->bases_begin()) {
           llvm::outs() << ", ";
         }
-        llvm::outs() << base->getType()->getAsCXXRecordDecl()->getName();
+        llvm::outs() << base->getType().getAsString();
       }
+      llvm::outs() << "\n";
     }
 
-    llvm::outs() << "\n";
-
-    llvm::outs() << "|_Friends\n";
     if (record->friend_begin() == record->friend_end()) {
       llvm::outs() << "| |_ (no friends)\n";
     } else {
-      for (const auto* friendDecl : record->friends()) {
-        const clang::Decl* friendDeclType = friendDecl->getFriendDecl();
-        if (const auto* friendClass = llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
+      for (const auto *friendDecl : record->friends()) {
+        const clang::Decl *friendDeclType = friendDecl->getFriendDecl();
+        if (const auto *friendClass = llvm::dyn_cast<clang::CXXRecordDecl>(friendDeclType)) {
           llvm::outs() << "| |_ " << friendClass->getName() << "\n";
-        } else if (const auto* friendFunction = llvm::dyn_cast<clang::FunctionDecl>(friendDeclType)) {
+        } else if (const auto *friendFunction = llvm::dyn_cast<clang::FunctionDecl>(friendDeclType)) {
           llvm::outs() << "| |_ " << friendFunction->getName() << "\n";
         } else {
           llvm::outs() << "| |_ (unknown friend kind)\n";
@@ -58,60 +56,46 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
       }
     }
 
-    llvm::outs() << "|_Fields\n";
     if (record->field_empty()) {
       llvm::outs() << "| |_ (no fields)\n";
     } else {
-      for (const auto* field : record->fields()) {
+      for (const auto *field : record->fields()) {
         llvm::outs() << "| |_ " << field->getName() << " ("
                      << field->getType().getAsString() << "|"
                      << ::getAccessLevel(field->getAccess()) << ")\n";
       }
     }
 
-    llvm::outs() << "|_Methods\n";
     if (record->methods().empty()) {
       llvm::outs() << "| |_ (no methods)\n";
     } else {
-      for (const auto* method : record->methods()) {
-        if (method->isImplicit()) continue;
+      for (const auto *method : record->methods()) {
+        if (method->isImplicit())
+          continue;
 
         llvm::SmallVector<std::string, 4> specs;
 
-        if (method->isVirtual() && !method->hasAttr<clang::OverrideAttr>()) {
-          specs.push_back("virtual");
-        }
-        if (method->isPureVirtual()) {
-          specs.push_back("pure");
-        }
-        if (method->hasAttr<clang::OverrideAttr>()) {
-          specs.push_back("override");
-        }
-
-        std::string oss_str;
-        llvm::raw_string_ostream oss(oss_str);
-        oss << method->getReturnType().getAsString() << "(";
+        std::ostringstream oss;
+        oss << method->getReturnType().getAsString() << " " << method->getName() << "(";
 
         std::vector<std::string> paramTypes;
         for (unsigned i = 0; i < method->getNumParams(); ++i) {
-          const auto* param = method->getParamDecl(i);
+          const auto *param = method->getParamDecl(i);
           paramTypes.push_back(param->getType().getAsString());
         }
 
-        llvm::interleaveComma(paramTypes, oss, [&](const std::string& type) { return type; });
+        llvm::interleaveComma(paramTypes, oss, [&](const std::string &type) { return type; });
         oss << ")";
 
         llvm::outs() << "| |_ " << method->getName() << " (" << oss.str() << "|"
                      << ::getAccessLevel(method->getAccess());
 
-        for (const auto& s : specs) {
+        for (const auto &s : specs) {
           llvm::outs() << "|" << s;
         }
         llvm::outs() << ")\n";
       }
     }
-
-    llvm::outs() << "\n";
 
     return true;
   }
@@ -119,9 +103,9 @@ class LabPluginVisitor final : public clang::RecursiveASTVisitor<LabPluginVisito
 
 class LabPluginConsumer final : public clang::ASTConsumer {
  public:
-  explicit LabPluginConsumer(clang::ASTContext* context) : m_visitor(context) {}
+  explicit LabPluginConsumer(clang::ASTContext *context) : m_visitor(context) {}
 
-  void HandleTranslationUnit(clang::ASTContext& context) override {
+  void HandleTranslationUnit(clang::ASTContext &context) override {
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
   }
 
@@ -132,12 +116,12 @@ class LabPluginConsumer final : public clang::ASTConsumer {
 class LabPluginAction final : public clang::PluginASTAction {
  public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance& ci, llvm::StringRef) override {
+  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     return std::make_unique<LabPluginConsumer>(&ci.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance& ci,
-                 const std::vector<std::string>& args) override {
+  bool ParseArgs(const clang::CompilerInstance &ci,
+                 const std::vector<std::string> &args) override {
     return true;
   }
 };
