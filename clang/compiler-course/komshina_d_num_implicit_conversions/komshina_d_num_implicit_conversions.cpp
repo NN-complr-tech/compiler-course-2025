@@ -52,7 +52,7 @@ public:
       llvm::outs() << "CHECK-NEXT: " << FromType + " -> " + ToType << ": 1\n";
     }
   }
-		
+
 private:
   void HandleConv(clang::QualType From, clang::QualType To) {
     From = ResolveType(From);
@@ -78,7 +78,7 @@ private:
   std::string CurrentFunction;
   std::vector<std::tuple<std::string, std::string, std::string>> CastList;
 };
-	
+
 class ImplicitConversionsConsumer final : public clang::ASTConsumer {
 public:
   ImplicitConversionsConsumer() {}
