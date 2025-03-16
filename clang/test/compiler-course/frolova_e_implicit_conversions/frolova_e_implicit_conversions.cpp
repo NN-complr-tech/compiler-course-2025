@@ -72,3 +72,10 @@ class MyClass {
 MyClass createAndReturnObject() {
     return 10;
 }
+
+// CHECK:Function: foo
+// CHECK-NEXT:int[3] -> int *: 1
+int foo(int a) {
+    static int aa[] = {1, 2, 3};
+    return aa[a];
+}

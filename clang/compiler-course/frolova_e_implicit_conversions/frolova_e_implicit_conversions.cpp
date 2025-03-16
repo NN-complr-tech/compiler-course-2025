@@ -18,23 +18,20 @@ class ImplicitConvVisitor final
     fromTypeStr = (fromTypeStr == "_Bool") ? "bool" : fromTypeStr;
     toTypeStr = (toTypeStr == "_Bool") ? "bool" : toTypeStr;
 
-    if (fromTypeStr != toTypeStr) {
-      std::string conversion = fromTypeStr + " -> " + toTypeStr;
-      auto &convList = conversions[currentFunction];
+    if(fromTypeStr == toTypeStr)
+      return;
 
-      bool found = false;
-      for (auto &entry : convList) {
-        if (entry.first == conversion) {
-          entry.second++;
-          found = true;
-          break;
-        }
-      }
+    std::string conversion = fromTypeStr + " -> " + toTypeStr;
+    auto &convList = conversions[currentFunction];
 
-      if (!found) {
-        convList.push_back({conversion, 1});
+    for (auto &entry : convList) {
+      if (entry.first == conversion) {
+        entry.second++;        
+        break;
       }
     }
+
+    convList.push_back({conversion, 1});  
   }
 
 public:
@@ -73,8 +70,8 @@ public:
     auto &os = llvm::outs();
     for (const auto &funcName : functionOrder) {
       os << "Function: " << funcName << "\n";
-      for (const auto &conversion : conversions[funcName]) {
-        os << "  " << conversion.first << ": " << conversion.second << "\n";
+      for (const auto &[c1,c2] : conversions[funcName]) {
+        os << "  " << c1 << ": " << c2 << "\n";
       }
       os << "\n";
     }
