@@ -50,7 +50,7 @@ public:
         llvm::outs() << "Function " << FunctionName << "\n";
         processedFunctions.insert(FunctionName);
       }
-      
+
       llvm::outs() << FromType + " -> " + ToType << ": 1\n";
       totalConversions++;
     }
