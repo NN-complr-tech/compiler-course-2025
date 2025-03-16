@@ -16,7 +16,7 @@ public:
     if (!var) {
       return true;
     }
-    if (var.getName().empty()) {
+    if (var->getName().empty()) {
       return true;
     }
     std::string prefix;
@@ -40,7 +40,7 @@ public:
     if (!param) {
       return true;
     }
-    if (param.getName().empty()) {
+    if (param->getName().empty()) {
       return true;
     }
     std::string newName = "param_" + param->getName().str();
@@ -57,7 +57,7 @@ public:
     if (!decl) {
       return true;
     }
-    if (decl.getName().empty()) {
+    if (decl->getName().empty()) {
       return true;
     }
 
