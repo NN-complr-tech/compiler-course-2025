@@ -45,11 +45,11 @@ public:
       const auto &[FunctionName, FromType, ToType] = entry;
 
       if (processedFunctions.find(FunctionName) == processedFunctions.end()) {
-        llvm::outs() << "CHECK: Function " << FunctionName << "\n";
+        llvm::outs() << "Function " << FunctionName << "\n";
         processedFunctions.insert(FunctionName);
       }
 
-      llvm::outs() << "CHECK-NEXT: " << FromType + " -> " + ToType << ": 1\n";
+      llvm::outs() << FromType + " -> " + ToType << ": 1\n";
     }
   }
 
