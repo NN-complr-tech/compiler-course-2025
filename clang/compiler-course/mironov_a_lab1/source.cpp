@@ -56,10 +56,9 @@ public:
 
   void Results() {
     for (const auto &[func, table] : casts_) {
-      if (func == "global_scope"){
+      if (func == "global_scope") {
         llvm::outs() << "In global scope\n";
-      }
-      else{
+      } else {
         llvm::outs() << "In function: " << func << '\n';
       }
       for (const auto &[types, value] : table) {
