@@ -1,75 +1,89 @@
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/Attr.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-class MyUnVarsVisitor final
-    : public clang::RecursiveASTVisitor<MyUnVarsVisitor> {
-public:
-  explicit MyUnVarsVisitor(clang::ASTContext *context) : m_context(context) {}
 
-  // (check https://compiler-explorer.com/z/M3vxY6P15 for correct type)
+class MyUnVarsVisitor final : public clang::RecursiveASTVisitor<MyUnVarsVisitor> {
+public:
+  explicit MyUnVarsVisitor(clang::ASTContext *context, clang::Rewriter &R)
+      : m_context(context), TheRewriter(R) {}
+
   bool VisitParamVarDecl(clang::ParmVarDecl *parametr) {
     if (!parametr->isUsed() && !parametr->hasAttr<clang::UnusedAttr>()) {
-      parametr->addAttr(clang::UnusedAttr::Create(*m_context));
+      clang::SourceLocation loc = parametr->getSourceRange().getBegin();
+      TheRewriter.InsertText(loc, "[[maybe_unused]] ", true, true);
     }
     return true;
   }
+
   bool VisitVarDecl(clang::VarDecl *variable) {
     if (!variable->isUsed() && !variable->hasAttr<clang::UnusedAttr>()) {
-      variable->addAttr(clang::UnusedAttr::Create(*m_context));
+      clang::SourceLocation loc = variable->getSourceRange().getBegin();
+      TheRewriter.InsertText(loc, "[[maybe_unused]] ", true, true);
     }
     return true;
   }
 
 private:
   clang::ASTContext *m_context;
-};
-
-// You need to dump your data to change code info
-class MyDumpVisitor final : public clang::RecursiveASTVisitor<MyDumpVisitor> {
-public:
-  explicit MyDumpVisitor(clang::ASTContext *context) : m_context(context) {}
-  bool VisitFunctionDecl(clang::FunctionDecl *function) {
-    function->dump();
-    return true;
-  }
-
-private:
-  clang::ASTContext *m_context;
+  clang::Rewriter &TheRewriter;
 };
 
 class MyUnVarsConsumer final : public clang::ASTConsumer {
 public:
-  explicit MyUnVarsConsumer(clang::ASTContext *context)
-      : m_visitor(context), d_visitor(context) {}
+  MyUnVarsConsumer(clang::ASTContext *context, clang::Rewriter &R)
+      : Visitor(context, R) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
-    m_visitor.TraverseDecl(context.getTranslationUnitDecl());
-    d_visitor.TraverseDecl(context.getTranslationUnitDecl());
+    Visitor.TraverseDecl(context.getTranslationUnitDecl());
   }
 
 private:
-  MyUnVarsVisitor m_visitor;
-  MyDumpVisitor d_visitor;
+  MyUnVarsVisitor Visitor;
 };
 
 class MyUnVarsAction final : public clang::PluginASTAction {
+private:
+  clang::Rewriter TheRewriter;
+
 public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<MyUnVarsConsumer>(&ci.getASTContext());
+  CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
+    TheRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
+    return std::make_unique<MyUnVarsConsumer>(&CI.getASTContext(), TheRewriter);
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
+  void EndSourceFileAction() override {
+    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
+        .write(llvm::outs());
+  }
+
+  bool ParseArgs(const clang::CompilerInstance &CI,
                  const std::vector<std::string> &args) override {
+    for (const auto &arg : args) {
+      if (arg == "-help") {
+        PrintHelp(llvm::outs());
+        // Returning false stops further processing after printing help.
+        return false;
+      }
+    }
     return true;
   }
+
+  void PrintHelp(llvm::raw_ostream &ros) {
+    ros << "Usage: -plugin grudzin_k_UnVars_plugin [options]\n"
+        << "This plugin marks unused variables by adding the attribute [[maybe_unused]].\n"
+        << "Options:\n"
+        << "  -help    : Display this help message.\n";
+  }
 };
+
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<MyUnVarsAction>
-    X("grudzin_k_UnVars_plugin", "Description plugin");
+    X("grudzin_k_UnVars_plugin", "This plugin marks unused variables by adding attribute and adding [[maybe_unused]] flag in code");
