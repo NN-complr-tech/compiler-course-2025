@@ -1,14 +1,14 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/Lab1_AST_Mironov_Arseniy_FIIT1_ClangAST%pluginext -plugin Lab1_AST_Mironov_Arseniy_FIIT1_ClangAST -fsyntax-only %s 2>&1 | FileCheck %s -dump-input=always
 
+// CHECK: In global scope
+// CHECK-NEXT: int -> float: 1
+float global_scope_test = 4;
+
 
 // CHECK: In function: mul
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
-
-// CHECK: In function: scope_name
-// CHECK-NEXT: int -> float: 1
-float scope_name_test = 4;
 
 // CHECK: In function: sum
 // CHECK-NEXT: float -> double: 1

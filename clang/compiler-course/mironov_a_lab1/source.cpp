@@ -14,7 +14,7 @@ public:
   CastVisitor() {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *function) {
-    function_name_ = function->getNameAsString();
+    scope_name_ = function->getNameAsString();
     return true;
   }
 
@@ -37,7 +37,7 @@ public:
       return true;
     }
 
-    casts_[function_name_][std::make_pair(source_type, target_type)]++;
+    casts_[scope_name_][std::make_pair(source_type, target_type)]++;
     return true;
   }
 
@@ -49,14 +49,19 @@ public:
     for (const auto *arg : construct->arguments()) {
       std::string source_type = arg->getType().getCanonicalType().getAsString();
 
-      casts_[function_name_][std::make_pair(source_type, target_type)]++;
+      casts_[scope_name_][std::make_pair(source_type, target_type)]++;
     }
     return true;
   }
 
   void Results() {
     for (const auto &[func, table] : casts_) {
-      llvm::outs() << "In function: " << func << '\n';
+      if (func == "global_scope"){
+        llvm::outs() << "In global scope\n";
+      }
+      else{
+        llvm::outs() << "In function: " << func << '\n';
+      }
       for (const auto &[types, value] : table) {
         llvm::outs() << types.first << " -> " << types.second << ": " << value
                      << '\n';
@@ -68,7 +73,7 @@ private:
   // table: function: {type1, type2}: a number of implicit casts
   std::map<std::string, std::map<std::pair<std::string, std::string>, int>>
       casts_;
-  std::string function_name_ = "scope_name";
+  std::string scope_name_ = "global_scope";
 };
 
 class CastConsumer final : public clang::ASTConsumer {
