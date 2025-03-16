@@ -13,6 +13,12 @@ public:
       : m_rewriter(rewriter) {}
 
   bool VisitVarDecl(clang::VarDecl *var) {
+    if (!var) {
+      return true;
+    }
+    if (var.getName().empty()) {
+      return true;
+    }
     std::string prefix;
     if (var->isStaticLocal()) {
       prefix = "static_";
@@ -31,6 +37,12 @@ public:
   }
 
   bool VisitParmVarDecl(clang::ParmVarDecl *param) {
+    if (!param) {
+      return true;
+    }
+    if (param.getName().empty()) {
+      return true;
+    }
     std::string newName = "param_" + param->getName().str();
     renameVar(param, newName);
     m_renamedVars[param] = newName;
@@ -38,7 +50,18 @@ public:
   }
 
   bool VisitDeclRefExpr(clang::DeclRefExpr *expr) {
-    if (auto *var = clang::dyn_cast<clang::VarDecl>(expr->getDecl())) {
+    if (!expr) {
+      return true;
+    }
+    auto *decl = expr->getDecl();
+    if (!decl) {
+      return true;
+    }
+    if (decl.getName().empty()) {
+      return true;
+    }
+
+    if (auto *var = clang::dyn_cast<clang::VarDecl>(decl)) {
       auto it = m_renamedVars.find(var);
       if (it != m_renamedVars.end()) {
         m_rewriter.ReplaceText(expr->getLocation(), var->getName().size(),
