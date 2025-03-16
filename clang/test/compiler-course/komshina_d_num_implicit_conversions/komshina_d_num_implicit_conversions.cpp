@@ -58,3 +58,5 @@ void goo() {
     int x = 20;
     loo(&x);
 }
+
+// CHECK: Total implicit conversions: 10

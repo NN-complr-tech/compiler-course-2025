@@ -13,7 +13,7 @@ namespace {
 class ImplicitConversionsAnalyzer final
     : public clang::RecursiveASTVisitor<ImplicitConversionsAnalyzer> {
 public:
-  explicit ImplicitConversionsAnalyzer() {}
+  ImplicitConversionsAnalyzer() {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *func) {
     CurrentFunction = func->getNameAsString();
@@ -40,17 +40,24 @@ public:
   }
 
   void PrintReport(bool includeTotal = false) const {
-    std::set<std::string> processedFunctions;
-    for (const auto &entry : CastList) {
-      const auto &[FunctionName, FromType, ToType] = entry;
+      std::set<std::string> processedFunctions;
+      int totalConversions = 0;
 
-      if (processedFunctions.find(FunctionName) == processedFunctions.end()) {
-        llvm::outs() << "Function " << FunctionName << "\n";
-        processedFunctions.insert(FunctionName);
+      for (const auto& entry : CastList) {
+          const auto& [FunctionName, FromType, ToType] = entry;
+
+          if (processedFunctions.find(FunctionName) == processedFunctions.end()) {
+              llvm::outs() << "Function " << FunctionName << "\n";
+              processedFunctions.insert(FunctionName);
+          }
+
+          llvm::outs() << FromType + " -> " + ToType << ": 1\n";
+          totalConversions++;
       }
 
-      llvm::outs() << FromType + " -> " + ToType << ": 1\n";
-    }
+      if (includeTotal) {
+          llvm::outs() << "Total implicit conversions: " << totalConversions << "\n";
+      }
   }
 
 private:
@@ -101,6 +108,14 @@ public:
 
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
+      for (const auto& arg : args) {
+          if (arg == "--help") {
+              llvm::errs() << "Usage: -Xclang -plugin -Xclang Implicit_Conversions_Komshina_Daria_FIIT1_ClangAST\n"
+                  << "Options:\n"
+                  << "  --help     Show this help message\n";
+              return false;
+          }
+      }
     return true;
   }
 };
