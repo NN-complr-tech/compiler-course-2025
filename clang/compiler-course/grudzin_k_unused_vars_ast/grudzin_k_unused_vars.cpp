@@ -1,14 +1,15 @@
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/Attr.h"
-#include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
 
-class MyUnVarsVisitor final : public clang::RecursiveASTVisitor<MyUnVarsVisitor> {
+class MyUnVarsVisitor final
+    : public clang::RecursiveASTVisitor<MyUnVarsVisitor> {
 public:
   explicit MyUnVarsVisitor(clang::ASTContext *context, clang::Rewriter &R)
       : m_context(context), TheRewriter(R) {}
@@ -77,7 +78,8 @@ public:
 
   void PrintHelp(llvm::raw_ostream &ros) {
     ros << "Usage: -plugin grudzin_k_UnVars_plugin [options]\n"
-        << "This plugin marks unused variables by adding the attribute [[maybe_unused]].\n"
+        << "This plugin marks unused variables by adding the attribute "
+           "[[maybe_unused]].\n"
         << "Options:\n"
         << "  -help    : Display this help message.\n";
   }
@@ -86,4 +88,6 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<MyUnVarsAction>
-    X("grudzin_k_UnVars_plugin", "This plugin marks unused variables by adding attribute and adding [[maybe_unused]] flag in code");
+    X("grudzin_k_UnVars_plugin",
+      "This plugin marks unused variables by adding attribute and adding "
+      "[[maybe_unused]] flag in code");
