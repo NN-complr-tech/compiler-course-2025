@@ -116,4 +116,4 @@ private:
 
 static clang::FrontendPluginRegistry::Add<ExampleAction>
     X("FirstPlugin_KozlovaEkaterina_FIIT3_ClangAST",
-        "Adds prefixes to variables");
+      "Adds prefixes to variables");
