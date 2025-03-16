@@ -11,7 +11,7 @@
 namespace {
 class CastVisitor final : public clang::RecursiveASTVisitor<CastVisitor> {
 public:
-  explicit CastVisitor() {}
+  CastVisitor() {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *function) {
     function_name_ = function->getNameAsString();
@@ -68,7 +68,7 @@ private:
   // table: function: {type1, type2}: a number of implicit casts
   std::map<std::string, std::map<std::pair<std::string, std::string>, int>>
       casts_;
-  std::string function_name_ = "Global_scope";
+  std::string function_name_ = "scope_name";
 };
 
 class CastConsumer final : public clang::ASTConsumer {

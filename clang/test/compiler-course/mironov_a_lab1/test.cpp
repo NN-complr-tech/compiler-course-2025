@@ -6,10 +6,13 @@
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
 
+// CHECK: In function: scope_name
+// CHECK-NEXT: int -> float: 1
+float scope_name_test = 4;
+
 // CHECK: In function: sum
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
-
 
 double sum(int a, float b) {
 	return a + b;
@@ -69,4 +72,13 @@ void test_casts3(){
 
 X test_casts4(){
 	return true;
+}
+
+// CHECK: In function: test_casts5
+// CHECK-NEXT: int * -> void *: 1
+
+void test_casts5(){
+	int obj = 5;
+	int *ptr = &obj;
+	void* cp = ptr;
 }
