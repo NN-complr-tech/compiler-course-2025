@@ -97,7 +97,7 @@ public:
   explicit DataTypesVisitor(clang::ASTContext *context) : m_context_(context) {}
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *recordDecl) {
     auto &&output = llvm::outs();
-    // is union ????
+    // is union
     if (recordDecl->isUnion()) {
       output << recordDecl->getNameAsString() << "(union)\n";
     } else {
