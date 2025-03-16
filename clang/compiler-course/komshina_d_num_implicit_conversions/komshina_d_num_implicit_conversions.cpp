@@ -40,24 +40,25 @@ public:
   }
 
   void PrintReport(bool includeTotal = false) const {
-      std::set<std::string> processedFunctions;
-      int totalConversions = 0;
+    std::set<std::string> processedFunctions;
+    int totalConversions = 0;
 
-      for (const auto& entry : CastList) {
-          const auto& [FunctionName, FromType, ToType] = entry;
+    for (const auto &entry : CastList) {
+      const auto &[FunctionName, FromType, ToType] = entry;
 
-          if (processedFunctions.find(FunctionName) == processedFunctions.end()) {
-              llvm::outs() << "Function " << FunctionName << "\n";
-              processedFunctions.insert(FunctionName);
-          }
-
-          llvm::outs() << FromType + " -> " + ToType << ": 1\n";
-          totalConversions++;
+      if (processedFunctions.find(FunctionName) == processedFunctions.end()) {
+        llvm::outs() << "Function " << FunctionName << "\n";
+        processedFunctions.insert(FunctionName);
       }
+      
+      llvm::outs() << FromType + " -> " + ToType << ": 1\n";
+      totalConversions++;
+    }
 
-      if (includeTotal) {
-          llvm::outs() << "Total implicit conversions: " << totalConversions << "\n";
-      }
+    if (includeTotal) {
+      llvm::outs() << "Total implicit conversions: " << totalConversions
+                   << "\n";
+    }
   }
 
 private:
@@ -108,14 +109,15 @@ public:
 
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
-      for (const auto& arg : args) {
-          if (arg == "--help") {
-              llvm::errs() << "Usage: -Xclang -plugin -Xclang Implicit_Conversions_Komshina_Daria_FIIT1_ClangAST\n"
-                  << "Options:\n"
-                  << "  --help     Show this help message\n";
-              return false;
-          }
+    for (const auto &arg : args) {
+      if (arg == "--help") {
+        llvm::errs() << "Usage: -Xclang -plugin -Xclang "
+                        "Implicit_Conversions_Komshina_Daria_FIIT1_ClangAST\n"
+                     << "Options:\n"
+                     << "  --help     Show this help message\n";
+        return false;
       }
+    }
     return true;
   }
 };
