@@ -33,7 +33,8 @@ public:
       std::string name = paramVarDecl->getName().str();
       std::string mod_name = "param_" + name;
       renamedVariables_[name] = mod_name;
-      rewriter_.ReplaceText(paramVarDecl->getLocation(), name.length(), mod_name);
+      rewriter_.ReplaceText(paramVarDecl->getLocation(), name.length(),
+                            mod_name);
     }
     return true;
   }
