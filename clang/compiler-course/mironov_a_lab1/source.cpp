@@ -100,4 +100,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<CastAction>
-    X("Lab1_AST_Mironov_Arseniy_FIIT1_ClangAST", "Cast counter");
+    X("Lab1_AST_Mironov_Arseniy_FIIT1_ClangAST",
+      "The plugin counts the number of implicit conversations and returns it");

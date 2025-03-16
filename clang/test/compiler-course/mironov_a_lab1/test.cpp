@@ -47,3 +47,26 @@ void test_casts2(){
 	float c3 = false;
 	char c4= true;
 }
+
+class X{
+private:
+	int created;
+public:
+	X(int val): created(val) {} 
+};
+
+// CHECK: In function: test_casts3
+// CHECK-NEXT: double -> int: 1
+// CHECK-NEXT: int -> class X: 1
+
+void test_casts3(){
+	X sample(1.0);
+}
+
+// CHECK: In function: test_casts4
+// CHECK-NEXT: _Bool -> int: 1
+// CHECK-NEXT: int -> class X: 1
+
+X test_casts4(){
+	return true;
+}
