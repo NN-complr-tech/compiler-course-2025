@@ -67,21 +67,14 @@ public:
   bool ParseArgs(const clang::CompilerInstance &CI,
                  const std::vector<std::string> &args) override {
     for (const auto &arg : args) {
-      if (arg == "-help") {
-        PrintHelp(llvm::outs());
+      if (arg == "--help") {
         // Returning false stops further processing after printing help.
+        llvm::outs() << "This plugin marks unused variables with "
+                        "[[maybe_unused]] attribute";
         return false;
       }
     }
     return true;
-  }
-
-  void PrintHelp(llvm::raw_ostream &ros) {
-    ros << "Usage: -plugin grudzin_k_UnVars_plugin [options]\n"
-        << "This plugin marks unused variables by adding the attribute "
-           "[[maybe_unused]].\n"
-        << "Options:\n"
-        << "  -help    : Display this help message.\n";
   }
 };
 
