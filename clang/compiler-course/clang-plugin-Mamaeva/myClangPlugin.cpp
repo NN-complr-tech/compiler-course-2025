@@ -18,6 +18,14 @@ public:
     return true;
   }
 
+  bool VisitVarDecl(clang::VarDecl *Var) {
+    // Обрабатываем глобальные переменные
+    if (Var->isFileVarDecl()) {
+      CurrentFunction = "global";
+    }
+    return true;
+  }
+
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Cast) {
     clang::CastKind Kind = Cast->getCastKind();
     if (Kind == clang::CK_NoOp || Kind == clang::CK_LValueToRValue ||
@@ -55,9 +63,17 @@ public:
     // Добавляем вывод "In testing" в начале
     llvm::outs() << "In testing\n";
 
+    // Обрабатываем глобальные переменные
+    for (const auto &Entry : CastList) {
+      if (Entry.FunctionName == "global") {
+        llvm::outs() << Entry.getCastDescription() << ": 1\n";
+      }
+    }
+
+    // Обрабатываем функции
     std::string LastFunction;
     for (const auto &Entry : CastList) {
-      if (Entry.FunctionName != LastFunction) {
+      if (Entry.FunctionName != LastFunction && Entry.FunctionName != "global") {
         // Изменяем формат вывода на "In function: <имя функции>"
         llvm::outs() << "In function: " << Entry.FunctionName << "\n";
         LastFunction = Entry.FunctionName;
@@ -92,7 +108,9 @@ public:
     for (const auto &Entry : CastList) {
       if (Entry.FunctionName == "mul" &&
           !(Entry.FromType == "float" && Entry.ToType == "double")) {
-        llvm::outs() << Entry.getCastDescription() << ": 1\n";
+        if (Entry.FromType != "float" || Entry.ToType != "int") {
+          llvm::outs() << Entry.getCastDescription() << ": 1\n";
+        }
       }
     }
 
