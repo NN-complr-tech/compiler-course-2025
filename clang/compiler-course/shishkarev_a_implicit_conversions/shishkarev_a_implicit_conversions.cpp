@@ -3,6 +3,9 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
+#include <map>
+#include <utility>
+#include <string>
 
 namespace {
 class ImplicitConversionVisitor : public clang::RecursiveASTVisitor<ImplicitConversionVisitor> {
@@ -20,7 +23,7 @@ public:
 
     // Выводим результаты
     for (const auto &conv : m_conversions) {
-      llvm::outs() << conv.first << " -> " << conv.second << ": " << m_conversions[conv] << "\n";
+      llvm::outs() << conv.first.first << " -> " << conv.first.second << ": " << conv.second << "\n";
     }
 
     return true;
