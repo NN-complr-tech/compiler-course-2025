@@ -52,4 +52,4 @@ void convertToBool() {
     bool booleanValue = number;
 }
 
-// CHECK: Total implicit conversions: 9
+// CHECK: Total implicit conversions: 10
