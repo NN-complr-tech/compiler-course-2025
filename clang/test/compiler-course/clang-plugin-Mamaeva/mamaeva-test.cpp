@@ -14,10 +14,11 @@ double sum(int a, float b) {
 
 // CHECK: In function: mul
 // CHECK-NEXT: float -> double: 1
+// CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: double -> int: 1
 
 int mul(float a, float b) {
     return a + sum(a, b);
 }
 
-// CHECK: Total implicit conversions: 5
+// CHECK: Total implicit conversions: 6
