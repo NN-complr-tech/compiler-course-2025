@@ -19,3 +19,5 @@ double sum(int a, float b) {
 int mul(float a, float b) {
     return a + sum(a, b);
 }
+
+// CHECK: Total implicit conversions: 5
