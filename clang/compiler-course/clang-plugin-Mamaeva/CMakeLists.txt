@@ -1,5 +1,5 @@
 set(Title "myClangPlugin")
-set(Student "mamaeva_olga")
+set(Student "Mamaeva_Olga")
 set(Group "FIIT3")
 set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
 
