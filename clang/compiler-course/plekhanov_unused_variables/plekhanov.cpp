@@ -1,47 +1,74 @@
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/Attr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-class ExampleVisitor final : public clang::RecursiveASTVisitor<ExampleVisitor> {
+
+class UnusedVariablesVisitor final
+    : public clang::RecursiveASTVisitor<UnusedVariablesVisitor> {
 public:
-  explicit ExampleVisitor(clang::ASTContext *context) : m_context(context) {}
-  bool VisitFunctionDecl(clang::FunctionDecl *func) {
-    func->dump();
+  UnusedVariablesVisitor(clang::ASTContext *Context, clang::Rewriter &R)
+      : m_context(Context), TheRewriter(R) {}
+
+  bool VisitParamVarDecl(clang::ParmVarDecl *param) {
+    if (!param->isUsed() && !param->hasAttr<clang::UnusedAttr>()) {
+      clang::SourceLocation loc = param->getSourceRange().getBegin();
+      TheRewriter.InsertText(loc, "[[maybe_unused]] ", true, true);
+    }
+    return true;
+  }
+
+  bool VisitVarDecl(clang::VarDecl *var) {
+    if (!var->isUsed() && !var->hasAttr<clang::UnusedAttr>()) {
+      clang::SourceLocation loc = var->getSourceRange().getBegin();
+      TheRewriter.InsertText(loc, "[[maybe_unused]] ", true, true);
+    }
     return true;
   }
 
 private:
   clang::ASTContext *m_context;
+  clang::Rewriter &TheRewriter;
 };
 
-class ExampleConsumer final : public clang::ASTConsumer {
+class UnusedVariablesConsumer final : public clang::ASTConsumer {
 public:
-  explicit ExampleConsumer(clang::ASTContext *context) : m_visitor(context) {}
+  UnusedVariablesConsumer(clang::ASTContext *Context, clang::Rewriter &R)
+      : Visitor(Context, R) {}
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    m_visitor.TraverseDecl(context.getTranslationUnitDecl());
+  void HandleTranslationUnit(clang::ASTContext &Context) override {
+    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
 private:
-  ExampleVisitor m_visitor;
+  UnusedVariablesVisitor Visitor;
 };
 
-class ExampleAction final : public clang::PluginASTAction {
+class UnusedVariablesAction final : public clang::PluginASTAction {
+private:
+  clang::Rewriter TheRewriter;
+
 public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ExampleConsumer>(&ci.getASTContext());
+  CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
+    TheRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
+    return std::make_unique<UnusedVariablesConsumer>(&CI.getASTContext(), TheRewriter);
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
+  void EndSourceFileAction() override {
+    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID()).write(llvm::outs());
+  }
+
+  bool ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &args) override {
     return true;
   }
 };
-} // namespace
 
-static clang::FrontendPluginRegistry::Add<ExampleAction>
-    X("example_plugin", "Description plugin");
+}
+
+static clang::FrontendPluginRegistry::Add<UnusedVariablesAction>
+    X("FindUnused", "Find unused variables in code and mark them as the /MAYBE UNUSED/");
