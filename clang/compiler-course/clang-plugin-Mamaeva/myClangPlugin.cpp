@@ -52,10 +52,14 @@ public:
   }
 
   void PrintResults() {
+    // Добавляем вывод "In testing" в начале
+    llvm::outs() << "In testing\n";
+
     std::string LastFunction;
     for (const auto &Entry : CastList) {
       if (Entry.FunctionName != LastFunction) {
-        llvm::outs() << "Function " << Entry.FunctionName << "\n";
+        // Изменяем формат вывода на "In function: <имя функции>"
+        llvm::outs() << "In function: " << Entry.FunctionName << "\n";
         LastFunction = Entry.FunctionName;
       }
       llvm::outs() << Entry.getCastDescription() << ": 1\n";
