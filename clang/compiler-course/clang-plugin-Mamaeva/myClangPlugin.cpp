@@ -73,7 +73,8 @@ public:
     // Обрабатываем функции
     std::string LastFunction;
     for (const auto &Entry : CastList) {
-      if (Entry.FunctionName != LastFunction && Entry.FunctionName != "global") {
+      if (Entry.FunctionName != LastFunction &&
+          Entry.FunctionName != "global") {
         // Изменяем формат вывода на "In function: <имя функции>"
         llvm::outs() << "In function: " << Entry.FunctionName << "\n";
         LastFunction = Entry.FunctionName;
