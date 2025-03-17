@@ -56,19 +56,23 @@ public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
     TheRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-    return std::make_unique<UnusedVariablesConsumer>(&CI.getASTContext(), TheRewriter);
+    return std::make_unique<UnusedVariablesConsumer>(&CI.getASTContext(),
+                                                     TheRewriter);
   }
 
   void EndSourceFileAction() override {
-    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID()).write(llvm::outs());
+    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
+        .write(llvm::outs());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &CI,
+                 const std::vector<std::string> &args) override {
     return true;
   }
 };
 
-}
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<UnusedVariablesAction>
-    X("FindUnused", "Find unused variables in code and mark them as the /MAYBE UNUSED/");
+    X("FindUnused",
+      "Find unused variables in code and mark them as the /MAYBE UNUSED/");
