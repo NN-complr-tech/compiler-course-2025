@@ -14,7 +14,7 @@ class ImplicitConvVisitor
 private:
   clang::ASTContext *m_context;
   llvm::MapVector<const clang::FunctionDecl *,
-           std::map<std::pair<std::string, std::string>, int>>
+                  std::map<std::pair<std::string, std::string>, int>>
       m_functionStats;
   int m_totalConversions = 0;
 
@@ -64,9 +64,10 @@ public:
         break;
       }
     }
-    typeName.erase(std::remove_if(typeName.begin(), typeName.end(),
-                                  [](unsigned char c) { return std::isspace(c); }),
-                   typeName.end());
+    typeName.erase(
+        std::remove_if(typeName.begin(), typeName.end(),
+                       [](unsigned char c) { return std::isspace(c); }),
+        typeName.end());
     size_t pos;
     while ((pos = typeName.find("_Bool")) != std::string::npos) {
       typeName.replace(pos, 5, "bool");
