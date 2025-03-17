@@ -8,35 +8,8 @@
 #include <vector>
 
 namespace {
-class MyClangVisitor final
-    : public clang::RecursiveASTVisitor<MyClangVisitor> {
-  void handleTypeConversion(const clang::QualType &fromType,
-                            const clang::QualType &toType) {
-    std::string fromTypeStr = fromType.getAsString();
-    std::string toTypeStr = toType.getAsString();
 
-    fromTypeStr = (fromTypeStr == "_Bool") ? "bool" : fromTypeStr;
-    toTypeStr = (toTypeStr == "_Bool") ? "bool" : toTypeStr;
-
-    if (fromTypeStr != toTypeStr) {
-      std::string conversion = fromTypeStr + " -> " + toTypeStr;
-      auto &convList = conversions[currentFunction];
-
-      bool found = false;
-      for (auto &entry : convList) {
-        if (entry.first == conversion) {
-          entry.second++;
-          found = true;
-          break;
-        }
-      }
-
-      if (!found) {
-        convList.push_back({conversion, 1});
-      }
-    }
-  }
-
+class MyClangVisitor final : public clang::RecursiveASTVisitor<MyClangVisitor> {
 public:
   explicit MyClangVisitor(clang::ASTContext *context) : Context(context) {}
 
@@ -48,24 +21,42 @@ public:
     return true;
   }
 
-  bool VisitCXXConstructExpr(clang::CXXConstructExpr *expr) {
-    if (expr->getNumArgs() == 1) {
-      clang::QualType fromType = expr->getArg(0)->getType();
-      clang::QualType toType = expr->getType();
-      handleTypeConversion(fromType, toType);
-    }
-    return true;
-  }
-
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *cast) {
-    if (!cast || !cast->getSubExpr() ||
-        cast->getCastKind() == clang::CK_FunctionToPointerDecay) {
+    if (!cast || !cast->getSubExpr()) {
       return true;
     }
 
     clang::QualType fromType = cast->getSubExpr()->getType();
     clang::QualType toType = cast->getType();
-    handleTypeConversion(fromType, toType);
+
+    if (fromType == toType) {
+      return true;
+    }
+
+    std::string fromTypeStr = fromType.getAsString();
+    std::string toTypeStr = toType.getAsString();
+
+    // Заменяем "_Bool" на "bool" для читаемости
+    fromTypeStr = (fromTypeStr == "_Bool") ? "bool" : fromTypeStr;
+    toTypeStr = (toTypeStr == "_Bool") ? "bool" : toTypeStr;
+
+    std::string conversion = fromTypeStr + " -> " + toTypeStr;
+
+    // Увеличиваем счетчик для данного преобразования в текущей функции
+    auto &convList = conversions[currentFunction];
+    bool found = false;
+    for (auto &entry : convList) {
+      if (entry.first == conversion) {
+        entry.second++;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      convList.push_back({conversion, 1});
+    }
+
     return true;
   }
 
@@ -112,8 +103,8 @@ public:
     return true;
   }
 };
+
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<MyClangPlugin>
-    X("myClangPlugin",
-      "Output the number of implicit conversions in the entire file");
+    X("myClangPlugin", "Counts implicit type conversions");
