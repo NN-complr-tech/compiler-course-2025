@@ -8,8 +8,7 @@
 
 namespace {
 
-class ImplicitConvVisitor
-    : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
+class MyClangVisitor : public clang::RecursiveASTVisitor<MyClangVisitor> {
 
 private:
   clang::ASTContext *m_context;
@@ -19,8 +18,7 @@ private:
   int m_totalConversions = 0;
 
 public:
-  explicit ImplicitConvVisitor(clang::ASTContext *context)
-      : m_context(context) {}
+  explicit MyClangVisitor(clang::ASTContext *context) : m_context(context) {}
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
 
@@ -95,14 +93,13 @@ public:
   }
 };
 
-class ImplicitConvConsumer : public clang::ASTConsumer {
+class MyClangConsumer : public clang::ASTConsumer {
 
 private:
-  ImplicitConvVisitor m_visitor;
+  MyClangVisitor m_visitor;
 
 public:
-  explicit ImplicitConvConsumer(clang::ASTContext *context)
-      : m_visitor(context) {}
+  explicit MyClangConsumer(clang::ASTContext *context) : m_visitor(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
@@ -110,11 +107,11 @@ public:
   }
 };
 
-class ImplicitConvAction : public clang::PluginASTAction {
+class MyClangPlugin : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ImplicitConvConsumer>(&ci.getASTContext());
+    return std::make_unique<MyClangConsumer>(&ci.getASTContext());
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
@@ -125,5 +122,6 @@ public:
 
 } // namespace
 
+// Регистрация плагина
 static clang::FrontendPluginRegistry::Add<MyClangPlugin>
     X("myClangPlugin", "Counts implicit type conversions");
