@@ -13,7 +13,7 @@ class ImplicitConvVisitor
 
 private:
   clang::ASTContext *m_context;
-  std::map<const clang::FunctionDecl *,
+  llvm::MapVector<const clang::FunctionDecl *,
            std::map<std::pair<std::string, std::string>, int>>
       m_functionStats;
   int m_totalConversions = 0;
