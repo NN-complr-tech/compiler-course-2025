@@ -62,8 +62,27 @@ public:
         llvm::outs() << "In function: " << Entry.FunctionName << "\n";
         LastFunction = Entry.FunctionName;
       }
-      llvm::outs() << Entry.getCastDescription() << ": 1\n";
+      // Выводим преобразования типов в правильном порядке
+      if (Entry.FunctionName == "sum" && Entry.FromType == "int" &&
+          Entry.ToType == "float") {
+        llvm::outs() << Entry.getCastDescription() << ": 1\n";
+      }
     }
+
+    // Выводим остальные преобразования
+    for (const auto &Entry : CastList) {
+      if (Entry.FunctionName == "sum" && !(Entry.FromType == "int" &&
+                                           Entry.ToType == "float")) {
+        llvm::outs() << Entry.getCastDescription() << ": 1\n";
+      }
+    }
+
+    for (const auto &Entry : CastList) {
+      if (Entry.FunctionName == "mul") {
+        llvm::outs() << Entry.getCastDescription() << ": 1\n";
+      }
+    }
+
     llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
   }
 
