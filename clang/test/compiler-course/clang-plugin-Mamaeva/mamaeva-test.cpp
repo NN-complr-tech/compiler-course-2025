@@ -4,6 +4,7 @@
 // CHECK-NEXT: int -> float: 1
 float testing = 7;
 
+
 // CHECK: In function: sum
 // CHECK-NEXT: int -> float: 1
 // CHECK-NEXT: float -> double: 1
