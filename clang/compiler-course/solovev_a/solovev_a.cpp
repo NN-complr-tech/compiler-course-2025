@@ -58,6 +58,9 @@ private:
     } else if (varDecl->isLocalVarDecl()) {
       return "local_";
     } else if (varDecl->hasGlobalStorage()) {
+      if (varDecl->getStorageClass() == clang::SC_Static) {
+        return "static_global_";
+      }
       return "global_";
     }
     return "";
