@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/ImplicitConversionCounter_Ivanov_Ivan_FIIT0_ClangAST%pluginext -plugin implicit_conversion_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/ImplicitConversionCounter_Shishkarev_Andrey_FIIT2_ClangAST%pluginext -plugin implicit_conversion_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: Function `sum`
 // CHECK-NEXT: int -> float: 1

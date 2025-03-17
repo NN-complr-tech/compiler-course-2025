@@ -1,4 +1,4 @@
-set(Title "ClangAST")
+set(Title "ImplicitConversionCounter")
 set(Student "Shishkarev_Andrey")
 set(Group "FIIT2")
 set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
