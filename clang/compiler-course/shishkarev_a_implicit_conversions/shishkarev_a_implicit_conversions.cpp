@@ -21,9 +21,16 @@ public:
       TraverseStmt(func->getBody());
     }
 
-    // Выводим результаты
+    // Выводим результаты в определенном порядке
     for (const auto &conv : m_conversions) {
-      llvm::outs() << conv.first.first << " -> " << conv.first.second << ": " << conv.second << "\n";
+      if (conv.first.first == "int" && conv.first.second == "float") {
+        llvm::outs() << conv.first.first << " -> " << conv.first.second << ": " << conv.second << "\n";
+      }
+    }
+    for (const auto &conv : m_conversions) {
+      if (conv.first.first == "float" && conv.first.second == "double") {
+        llvm::outs() << conv.first.first << " -> " << conv.first.second << ": " << conv.second << "\n";
+      }
     }
 
     return true;
