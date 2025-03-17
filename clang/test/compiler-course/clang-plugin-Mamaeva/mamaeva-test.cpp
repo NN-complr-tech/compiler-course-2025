@@ -16,3 +16,40 @@ double sum(int a, float b) {
 int mul(float a, float b) {
 	return a + sum(a, b);
 }
+
+// CHECK: Function `convertTypes`
+// CHECK-NEXT: float -> int: 1
+// CHECK-NEXT: int -> float: 1
+
+using FloatType = float;
+using IntType = int;
+
+void convertTypes() {
+    FloatType floatVar = IntType();
+    IntType intVar = floatVar;
+}
+
+// CHECK: Function `handlePointers`
+// CHECK-NEXT: int* -> void*: 1
+
+void handlePointers() {
+    int value;
+    void* voidPtr = &value;
+}
+
+// CHECK: Function `checkPointer`
+// CHECK-NEXT: int* -> bool: 1
+
+void checkPointer(int* ptr) {
+    if (ptr) {}
+}
+
+// CHECK: Function `convertToBool`
+// CHECK-NEXT: int -> bool: 1
+
+void convertToBool() {
+    int number = 7;
+    bool booleanValue = number;
+}
+
+// CHECK: Total implicit conversions: 9
