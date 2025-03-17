@@ -56,7 +56,7 @@ public:
   }
 
   std::string normalizeTypeName(std::string typeName) {
-    const std::vector<std::string> prefixes = {"struct ", "class "};
+    const std::vector<std::string> prefixes = {"struct ", "class ", "enum "};
     for (const auto &prefix : prefixes) {
       size_t pos = typeName.find(prefix);
       if (pos == 0) {
@@ -64,7 +64,8 @@ public:
         break;
       }
     }
-    typeName.erase(std::remove_if(typeName.begin(), typeName.end(), ::isspace),
+    typeName.erase(std::remove_if(typeName.begin(), typeName.end(),
+                                  [](unsigned char c) { return std::isspace(c); }),
                    typeName.end());
     size_t pos;
     while ((pos = typeName.find("_Bool")) != std::string::npos) {
