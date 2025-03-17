@@ -1,4 +1,5 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/myClangPlugin_mamaeva_olga_FIIT3_ClangAST%pluginext -plugin myClangPlugin -fsyntax-only %s 2>&1 | FileCheck %s -dump-input=always
+// RUN: %clang_cc1 -load %llvmshlibdir/myClangPlugin_mamaeva_olga_FIIT3_ClangAST%pluginext -plugin 
+myClangPlugin -fsyntax-only %s 2>&1 | FileCheck %s -dump-input=always
 
 // CHECK: In testing
 // CHECK-NEXT: int -> float: 1
