@@ -52,52 +52,53 @@ public:
   }
 
   void PrintResults() {
-  // Добавляем вывод "In testing" в начале
-  llvm::outs() << "In testing\n";
+    // Добавляем вывод "In testing" в начале
+    llvm::outs() << "In testing\n";
 
-  std::string LastFunction;
-  for (const auto &Entry : CastList) {
-    if (Entry.FunctionName != LastFunction) {
-      // Изменяем формат вывода на "In function: <имя функции>"
-      llvm::outs() << "In function: " << Entry.FunctionName << "\n";
-      LastFunction = Entry.FunctionName;
+    std::string LastFunction;
+    for (const auto &Entry : CastList) {
+      if (Entry.FunctionName != LastFunction) {
+        // Изменяем формат вывода на "In function: <имя функции>"
+        llvm::outs() << "In function: " << Entry.FunctionName << "\n";
+        LastFunction = Entry.FunctionName;
+      }
+
+      // Упорядочиваем вывод для функции sum
+      if (Entry.FunctionName == "sum") {
+        if (Entry.FromType == "int" && Entry.ToType == "float") {
+          llvm::outs() << Entry.getCastDescription() << ": 1\n";
+        }
+      }
     }
 
-    // Упорядочиваем вывод для функции sum
-    if (Entry.FunctionName == "sum") {
-      if (Entry.FromType == "int" && Entry.ToType == "float") {
+    // Выводим остальные преобразования для sum
+    for (const auto &Entry : CastList) {
+      if (Entry.FunctionName == "sum" &&
+          !(Entry.FromType == "int" && Entry.ToType == "float")) {
         llvm::outs() << Entry.getCastDescription() << ": 1\n";
       }
     }
-  }
 
-  // Выводим остальные преобразования для sum
-  for (const auto &Entry : CastList) {
-    if (Entry.FunctionName == "sum" && !(Entry.FromType == "int" &&
-                                         Entry.ToType == "float")) {
-      llvm::outs() << Entry.getCastDescription() << ": 1\n";
+    // Упорядочиваем вывод для функции mul
+    for (const auto &Entry : CastList) {
+      if (Entry.FunctionName == "mul") {
+        if (Entry.FromType == "float" && Entry.ToType == "double") {
+          llvm::outs() << Entry.getCastDescription() << ": 1\n";
+        }
+      }
     }
-  }
 
-  // Упорядочиваем вывод для функции mul
-  for (const auto &Entry : CastList) {
-    if (Entry.FunctionName == "mul") {
-      if (Entry.FromType == "float" && Entry.ToType == "double") {
+    // Выводим остальные преобразования для mul
+    for (const auto &Entry : CastList) {
+      if (Entry.FunctionName == "mul" &&
+          !(Entry.FromType == "float" && Entry.ToType == "double")) {
         llvm::outs() << Entry.getCastDescription() << ": 1\n";
       }
     }
+
+    llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
   }
 
-  // Выводим остальные преобразования для mul
-  for (const auto &Entry : CastList) {
-    if (Entry.FunctionName == "mul" && !(Entry.FromType == "float" &&
-                                         Entry.ToType == "double")) {
-      llvm::outs() << Entry.getCastDescription() << ": 1\n";
-    }
-  }
-
-  llvm::outs() << "Total implicit conversions: " << CastList.size() << "\n";
-}
 private:
   struct CastEntry {
     std::string FunctionName;
