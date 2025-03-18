@@ -14,7 +14,6 @@ class UnusedVarLabel final : public clang::RecursiveASTVisitor<UnusedVarLabel> {
 public:
   explicit UnusedVarLabel(clang::ASTContext *ctx, clang::Rewriter &rwrt) : context(ctx), rewriter(rwrt) {}
 											 
-
   bool VisitVarDecl(clang::VarDecl *var) {
     if (!var->isUsed() && !var->isImplicit() && !var->hasAttr<clang::UnusedAttr>()) {
         outs() << "Marking variable as maybe_unused: " << var->getNameAsString() << "\n";
@@ -44,9 +43,7 @@ private:
 
 class ASTProcessor final : public clang::ASTConsumer {
 public:
-  explicit ASTProcessor(clang::ASTContext *ctx, clang::Rewriter &rwrt) : Label(ctx, rwrt) {}
-							  
-
+  explicit ASTProcessor(clang::ASTContext *ctx, clang::Rewriter &rwrt) : Label(ctx, rwrt) {}							  
   void HandleTranslationUnit(clang::ASTContext &ctx) override {
     Label.TraverseDecl(ctx.getTranslationUnitDecl());
   }
@@ -61,8 +58,6 @@ public:
     rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
     return std::make_unique<ASTProcessor>(&ci.getASTContext(), rewriter);
   }
-
-	   
 									 
   bool ParseArgs(const clang::CompilerInstance &ci, const std::vector<std::string> &args) override {
 																	  
@@ -70,8 +65,7 @@ public:
   }
 
   void EndSourceFileAction() override {
-    rewriter.getEditBuffer(rewriter.getSourceMgr().getMainFileID()).write(llvm::outs());
-							 
+    rewriter.getEditBuffer(rewriter.getSourceMgr().getMainFileID()).write(llvm::outs());					 
   }
 
 private:
