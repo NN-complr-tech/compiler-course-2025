@@ -39,7 +39,7 @@ public:
     if (param->hasDefaultArg()) {
       clang::Expr *defaultArg = param->getDefaultArg();
       llvm::raw_string_ostream stream(defaultValueStr);
-      defaultArg->printPretty(stream, nullptr, 
+      defaultArg->printPretty(stream, nullptr,
                               clang::PrintingPolicy(clang::LangOptions()));
       stream.flush();
       newName += "_default_" + defaultValueStr;
