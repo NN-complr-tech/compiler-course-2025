@@ -1,6 +1,6 @@
-set(Title "Implicit_Conv")
-set(Student "Kudryashova_Irina")
-set(Group "FIIT3")
+set(Title "ClangAST_4")
+set(Student "Shkurinskaya_Elena")
+set(Group "FIIT2")
 set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
