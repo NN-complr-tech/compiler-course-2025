@@ -17,7 +17,7 @@ public:
   explicit ImplicitConversionVisitor(clang::ASTContext *Context)
       : MContext(Context) {}
 
-  bool visitFunctionDecl(clang::FunctionDecl *Func) {
+  bool VisitFunctionDecl(clang::FunctionDecl *Func) {
     llvm::outs() << "Function `" << Func->getName() << "`\n";
     MConversions.clear();
 
@@ -48,7 +48,7 @@ public:
     return true;
   }
 
-  bool visitImplicitCastExpr(clang::ImplicitCastExpr *Expr) {
+  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Expr) {
     auto FromType = Expr->getSubExpr()->getType().getAsString();
     auto ToType = Expr->getType().getAsString();
 
@@ -70,7 +70,7 @@ private:
 
     size_t PtrPos = Normalized.find("(*)");
     if (PtrPos != std::string::npos) {
-      Normalized.erase(PtrPos, 3);
+      Normalized.erase(PtrPos, 3); // Удаляем "(*)"
     }
 
     std::string WithoutModifiers = Normalized;
