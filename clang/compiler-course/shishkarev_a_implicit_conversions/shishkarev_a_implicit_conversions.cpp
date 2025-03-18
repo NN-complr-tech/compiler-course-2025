@@ -26,23 +26,20 @@ public:
     }
 
     MConversions.erase(
-      std::remove_if(MConversions.begin(), MConversions.end(),
-                      [](const std::pair<std::string, std::string> &Conv) {
-                        return Conv.first ==
-                              Conv.second;
-                      }),
-      MConversions.end());
+        std::remove_if(MConversions.begin(), MConversions.end(),
+                       [](const std::pair<std::string, std::string> &Conv) {
+                         return Conv.first == Conv.second;
+                       }),
+        MConversions.end());
 
     std::set<std::pair<std::string, std::string>> UniqueConversions;
     MConversions.erase(
-      std::remove_if(
-          MConversions.begin(), MConversions.end(),
-          [&UniqueConversions](
-              const std::pair<std::string, std::string> &Conv) {
-            return !UniqueConversions.insert(Conv)
-                        .second;
-          }),
-      MConversions.end());
+        std::remove_if(MConversions.begin(), MConversions.end(),
+                       [&UniqueConversions](
+                           const std::pair<std::string, std::string> &Conv) {
+                         return !UniqueConversions.insert(Conv).second;
+                       }),
+        MConversions.end());
 
     for (auto It = MConversions.rbegin(); It != MConversions.rend(); ++It) {
       llvm::outs() << It->first << " -> " << It->second << ": 1\n";
@@ -58,6 +55,7 @@ public:
     FromType = normalizeType(FromType, ToType);
     ToType = normalizeType(ToType, FromType);
 
+    MConversions.emplace_back(fromType, toType);
 
     return RecursiveASTVisitor::VisitImplicitCastExpr(Expr);
   }
