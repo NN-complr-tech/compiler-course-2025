@@ -55,7 +55,7 @@ public:
     FromType = normalizeType(FromType, ToType);
     ToType = normalizeType(ToType, FromType);
 
-    MConversions.emplace_back(fromType, toType);
+    MConversions.emplace_back(FromType, ToType);
 
     return RecursiveASTVisitor::VisitImplicitCastExpr(Expr);
   }
