@@ -3,127 +3,115 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
-#include <vector>
-#include <utility>
-#include <string>
-#include <algorithm> // для std::remove_if и std::unique
+
+#include <algorithm>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 class ImplicitConversionVisitor : public clang::RecursiveASTVisitor<ImplicitConversionVisitor> {
 public:
-  explicit ImplicitConversionVisitor(clang::ASTContext *context) : m_context(context) {}
+  explicit ImplicitConversionVisitor(clang::ASTContext *Context) : MContext(Context) {}
 
-  bool VisitFunctionDecl(clang::FunctionDecl *func) {
-    llvm::outs() << "Function `" << func->getName() << "`\n";
-    m_conversions.clear();
+  bool visitFunctionDecl(clang::FunctionDecl *Func) {
+    llvm::outs() << "Function `" << Func->getName() << "`\n";
+    MConversions.clear();
 
-    // Обходим тело функции
-    if (func->hasBody()) {
-      TraverseStmt(func->getBody());
+    if (Func->hasBody()) {
+      TraverseStmt(Func->getBody());
     }
 
-    // Удаляем преобразования внутри одного типа (например, int -> int, float -> float)
-    m_conversions.erase(
+    MConversions.erase(
       std::remove_if(
-        m_conversions.begin(),
-        m_conversions.end(),
-        [](const std::pair<std::string, std::string> &conv) {
-          return conv.first == conv.second; // Удаляем, если типы совпадают
+        MConversions.begin(),
+        MConversions.end(),
+        [](const std::pair<std::string, std::string> &Conv) {
+          return Conv.first == Conv.second;
         }
       ),
-      m_conversions.end()
+      MConversions.end()
     );
 
-    // Удаляем дубликаты преобразований
-    std::set<std::pair<std::string, std::string>> unique_conversions;
-    m_conversions.erase(
+    std::set<std::pair<std::string, std::string>> UniqueConversions;
+    MConversions.erase(
       std::remove_if(
-        m_conversions.begin(),
-        m_conversions.end(),
-        [&unique_conversions](const std::pair<std::string, std::string> &conv) {
-          return !unique_conversions.insert(conv).second; // Удаляем, если преобразование уже было
+        MConversions.begin(),
+        MConversions.end(),
+        [&UniqueConversions](const std::pair<std::string, std::string> &Conv) {
+          return !UniqueConversions.insert(Conv).second;
         }
       ),
-      m_conversions.end()
+      MConversions.end()
     );
 
-    // Выводим результаты в обратном порядке
-    for (auto it = m_conversions.rbegin(); it != m_conversions.rend(); ++it) {
-      llvm::outs() << it->first << " -> " << it->second << ": 1\n";
+    for (auto It = MConversions.rbegin(); It != MConversions.rend(); ++It) {
+      llvm::outs() << It->first << " -> " << It->second << ": 1\n";
     }
 
     return true;
   }
 
-  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *expr) {
-    // Получаем типы до и после преобразования
-    auto fromType = expr->getSubExpr()->getType().getAsString();
-    auto toType = expr->getType().getAsString();
+  bool visitImplicitCastExpr(clang::ImplicitCastExpr *Expr) {
+    auto FromType = Expr->getSubExpr()->getType().getAsString();
+    auto ToType = Expr->getType().getAsString();
 
-    // Нормализуем типы (удаляем лишние модификаторы, такие как ссылки и указатели)
-    fromType = normalizeType(fromType, toType);
-    toType = normalizeType(toType, fromType);
+    FromType = normalizeType(FromType, ToType);
+    ToType = normalizeType(ToType, FromType);
 
-    // Сохраняем преобразование в порядке обхода
-    m_conversions.emplace_back(fromType, toType);
+    MConversions.emplace_back(FromType, ToType);
 
-    // Продолжаем обход вглубь AST
-    return RecursiveASTVisitor::VisitImplicitCastExpr(expr);
+    return RecursiveASTVisitor::VisitImplicitCastExpr(Expr);
   }
 
 private:
-  clang::ASTContext *m_context;
-  std::vector<std::pair<std::string, std::string>> m_conversions; // Вектор для сохранения порядка
+  clang::ASTContext *MContext;
+  std::vector<std::pair<std::string, std::string>> MConversions;
 
-  // Функция для нормализации типов (удаление лишних модификаторов)
-  std::string normalizeType(const std::string &type, const std::string &otherType) {
-    std::string normalized = type;
+  std::string normalizeType(const std::string &Type, const std::string &OtherType) {
+    std::string Normalized = Type;
 
-    // Удаляем указатели на функции (например, "double (*)(int, float)" -> "double(int, float)")
-    size_t ptrPos = normalized.find("(*)");
-    if (ptrPos != std::string::npos) {
-      normalized.erase(ptrPos, 3); // Удаляем "(*)"
+    size_t PtrPos = Normalized.find("(*)");
+    if (PtrPos != std::string::npos) {
+      Normalized.erase(PtrPos, 3);
     }
 
-    // Удаляем ссылки и указатели только если типы совпадают после удаления
-    std::string withoutModifiers = normalized;
-    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '&'), withoutModifiers.end());
-    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '*'), withoutModifiers.end());
+    std::string WithoutModifiers = Normalized;
+    WithoutModifiers.erase(std::remove(WithoutModifiers.begin(), WithoutModifiers.end(), '&'), WithoutModifiers.end());
+    WithoutModifiers.erase(std::remove(WithoutModifiers.begin(), WithoutModifiers.end(), '*'), WithoutModifiers.end());
 
-    // Если типы совпадают после удаления модификаторов, применяем нормализацию
-    if (withoutModifiers == otherType) {
-      normalized = withoutModifiers;
+    if (WithoutModifiers == OtherType) {
+      Normalized = WithoutModifiers;
     }
 
-    // Удаляем пробелы
-    normalized.erase(std::remove(normalized.begin(), normalized.end(), ' '), normalized.end());
+    Normalized.erase(std::remove(Normalized.begin(), Normalized.end(), ' '), Normalized.end());
 
-    return normalized;
+    return Normalized;
   }
 };
 
 class ImplicitConversionConsumer : public clang::ASTConsumer {
 public:
-  explicit ImplicitConversionConsumer(clang::ASTContext *context) : m_visitor(context) {}
+  explicit ImplicitConversionConsumer(clang::ASTContext *Context) : MVisitor(Context) {}
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    m_visitor.TraverseDecl(context.getTranslationUnitDecl());
+  void HandleTranslationUnit(clang::ASTContext &Context) override {
+    MVisitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
 private:
-  ImplicitConversionVisitor m_visitor;
+  ImplicitConversionVisitor MVisitor;
 };
 
 class ImplicitConversionAction : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ImplicitConversionConsumer>(&ci.getASTContext());
+  CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
+    return std::make_unique<ImplicitConversionConsumer>(&CI.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &CI,
+                 const std::vector<std::string> &Args) override {
     return true;
   }
 };
