@@ -1,0 +1,33 @@
+// RUN: %clang_cc1 -load %llvmshlibdir/UserDefinedDataTypePlugin_SozonovIlya_FIIT3_ClangAST%pluginext -plugin user_defined_data_type_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+
+//CHECK: Human
+//CHECK-NEXT: |_Fields
+//CHECK-NEXT: | |_ age (unsigned int|public)
+//CHECK-NEXT: | |_ height (unsigned int|public)
+//CHECK-NEXT: |
+//CHECK-NEXT: |_Methods
+//CHECK-NEXT: | |_ sleep (void()|public|virtual|pure)
+//CHECK-NEXT: | |_ eat (void()|public|virtual|pure)
+
+struct Human {
+	unsigned age;
+	unsigned height;
+	virtual void sleep() = 0;
+	virtual void eat() = 0;
+};
+
+//CHECK: Engineer -> Human
+//CHECK-NEXT: |_Fields
+//CHECK-NEXT: | |_ salary (unsigned int|public)
+//CHECK-NEXT: |
+//CHECK-NEXT: |_Methods
+//CHECK-NEXT: | |_ sleep (void()|public|override)
+//CHECK-NEXT: | |_ eat (void()|public|override)
+//CHECK-NEXT: | |_ work (void()|public)
+
+struct Engineer : Human {
+	unsigned salary;
+	void sleep() override { /* something */ }
+	void eat() override { /* something */ }
+	void work() { /* something */ }
+};
