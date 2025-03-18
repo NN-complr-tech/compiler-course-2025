@@ -82,5 +82,3 @@ private:
 } // namespace
 static clang::FrontendPluginRegistry::Add<PluginEntry>
     X("unUsedVarPlugin_LysovIvan_FIIT3_ClangAST", "The plugin detects unused variables and function parameters in code and adds the [[maybe_unused]] attribute.");
-																		  
-						
