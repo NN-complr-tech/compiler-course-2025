@@ -62,8 +62,8 @@ public:
     auto toType = expr->getType().getAsString();
 
     // Нормализуем типы (удаляем лишние модификаторы, такие как ссылки и указатели)
-    fromType = normalizeType(fromType);
-    toType = normalizeType(toType);
+    fromType = normalizeType(fromType, toType);
+    toType = normalizeType(toType, fromType);
 
     // Сохраняем преобразование в порядке обхода
     m_conversions.emplace_back(fromType, toType);
@@ -77,13 +77,28 @@ private:
   std::vector<std::pair<std::string, std::string>> m_conversions; // Вектор для сохранения порядка
 
   // Функция для нормализации типов (удаление лишних модификаторов)
-  std::string normalizeType(const std::string &type) {
+  std::string normalizeType(const std::string &type, const std::string &otherType) {
     std::string normalized = type;
-    // Удаляем ссылки и указатели
-    normalized.erase(std::remove(normalized.begin(), normalized.end(), '&'), normalized.end());
-    normalized.erase(std::remove(normalized.begin(), normalized.end(), '(*)'), normalized.end());
+
+    // Удаляем указатели на функции (например, "double (*)(int, float)" -> "double(int, float)")
+    size_t ptrPos = normalized.find("(*)");
+    if (ptrPos != std::string::npos) {
+      normalized.erase(ptrPos, 3); // Удаляем "(*)"
+    }
+
+    // Удаляем ссылки и указатели только если типы совпадают после удаления
+    std::string withoutModifiers = normalized;
+    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '&'), withoutModifiers.end();
+    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '*'), withoutModifiers.end();
+
+    // Если типы совпадают после удаления модификаторов, применяем нормализацию
+    if (withoutModifiers == otherType) {
+      normalized = withoutModifiers;
+    }
+
     // Удаляем пробелы
     normalized.erase(std::remove(normalized.begin(), normalized.end(), ' '), normalized.end());
+
     return normalized;
   }
 };
