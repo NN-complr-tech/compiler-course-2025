@@ -3,7 +3,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
-#include <map>
+#include <vector>
 #include <utility>
 #include <string>
 
@@ -21,17 +21,9 @@ public:
       TraverseStmt(func->getBody());
     }
 
-    // Сортируем преобразования по типам
-    std::map<std::string, std::map<std::string, int>> sorted_conversions;
+    // Выводим результаты в порядке, в котором они были найдены
     for (const auto &conv : m_conversions) {
-      sorted_conversions[conv.first.first][conv.first.second] += conv.second;
-    }
-
-    // Выводим результаты в алфавитном порядке
-    for (const auto &fromType : sorted_conversions) {
-      for (const auto &toType : fromType.second) {
-        llvm::outs() << fromType.first << " -> " << toType.first << ": " << toType.second << "\n";
-      }
+      llvm::outs() << conv.first << " -> " << conv.second << ": 1\n";
     }
 
     return true;
@@ -42,15 +34,16 @@ public:
     auto fromType = expr->getSubExpr()->getType().getAsString();
     auto toType = expr->getType().getAsString();
 
-    // Увеличиваем счетчик для данного преобразования
-    m_conversions[std::make_pair(fromType, toType)]++;
+    // Сохраняем преобразование в порядке обхода
+    m_conversions.emplace_back(fromType, toType);
 
-    return true;
+    // Продолжаем обход вглубь AST
+    return RecursiveASTVisitor::VisitImplicitCastExpr(expr);
   }
 
 private:
   clang::ASTContext *m_context;
-  std::map<std::pair<std::string, std::string>, int> m_conversions;
+  std::vector<std::pair<std::string, std::string>> m_conversions; // Вектор для сохранения порядка
 };
 
 class ImplicitConversionConsumer : public clang::ASTConsumer {
