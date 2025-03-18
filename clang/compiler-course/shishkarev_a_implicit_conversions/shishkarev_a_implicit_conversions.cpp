@@ -6,7 +6,8 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include <algorithm> // для std::remove_if
+#include <algorithm> // для std::remove_if и std::unique
+#include <set>
 
 namespace {
 class ImplicitConversionVisitor : public clang::RecursiveASTVisitor<ImplicitConversionVisitor> {
@@ -34,6 +35,19 @@ public:
       m_conversions.end()
     );
 
+    // Удаляем дубликаты преобразований
+    std::set<std::pair<std::string, std::string>> unique_conversions;
+    m_conversions.erase(
+      std::remove_if(
+        m_conversions.begin(),
+        m_conversions.end(),
+        [&unique_conversions](const std::pair<std::string, std::string> &conv) {
+          return !unique_conversions.insert(conv).second; // Удаляем, если преобразование уже было
+        }
+      ),
+      m_conversions.end()
+    );
+
     // Выводим результаты в обратном порядке
     for (auto it = m_conversions.rbegin(); it != m_conversions.rend(); ++it) {
       llvm::outs() << it->first << " -> " << it->second << ": 1\n";
@@ -47,6 +61,10 @@ public:
     auto fromType = expr->getSubExpr()->getType().getAsString();
     auto toType = expr->getType().getAsString();
 
+    // Нормализуем типы (удаляем лишние модификаторы, такие как ссылки и указатели)
+    fromType = normalizeType(fromType);
+    toType = normalizeType(toType);
+
     // Сохраняем преобразование в порядке обхода
     m_conversions.emplace_back(fromType, toType);
 
@@ -57,6 +75,17 @@ public:
 private:
   clang::ASTContext *m_context;
   std::vector<std::pair<std::string, std::string>> m_conversions; // Вектор для сохранения порядка
+
+  // Функция для нормализации типов (удаление лишних модификаторов)
+  std::string normalizeType(const std::string &type) {
+    std::string normalized = type;
+    // Удаляем ссылки и указатели
+    normalized.erase(std::remove(normalized.begin(), normalized.end(), '&'), normalized.end());
+    normalized.erase(std::remove(normalized.begin(), normalized.end(), '*'), normalized.end());
+    // Удаляем пробелы
+    normalized.erase(std::remove(normalized.begin(), normalized.end(), ' '), normalized.end());
+    return normalized;
+  }
 };
 
 class ImplicitConversionConsumer : public clang::ASTConsumer {
