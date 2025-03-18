@@ -21,7 +21,7 @@ public:
       }
     } else if (var->isFileVarDecl()) {
       if (var->getStorageClass() == clang::SC_Static) {
-        renameVar(var, "global_");
+        renameVar(var, "static_global_");
       } else {
         renameVar(var, "global_");
       }
@@ -30,7 +30,30 @@ public:
   }
 
   bool VisitParmVarDecl(clang::ParmVarDecl *param) {
-    renameVar(param, "param_");
+    llvm::StringRef oldName = param->getName();
+    if (oldName.empty()) 
+      return true;
+    
+    std::string newName = "param_" + oldName.str();
+    std::string defaultValueStr;
+    if (param->hasDefaultArg()) {
+      clang::Expr *defaultArg = param->getDefaultArg();
+      llvm::raw_string_ostream stream(defaultValueStr);
+      defaultArg->printPretty(stream, nullptr, clang::PrintingPolicy(clang::LangOptions()));
+      stream.flush();
+      newName += "_default_" + defaultValueStr;
+      clang::SourceLocation loc = param->getLocation();
+      if (loc.isValid() && m_rewriter.getSourceMgr().isWrittenInMainFile(loc)) {
+          m_rewriter.ReplaceText(loc, oldName.size() + defaultValueStr.size() + 3, newName);
+      }
+    }
+    else {
+      clang::SourceLocation loc = param->getLocation();
+      if (loc.isValid() && m_rewriter.getSourceMgr().isWrittenInMainFile(loc)) {
+          m_rewriter.ReplaceText(loc, oldName.size(), newName);
+      }
+    }
+    renamedVars[param] = newName;
     return true;
   }
 
