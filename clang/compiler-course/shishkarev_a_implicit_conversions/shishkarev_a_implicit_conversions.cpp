@@ -6,6 +6,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <algorithm> // для std::remove_if
 
 namespace {
 class ImplicitConversionVisitor : public clang::RecursiveASTVisitor<ImplicitConversionVisitor> {
@@ -21,9 +22,21 @@ public:
       TraverseStmt(func->getBody());
     }
 
-    // Выводим результаты в порядке, в котором они были найдены
-    for (const auto &conv : m_conversions) {
-      llvm::outs() << conv.first << " -> " << conv.second << ": 1\n";
+    // Удаляем преобразования внутри одного типа (например, int -> int, float -> float)
+    m_conversions.erase(
+      std::remove_if(
+        m_conversions.begin(),
+        m_conversions.end(),
+        [](const std::pair<std::string, std::string> &conv) {
+          return conv.first == conv.second; // Удаляем, если типы совпадают
+        }
+      ),
+      m_conversions.end()
+    );
+
+    // Выводим результаты в обратном порядке
+    for (auto it = m_conversions.rbegin(); it != m_conversions.rend(); ++it) {
+      llvm::outs() << it->first << " -> " << it->second << ": 1\n";
     }
 
     return true;
