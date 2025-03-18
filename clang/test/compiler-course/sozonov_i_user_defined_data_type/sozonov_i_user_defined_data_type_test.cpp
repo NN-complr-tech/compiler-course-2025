@@ -10,10 +10,10 @@
 //CHECK-NEXT: | |_ eat (void()|public|virtual|pure)
 
 struct Human {
-	unsigned age;
-	unsigned height;
-	virtual void sleep() = 0;
-	virtual void eat() = 0;
+  unsigned age;
+  unsigned height;
+  virtual void sleep() = 0;
+  virtual void eat() = 0;
 };
 
 //CHECK: Engineer -> Human
@@ -26,8 +26,8 @@ struct Human {
 //CHECK-NEXT: | |_ work (void()|public)
 
 struct Engineer : Human {
-	unsigned salary;
-	void sleep() override { /* something */ }
-	void eat() override { /* something */ }
-	void work() { /* something */ }
+  unsigned salary;
+  void sleep() override { /* something */ }
+  void eat() override { /* something */ }
+  void work() { /* something */ }
 };
