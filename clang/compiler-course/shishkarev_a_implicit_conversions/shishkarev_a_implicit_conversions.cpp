@@ -21,15 +21,16 @@ public:
       TraverseStmt(func->getBody());
     }
 
-    // Выводим результаты в определенном порядке
+    // Сортируем преобразования по типам
+    std::map<std::string, std::map<std::string, int>> sorted_conversions;
     for (const auto &conv : m_conversions) {
-      if (conv.first.first == "int" && conv.first.second == "float") {
-        llvm::outs() << conv.first.first << " -> " << conv.first.second << ": " << conv.second << "\n";
-      }
+      sorted_conversions[conv.first.first][conv.first.second] += conv.second;
     }
-    for (const auto &conv : m_conversions) {
-      if (conv.first.first == "float" && conv.first.second == "double") {
-        llvm::outs() << conv.first.first << " -> " << conv.first.second << ": " << conv.second << "\n";
+
+    // Выводим результаты в алфавитном порядке
+    for (const auto &fromType : sorted_conversions) {
+      for (const auto &toType : fromType.second) {
+        llvm::outs() << fromType.first << " -> " << toType.first << ": " << toType.second << "\n";
       }
     }
 
