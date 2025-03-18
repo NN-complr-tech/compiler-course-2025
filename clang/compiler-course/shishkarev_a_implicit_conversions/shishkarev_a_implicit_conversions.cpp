@@ -81,7 +81,7 @@ private:
     std::string normalized = type;
     // Удаляем ссылки и указатели
     normalized.erase(std::remove(normalized.begin(), normalized.end(), '&'), normalized.end());
-    normalized.erase(std::remove(normalized.begin(), normalized.end(), '*'), normalized.end());
+    normalized.erase(std::remove(normalized.begin(), normalized.end(), '(*)'), normalized.end());
     // Удаляем пробелы
     normalized.erase(std::remove(normalized.begin(), normalized.end(), ' '), normalized.end());
     return normalized;
