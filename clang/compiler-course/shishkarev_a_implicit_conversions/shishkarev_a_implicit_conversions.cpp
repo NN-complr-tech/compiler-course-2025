@@ -88,8 +88,8 @@ private:
 
     // Удаляем ссылки и указатели только если типы совпадают после удаления
     std::string withoutModifiers = normalized;
-    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '&'), withoutModifiers.end();
-    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '*'), withoutModifiers.end();
+    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '&'), withoutModifiers.end());
+    withoutModifiers.erase(std::remove(withoutModifiers.begin(), withoutModifiers.end(), '*'), withoutModifiers.end());
 
     // Если типы совпадают после удаления модификаторов, применяем нормализацию
     if (withoutModifiers == otherType) {
