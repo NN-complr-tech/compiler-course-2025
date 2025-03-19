@@ -5,10 +5,10 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisitor> {
-  clang::ASTContext *class_context_;
+class DataPrinterVisitor final : public clang::RecursiveASTVisitor<DataPrinterVisitor> {
+  clang::ASTContext *ast_context_;
 
-  std::string AccessSpecifierToString(clang::AccessSpecifier accessSpecifier) {
+  std::string AccessSpecifierToStringRepresentation(clang::AccessSpecifier accessSpecifier) {
     switch (accessSpecifier) {
       case clang::AS_public:
         return "public";
@@ -22,7 +22,7 @@ class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisito
     }
   }
 
-  void PrintMember(const clang::ValueDecl *member) {
+  void PrintMemberDetails(const clang::ValueDecl *member) {
     auto &os = llvm::outs();
     os << "| |_ " << member->getNameAsString() << ' ';
     os << '(';
@@ -53,7 +53,7 @@ class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisito
 public:
   explicit PrintDataVisitor(clang::ASTContext *context) : class_context_(context) {}
 
-  bool VisitCXXRecordDecl(clang::CXXRecordDecl *declaration) {
+  bool VisitCXXRecordDeclaration(clang::CXXRecordDecl *declaration) {
     auto &os = llvm::outs();
     os << declaration->getNameAsString()
        << (declaration->isStruct() ? "(struct" : "(class")
@@ -90,11 +90,11 @@ public:
   }
 };
 
-class PrintDataConsumer final : public clang::ASTConsumer {
+class DataPrintConsumer final : public clang::ASTConsumer {
 public:
   explicit PrintDataConsumer(clang::ASTContext *context) : visitor_(context) {}
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
+  void ProcessTranslationUnit(clang::ASTContext &context) override {
     visitor_.TraverseDecl(context.getTranslationUnitDecl());
   }
 
