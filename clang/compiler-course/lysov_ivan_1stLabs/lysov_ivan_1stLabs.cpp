@@ -29,9 +29,9 @@ public:
   }
 
   bool VisitParmVarDecl(clang::ParmVarDecl *param) {
-    if (!param->isUsed() && !param->isImplicit() && 
+    if (!param->isUsed() && !param->isImplicit() &&
         !param->hasAttr<clang::UnusedAttr>()) {
-      outs() << "Marking parameter as maybe_unused: " 
+      outs() << "Marking parameter as maybe_unused: "
              << param->getNameAsString() << "\n";
       auto *attr = clang::UnusedAttr::CreateImplicit(*context);
       param->addAttr(attr);
