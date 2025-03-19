@@ -1,3 +1,14 @@
+//// -h arg test ////
+// RUN: %clang_cc1 -load %llvmshlibdir/UnusedVariables_Savchenko_Maxim_FIIT1_ClangAST%pluginext -plugin savchenko_m_UnusedVars_plugin 2>&1 | FileCheck %s --help
+// CHECK: The plugin adds the \[\[maybe_unused\]\] flag to variables and parameters that are not in use.
+
+
+//// --help arg test ////
+// RUN: %clang_cc1 -load %llvmshlibdir/UnusedVariables_Savchenko_Maxim_FIIT1_ClangAST%pluginext -plugin savchenko_m_UnusedVars_plugin 2>&1 | FileCheck %s --help
+// CHECK: The plugin adds the \[\[maybe_unused\]\] flag to variables and parameters that are not in use.
+
+
+//// main tests ////
 // RUN: %clang_cc1 -load %llvmshlibdir/UnusedVariables_Savchenko_Maxim_FIIT1_ClangAST%pluginext -plugin savchenko_m_UnusedVars_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: double used = 3.0;

@@ -73,6 +73,13 @@ public:
 
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
+    for (const auto &arg : args) {
+      if (arg == "-h" || arg == "--help") {
+        llvm::outs() << "The plugin adds the [[maybe_unused]] flag to "
+                        "variables and parameters that are not in use.";
+        return false;
+      }
+    }
     return true;
   }
 
