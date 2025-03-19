@@ -5,20 +5,21 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisitor> {
+class PrintDataVisitor final
+    : public clang::RecursiveASTVisitor<PrintDataVisitor> {
   clang::ASTContext *class_context_;
 
   std::string AccessSpecifierToString(clang::AccessSpecifier accessSpecifier) {
     switch (accessSpecifier) {
-      case clang::AS_public:
-        return "public";
-      case clang::AS_protected:
-        return "protected";
-      case clang::AS_private:
-        return "private";
-      default:
-        llvm::errs() << "Error: Unknown access specifier\n";
-        return "unknown access specifier";
+    case clang::AS_public:
+      return "public";
+    case clang::AS_protected:
+      return "protected";
+    case clang::AS_private:
+      return "private";
+    default:
+      llvm::errs() << "Error: Unknown access specifier\n";
+      return "unknown access specifier";
     }
   }
 
@@ -51,7 +52,8 @@ class PrintDataVisitor final : public clang::RecursiveASTVisitor<PrintDataVisito
   }
 
 public:
-  explicit PrintDataVisitor(clang::ASTContext *context) : class_context_(context) {}
+  explicit PrintDataVisitor(clang::ASTContext *context)
+      : class_context_(context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *declaration) {
     auto &os = llvm::outs();
@@ -104,11 +106,13 @@ private:
 
 class PrintDataAction final : public clang::PluginASTAction {
 public:
-  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+  std::unique_ptr<clang::ASTConsumer>
+  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     return std::make_unique<PrintDataConsumer>(&ci.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci, const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &ci,
+                 const std::vector<std::string> &args) override {
     return true;
   }
 };
