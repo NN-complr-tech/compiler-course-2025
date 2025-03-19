@@ -31,8 +31,9 @@ public:
       }
     }
 
+    llvm::outs() << "|\n";
+
     if (record->method_begin() != record->method_end()) {
-      llvm::outs() << "|\n";
       llvm::outs() << "|_Methods\n";
       bool firstMethod = true;
       for (const auto *method : record->methods()) {
