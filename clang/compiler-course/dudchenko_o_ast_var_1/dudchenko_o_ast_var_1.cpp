@@ -11,15 +11,13 @@ public:
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
     // Выводим имя структуры/класса
-    llvm::outs() << record->getName() << "\n";
+    llvm::outs() << record->getName();
 
     // Выводим базовые классы
     if (record->getNumBases() > 0) {
-      llvm::outs() << "|_Base Classes\n";
-      for (const auto &base : record->bases()) {
-        llvm::outs() << "| |_ " << base.getType()->getAsCXXRecordDecl()->getName() << "\n";
-      }
+      llvm::outs() << " -> " << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
     }
+    llvm::outs() << "\n";
 
     // Выводим поля
     if (record->field_begin() != record->field_end()) {
