@@ -59,43 +59,43 @@ public:
           if (hasOverride) {
             llvm::outs() << "|override";
           } else {
-              llvm::outs() << "|virtual";
-              if (isPureVirtual) {
-                llvm::outs() << "|pure";
-              }
-            }
-          } else {
             llvm::outs() << "|virtual";
+            if (isPureVirtual) {
+              llvm::outs() << "|pure";
+            }
+          }
+         } else {
+          llvm::outs() << "|virtual";
              if (isPureVirtual) {
                llvm::outs() << "|pure";
              }
            }
-        } else {
-          if (isPureVirtual) {
-            llvm::outs() << "|pure";
-          }
+      }
+      else {
+        if (isPureVirtual) {
+          llvm::outs() << "|pure";
         }
-         llvm::outs() << ")\n";
-       }
-     }
-
-    return true;
-  }
-
-private:
-  std::string getAccessSpecifierString(clang::AccessSpecifier access) {
-    switch (access) {
-    case clang::AS_public:
-      return "public";
-    case clang::AS_protected:
-      return "protected";
-    case clang::AS_private:
-      return "private";
-    case clang::AS_none:
-      return "none";
+      }
+      llvm::outs() << ")\n";
     }
-    return "unknown";
   }
+  return true;
+}
+
+private : std::string
+          getAccessSpecifierString(clang::AccessSpecifier access) {
+  switch (access) {
+  case clang::AS_public:
+    return "public";
+  case clang::AS_protected:
+    return "protected";
+  case clang::AS_private:
+    return "private";
+  case clang::AS_none:
+    return "none";
+  }
+  return "unknown";
+}
 };
 
 class TypeInfoConsumer : public clang::ASTConsumer {
