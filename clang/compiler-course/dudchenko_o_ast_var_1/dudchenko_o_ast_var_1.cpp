@@ -31,7 +31,7 @@ public:
 
     // Выводим методы
     if (record->method_begin() != record->method_end()) {
-      llvm::outs() << "|_Methods";
+      llvm::outs() << "|_Methods\n";  // Начинаем вывод методов сразу после полей.
       bool firstMethod = true;
       for (const auto *method : record->methods()) {
         // Пропускаем автоматически сгенерированные методы
@@ -40,10 +40,10 @@ public:
         }
 
         if (firstMethod) {
-          llvm::outs() << "\n";
           firstMethod = false;
         }
-        llvm::outs() << "| |_ " << method->getNameAsString() << " ("
+
+        llvm::outs() << "| |_ " << method->getNameAsString() << " (" 
                      << method->getReturnType().getAsString() << "()|"
                      << getAccessSpecifierString(method->getAccess()) << "|"
                      << (method->isVirtual() ? "virtual|" : "")
