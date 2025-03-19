@@ -48,7 +48,6 @@ public:
       }
     }
 
-    llvm::outs() << "\n";
     return true;
   }
 
