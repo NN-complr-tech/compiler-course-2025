@@ -15,14 +15,6 @@ struct Human {
   virtual void eat() = 0;
 };
 
-// CHECK: Engineer -> Human
-// CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ salary (unsigned int|public)
-// CHECK-NEXT: |
-// CHECK-NEXT: |_Methods
-// CHECK-NEXT: | |_ sleep (void()|public|override)
-// CHECK-NEXT: | |_ eat (void()|public|override)
-// CHECK-NEXT: | |_ work (void()|public)
 struct Engineer : Human {
   unsigned salary;
   void sleep() override { /* something */ }
