@@ -24,8 +24,8 @@ struct Human {
 // CHECK-NEXT: | |_ eat (void()|public|override)
 // CHECK-NEXT: | |_ work (void()|public)
 struct Engineer : Human {
-unsigned salary;
-void sleep() override { /* something */ }
-void eat() override { /* something */ }
-void work() { /* something */ }
+  unsigned salary;
+  void sleep() override { /* something */ }
+  void eat() override { /* something */ }
+  void work() { /* something */ }
 };
