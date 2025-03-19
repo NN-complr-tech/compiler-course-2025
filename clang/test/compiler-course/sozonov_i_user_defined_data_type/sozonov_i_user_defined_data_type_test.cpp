@@ -31,3 +31,85 @@ struct Engineer : Human {
   void eat() override { /* something */ }
   void work() { /* something */ }
 };
+
+// CHECK: EmptyStruct
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (no fields)
+// CHECK-NEXT: |
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ (no methods)
+
+struct EmptyStruct {};
+
+// CHECK: Data
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ publicField (int|public)
+// CHECK-NEXT: | |_ protectedField (double|protected)
+// CHECK-NEXT: | |_ privateField (char|private)
+// CHECK-NEXT: |
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ (no methods)
+
+struct Data {
+  int publicField;
+protected:
+  double protectedField;
+private:
+  char privateField;
+};
+
+// CHECK: MethodsExample
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (no fields)
+// CHECK-NEXT: |
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ foo (void()|public)
+// CHECK-NEXT: | |_ bar (int(int, double)|public)
+// CHECK-NEXT: | |_ baz (void()|public|const)
+
+struct MethodsExample {
+  void foo() {}
+  int bar(int x, double y) { return x; }
+  void baz() const {}
+};
+
+// CHECK: Base
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (no fields)
+// CHECK-NEXT: |
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ virtualFunc (void()|public|virtual|pure)
+
+struct Base {
+  virtual void virtualFunc() = 0;
+};
+
+// CHECK: Derived -> Base
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (no fields)
+// CHECK-NEXT: |
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ virtualFunc (void()|public|override)
+
+struct Derived : Base {
+  void virtualFunc() override {}
+};
+
+// CHECK: A
+
+struct A {};
+
+// CHECK: B -> A
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ value (A|public)
+// CHECK-NEXT: |
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ (no methods)
+// CHECK-NEXT: |
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ A
+
+struct B : public A {
+  struct A {};
+  A value;
+};

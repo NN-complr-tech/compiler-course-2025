@@ -4,8 +4,6 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <string>
-
 namespace {
 
 std::string AccessToString(clang::AccessSpecifier access) {
@@ -37,6 +35,8 @@ public:
     PrintFieldsInfo(output, record);
     output << "|\n|_Methods\n";
     PrintMethodsInfo(output, record);
+    output << "|\n|_Nested Types\n";
+    PrintNestedTypesInfo(output, record);
     output << "\n";
 
     return true;
@@ -83,12 +83,10 @@ private:
       output << "| |_ " << method->getNameAsString() << " ("
              << method->getReturnType().getAsString() << "(";
 
-      unsigned int n = method->getNumParams();
-      for (unsigned int i = 0; i < n; ++i) {
-        if (i > 0)
-          output << ", ";
-        output << method->getParamDecl(i)->getType().getAsString();
-      }
+      llvm::interleaveComma(method->parameters(), output,
+                            [](const clang::ParmVarDecl *param) {
+                              llvm::outs() << param->getType().getAsString();
+                            });
 
       output << ")|" << AccessToString(method->getAccess());
 
@@ -103,6 +101,26 @@ private:
 
       output << ")\n";
     }
+  }
+
+  void PrintNestedTypesInfo(llvm::raw_ostream &output,
+                            const clang::CXXRecordDecl *record) {
+    bool has_nested_types = false;
+
+    for (const auto *decl : record->decls()) {
+      if (const auto *nested = llvm::dyn_cast<clang::CXXRecordDecl>(decl)) {
+        if (!nested->isThisDeclarationADefinition() || nested->isImplicit())
+          continue;
+
+        if (!has_nested_types) {
+          has_nested_types = true;
+        }
+        output << "| |_ " << nested->getNameAsString() << "\n";
+      }
+    }
+
+    if (!has_nested_types)
+      output << "| |_ (no nested types)\n";
   }
 };
 
