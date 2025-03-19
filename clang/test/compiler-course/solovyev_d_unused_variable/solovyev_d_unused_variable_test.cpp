@@ -1,4 +1,7 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/UnusedVariable_Solovyev_Danila_FIIT3_ClangAST%pluginext -plugin unused_variable_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/UnusedVariable_Solovyev_Danila_FIIT3_ClangAST%pluginext -plugin unused_variable_plugin -plugin-arg-unused_variable_plugin --help 2>&1 | FileCheck --check-prefix=HELP %s
+
+//HELP:Marking unused variables and function parameters as {{\[\[maybe_unused\]\]}}
 
 //CHECK: int foo(int a, int b, \[\[maybe_unused\]\] int c) {
 //CHECK:      \[\[maybe_unused\]\] double value = 0.0;
