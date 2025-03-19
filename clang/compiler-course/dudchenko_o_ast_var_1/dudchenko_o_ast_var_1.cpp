@@ -17,9 +17,7 @@ public:
     llvm::outs() << record->getName();
 
     if (record->getNumBases() > 0) {
-      llvm::outs()
-          << " -> "
-          << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
+      llvm::outs() << " -> " << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
     }
 
     llvm::outs() << " \n";
@@ -27,9 +25,9 @@ public:
     if (record->field_begin() != record->field_end()) {
       llvm::outs() << "|_Fields\n";
       for (const auto *field : record->fields()) {
-        llvm::outs() << "| |_ " << field->getName() << " ("
-                     << field->getType().getAsString() << "|"
-                     << getAccessSpecifierString(field->getAccess()) << ")\n";
+          llvm::outs() << "| |_ " << field->getName() << " (" 
+                      << field->getType().getAsString() << "|"
+                      << getAccessSpecifierString(field->getAccess()) << ")\n";
       }
     }
 
@@ -47,111 +45,51 @@ public:
           firstMethod = false;
         }
 
-        llvm::outs() << "| |_ " << method->getNameAsString() << " ("
-                     << method->getReturnType().getAsString() << "()|"
-                     << getAccessSpecifierString(method->getAccess());
+        llvm::outs() << "| |_ " << method->getNameAsString() << " (" 
+        << method->getReturnType().getAsString() << "()|"
+        << getAccessSpecifierString(method->getAccess());
 
         bool isVirtualMethod = method->isVirtual();
         bool isPureVirtual = method->isPureVirtual();
         bool hasOverride = method->size_overridden_methods() > 0;
 
         if (isVirtualMethod) {
-          if (hasOverride) {
-            llvm::outs() << "|override";
-          } else {
-namespace {
-class TypeInfoVisitor : public clang::RecursiveASTVisitor<TypeInfoVisitor> {
-public:
-  explicit TypeInfoVisitor(clang::ASTContext *context) {}
-
-  bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
-    if (record->isImplicit()) {
-      return true;
-    }
-
-    llvm::outs() << record->getName();
-
-    if (record->getNumBases() > 0) {
-      llvm::outs()
-          << " -> "
-          << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
-    }
-
-    llvm::outs() << " \n";
-
-    if (record->field_begin() != record->field_end()) {
-      llvm::outs() << "|_Fields\n";
-      for (const auto *field : record->fields()) {
-        llvm::outs() << "| |_ " << field->getName() << " ("
-                     << field->getType().getAsString() << "|"
-                     << getAccessSpecifierString(field->getAccess()) << ")\n";
-      }
-    }
-
-    llvm::outs() << "|\n";
-
-    if (record->method_begin() != record->method_end()) {
-      llvm::outs() << "|_Methods\n";
-      bool firstMethod = true;
-      for (const auto *method : record->methods()) {
-        if (method->isImplicit() || method->isDefaulted()) {
-          continue;
-        }
-
-        if (firstMethod) {
-          firstMethod = false;
-        }
-
-        llvm::outs() << "| |_ " << method->getNameAsString() << " ("
-                     << method->getReturnType().getAsString() << "()|"
-                     << getAccessSpecifierString(method->getAccess());
-
-        bool isVirtualMethod = method->isVirtual();
-        bool isPureVirtual = method->isPureVirtual();
-        bool hasOverride = method->size_overridden_methods() > 0;
-
-        if (isVirtualMethod) {
-          if (hasOverride) {
-            llvm::outs() << "|override";
-          } else {
+        if (hasOverride) {
+          llvm::outs() << "|override";
+        } else {
             llvm::outs() << "|virtual";
             if (isPureVirtual) {
               llvm::outs() << "|pure";
             }
           }
-         } else {
-            llvm::outs() << "|virtual";
-              if (isPureVirtual) {
-                llvm::outs() << "|pure";
-              }
-            }
         } else {
           if (isPureVirtual) {
             llvm::outs() << "|pure";
           }
         }
-      llvm::outs() << ")\n";
-    }
-  }
-  return true;
-}
 
-private : std::string
-          getAccessSpecifierString(clang::AccessSpecifier access) {
-  switch (access) {
-  case clang::AS_public:
-    return "public";
-  case clang::AS_protected:
-    return "protected";
-  case clang::AS_private:
-    return "private";
-  case clang::AS_none:
-    return "none";
+        llvm::outs() << ")\n";
+      }
+    }
+
+    return true;
   }
-  return "unknown";
-}
+
+private:
+  std::string getAccessSpecifierString(clang::AccessSpecifier access) {
+    switch (access) {
+      case clang::AS_public:
+        return "public";
+      case clang::AS_protected:
+        return "protected";
+      case clang::AS_private:
+        return "private";
+      case clang::AS_none:
+        return "none";
+    }
+    return "unknown";
+  }
 };
-} // namespace
 
 class TypeInfoConsumer : public clang::ASTConsumer {
 public:
@@ -177,6 +115,7 @@ public:
     return true;
   }
 };
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<TypeInfoAction>
     X("type_info_plugin", "Prints information about user-defined types");
