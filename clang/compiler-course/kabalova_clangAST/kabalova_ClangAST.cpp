@@ -3,14 +3,13 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Rewrite/Core/Rewriter.h"
-#include "llvm/Support/Error.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
 
 class UnusedVisitor final : public clang::RecursiveASTVisitor<UnusedVisitor> {
 public:
-  explicit UnusedVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
+  UnusedVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
       : m_context(context), m_rewriter(rewriter) {}
   bool VisitFuncParameterDecl(clang::ParmVarDecl *parameter) {
     if (!parameter->isUsed() && !parameter->hasAttr<clang::UnusedAttr>()) {
@@ -41,7 +40,7 @@ private:
 
 class UnusedConsumer final : public clang::ASTConsumer {
 public:
-  explicit UnusedConsumer(clang::ASTContext *context, clang::Rewriter &rewriter)
+  UnusedConsumer(clang::ASTContext *context, clang::Rewriter &rewriter)
       : m_visitor(context, rewriter) {}
   void HandleTranslationUnit(clang::ASTContext &context) override {
     // TraverseDecl - Recursively visit a declaration
@@ -70,8 +69,8 @@ public:
 
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
-    for (size_t i = 0; i < args.size(); i++) {
-      if (args[i] == "--help") {
+    for (auto &i : args) {
+      if (i == "--help") {
         llvm::outs()
             << "This plugin searches for unused variables or unused parameters "
                "of functions and marks them with attribute [[maybe__unused]]"

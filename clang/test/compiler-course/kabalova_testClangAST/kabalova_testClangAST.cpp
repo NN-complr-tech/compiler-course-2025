@@ -18,3 +18,7 @@ int example(int a, int b, int c) {
 }
 
 [[maybe_unused]] int d = 0;
+
+// RUN: %clang_cc1 -load %llvmshlibdir/ClangAST_Kabalova_Valeria_FIIT1_ClangAST%pluginext -plugin ClangAST_Kabalova_Valeria_FIIT1_ClangAST -plugin-arg-ClangAST_Kabalova_Valeria_FIIT1_ClangAST --help %s -fsyntax-only 2>&1 | FileCheck %s 
+
+// CHECK: This plugin searches for unused variables or unused parameters of functions and marks them with attribute \[\[maybe__unused\]\]
