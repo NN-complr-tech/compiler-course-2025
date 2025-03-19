@@ -5,16 +5,16 @@
 // CHECK-NEXT: int -> float: 1
 
 double sum(int a, float b) {
-	return a + b;
+    return a + b;
 }
 
-// CHECK-NEXT: Function `mul`
+// CHECK: Function `mul`
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
 
 int mul(float a, float b) {
-	return a + sum(a, b);
+    return a + sum(a, b);
 }
 
 // CHECK: Function `convertTypes`
@@ -52,4 +52,37 @@ void convertToBool() {
     bool booleanValue = number;
 }
 
-// CHECK: Total implicit conversions: 10
+// CHECK: Function `classConversions`
+// CHECK-NEXT: MyClass -> int: 1
+// CHECK-NEXT: int -> AnotherClass: 1
+
+class MyClass {
+public:
+    operator int() const { return 42; } // Преобразование MyClass -> int
+};
+
+class AnotherClass {
+public:
+    AnotherClass(int x) {} // Преобразование int -> AnotherClass
+};
+
+void classConversions() {
+    MyClass obj1;
+    int x = obj1; // MyClass -> int
+    AnotherClass obj2 = x; // int -> AnotherClass
+}
+
+// CHECK: Function `enumConversions`
+// CHECK-NEXT: Color -> int: 1
+// CHECK-NEXT: int -> Status: 1
+
+enum Color { Red, Green, Blue };
+enum Status { Ok = 0, Error = 1 };
+
+void enumConversions() {
+    Color color = Green;
+    int colorCode = color; // Color -> int
+    Status status = static_cast<Status>(colorCode); // int -> Status
+}
+
+// CHECK: Total implicit conversions: 14
