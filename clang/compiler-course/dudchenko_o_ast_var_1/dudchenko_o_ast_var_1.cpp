@@ -46,12 +46,34 @@ public:
         }
 
         llvm::outs() << "| |_ " << method->getNameAsString() << " (" 
-                    << method->getReturnType().getAsString() << "()|"
-                    << getAccessSpecifierString(method->getAccess()) << "|"
-                    << (method->isVirtual() ? "virtual|" : "")
-                    << (method->isPureVirtual() ? "pure" : "")
-                    << (method->size_overridden_methods() > 0 ? "override" : "")
-                    << ")\n";
+        << method->getReturnType().getAsString() << "()|"
+        << getAccessSpecifierString(method->getAccess()) << "|";
+
+        if (method->isVirtual()) {
+          if (method->size_overridden_methods() == 0) {
+            if (method->isPureVirtual()) {
+              llvm::outs() << "virtual|";
+            }
+            else {
+              llvm::outs() << "virtual";
+            }
+          }
+        }
+
+        if (method->isPureVirtual()) {
+          if (method->size_overridden_methods() > 0) {
+            llvm::outs() << "pure|";
+          }
+          else{
+            llvm::outs() << "pure";
+          }
+        }
+
+        if (method->size_overridden_methods() > 0) {
+          llvm::outs() << "override";
+        }
+
+        llvm::outs() << ")\n";
       }
     }
 
