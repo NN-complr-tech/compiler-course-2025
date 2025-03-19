@@ -20,7 +20,7 @@ public:
       llvm::outs() << " -> " << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
     }
 
-    llvm::outs() << "\n";
+    llvm::outs() << "| \n";
 
     if (record->field_begin() != record->field_end()) {
       llvm::outs() << "|_Fields\n";
