@@ -7,7 +7,7 @@
 namespace {
 class TypeInfoVisitor : public clang::RecursiveASTVisitor<TypeInfoVisitor> {
 public:
-  explicit TypeInfoVisitor(clang::ASTContext *context) : m_context(context) {}
+  explicit TypeInfoVisitor(clang::ASTContext *context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
     // Выводим имя структуры/класса
@@ -39,7 +39,7 @@ public:
                      << method->getReturnType().getAsString() << "()|"
                      << getAccessSpecifierString(method->getAccess()) << "|"
                      << (method->isVirtual() ? "virtual|" : "")
-                     << (method->isPure() ? "pure|" : "")
+                     << (method->isPureVirtual() ? "pure|" : "") // Используем isPureVirtual()
                      << (method->size_overridden_methods() > 0 ? "override" : "")
                      << ")\n";
       }
@@ -50,8 +50,6 @@ public:
   }
 
 private:
-  clang::ASTContext *m_context;
-
   std::string getAccessSpecifierString(clang::AccessSpecifier access) {
     switch (access) {
       case clang::AS_public:
