@@ -10,31 +10,30 @@ public:
   explicit TypeInfoVisitor(clang::ASTContext *context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
-    // Выводим имя структуры/класса
+    if (record->isImplicit()) {
+      return true;
+    }
+
     llvm::outs() << record->getName();
 
-    // Выводим базовые классы
     if (record->getNumBases() > 0) {
       llvm::outs() << " -> " << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
     }
     llvm::outs() << "\n";
 
-    // Выводим поля
     if (record->field_begin() != record->field_end()) {
       llvm::outs() << "|_Fields\n";
       for (const auto *field : record->fields()) {
         llvm::outs() << "| |_ " << field->getName() << " (" 
-                     << field->getType().getAsString() << "|"
-                     << getAccessSpecifierString(field->getAccess()) << ")\n";
+                    << field->getType().getAsString() << "|"
+                    << getAccessSpecifierString(field->getAccess()) << ")\n";
       }
     }
 
-    // Выводим методы
     if (record->method_begin() != record->method_end()) {
-      llvm::outs() << "|_Methods\n";  // Начинаем вывод методов сразу после полей.
+      llvm::outs() << "|_Methods\n";
       bool firstMethod = true;
       for (const auto *method : record->methods()) {
-        // Пропускаем автоматически сгенерированные методы
         if (method->isImplicit() || method->isDefaulted()) {
           continue;
         }
@@ -44,12 +43,12 @@ public:
         }
 
         llvm::outs() << "| |_ " << method->getNameAsString() << " (" 
-                     << method->getReturnType().getAsString() << "()|"
-                     << getAccessSpecifierString(method->getAccess()) << "|"
-                     << (method->isVirtual() ? "virtual|" : "")
-                     << (method->isPureVirtual() ? "pure|" : "")
-                     << (method->size_overridden_methods() > 0 ? "override" : "")
-                     << ")\n";
+                    << method->getReturnType().getAsString() << "()|"
+                    << getAccessSpecifierString(method->getAccess()) << "|"
+                    << (method->isVirtual() ? "virtual|" : "")
+                    << (method->isPureVirtual() ? "pure|" : "")
+                    << (method->size_overridden_methods() > 0 ? "override" : "")
+                    << ")\n";
       }
     }
 
