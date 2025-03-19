@@ -3,67 +3,79 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
-
 namespace {
 class UnusedVisitor final : public clang::RecursiveASTVisitor<UnusedVisitor> {
 public:
-  explicit UnusedVisitor(clang::ASTContext *context) : m_context(context) {}
+  explicit UnusedVisitor(clang::ASTContext *context, clang::Rewriter &Rewriter)
+      : m_context(context), MRewriter(Rewriter) {}
   bool VisitVarDecl(clang::VarDecl *var) {
     if (!var->isUsed() && !var->hasAttr<clang::UnusedAttr>()) {
-        var->addAttr(clang::UnusedAttr::Create(*m_context));
+      MRewriter.InsertText(var->getSourceRange().getBegin(),
+                           "[[maybe_unused]] ", true, true);
+      var->addAttr(clang::UnusedAttr::Create(*m_context));
     }
     return true;
   }
 
   bool VisitParmVarDecl(clang::ParmVarDecl *param) {
     if (!param->isUsed() && !param->hasAttr<clang::UnusedAttr>()) {
-        param->addAttr(clang::UnusedAttr::Create(*m_context));
+      MRewriter.InsertText(param->getSourceRange().getBegin(),
+                           "[[maybe_unused]] ", true, true);
+      param->addAttr(clang::UnusedAttr::Create(*m_context));
     }
     return true;
   }
+
 private:
+  clang::Rewriter &MRewriter;
   clang::ASTContext *m_context;
 };
 
-class DumpVisitor final : public clang::RecursiveASTVisitor<DumpVisitor> {
-    public:
-      explicit DumpVisitor(clang::ASTContext *context) : m_context(context) {}
-      bool VisitFunctionDecl(clang::FunctionDecl *func) {
-        func->dump();
-        return true;
-      }
-    private:
-      clang::ASTContext *m_context;
-    };
-
-class ExampleConsumer final : public clang::ASTConsumer {
+class UnusedConsumer final : public clang::ASTConsumer {
 public:
-  explicit ExampleConsumer(clang::ASTContext *context) : um_visitor(context),dm_visitor(context) {}
+  explicit UnusedConsumer(clang::ASTContext *context, clang::Rewriter &Rewriter)
+      : um_visitor(context, Rewriter) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     um_visitor.TraverseDecl(context.getTranslationUnitDecl());
-    dm_visitor.TraverseDecl(context.getTranslationUnitDecl());
   }
 
 private:
   UnusedVisitor um_visitor;
-  DumpVisitor dm_visitor;
 };
 
-class ExampleAction final : public clang::PluginASTAction {
+class UnusedAction final : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ExampleConsumer>(&ci.getASTContext());
+    MRewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
+    return std::make_unique<UnusedConsumer>(&ci.getASTContext(), MRewriter);
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
+    for (const auto &arg : args) {
+      if (arg == "--help") {
+        llvm::outs() << "Marking unused variables and function parameters as "
+                        "[[maybe_unused]]\n";
+        return true;
+      }
+    }
     return true;
   }
+
+  void EndSourceFileAction() override {
+    MRewriter.getEditBuffer(MRewriter.getSourceMgr().getMainFileID())
+        .write(llvm::outs());
+  }
+
+private:
+  clang::Rewriter MRewriter;
 };
 } // namespace
 
-static clang::FrontendPluginRegistry::Add<ExampleAction>
-    X("unused_variable_plugin", "Description plugin");
+static clang::FrontendPluginRegistry::Add<UnusedAction>
+    X("unused_variable_plugin",
+      "Marking unused variables and function parameters as [[maybe_unused]]");
