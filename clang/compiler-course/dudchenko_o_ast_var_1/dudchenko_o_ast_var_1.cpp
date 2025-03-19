@@ -19,14 +19,15 @@ public:
     if (record->getNumBases() > 0) {
       llvm::outs() << " -> " << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
     }
+
     llvm::outs() << "\n";
 
     if (record->field_begin() != record->field_end()) {
       llvm::outs() << "|_Fields\n";
       for (const auto *field : record->fields()) {
-        llvm::outs() << "| |_ " << field->getName() << " (" 
-                    << field->getType().getAsString() << "|"
-                    << getAccessSpecifierString(field->getAccess()) << ")\n";
+          llvm::outs() << "| |_ " << field->getName() << " (" 
+                      << field->getType().getAsString() << "|"
+                      << getAccessSpecifierString(field->getAccess()) << ")\n";
       }
     }
 
