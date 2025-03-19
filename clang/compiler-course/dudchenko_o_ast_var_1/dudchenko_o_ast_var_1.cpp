@@ -20,7 +20,7 @@ public:
       llvm::outs() << " -> " << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
     }
 
-    llvm::outs() << "| \n";
+    llvm::outs() << " \n";
 
     if (record->field_begin() != record->field_end()) {
       llvm::outs() << "|_Fields\n";
@@ -32,6 +32,7 @@ public:
     }
 
     if (record->method_begin() != record->method_end()) {
+      llvm::outs() << "|\n";
       llvm::outs() << "|_Methods\n";
       bool firstMethod = true;
       for (const auto *method : record->methods()) {
