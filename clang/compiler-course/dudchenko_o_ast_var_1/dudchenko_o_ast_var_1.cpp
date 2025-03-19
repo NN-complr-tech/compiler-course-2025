@@ -65,13 +65,19 @@ public:
               }
             }
           } else {
-            if (isPureVirtual) {
-              llvm::outs() << "|pure";
-            }
+            llvm::outs() << "|virtual";
+             if (isPureVirtual) {
+               llvm::outs() << "|pure";
+             }
+           }
+        } else {
+          if (isPureVirtual) {
+            llvm::outs() << "|pure";
           }
-        llvm::outs() << ")\n";
-      }
-    }
+        }
+         llvm::outs() << ")\n";
+       }
+     }
 
     return true;
   }
