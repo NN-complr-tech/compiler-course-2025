@@ -7,12 +7,9 @@
 #include <string>
 #include <vector>
 
-using namespace clang;
-using namespace std;
-
 namespace {
 
-class ImplicitConversionAnalyzer
+class ImplicitConversionAnalyzer final
     : public clang::RecursiveASTVisitor<ImplicitConversionAnalyzer>,
       public clang::ASTConsumer {
 public:
@@ -30,34 +27,34 @@ public:
       return true;
     }
 
-    QualType sourceType = cxxExpr->getArg(0)->getType();
-    QualType destType = cxxExpr->getType();
+    clang::QualType sourceType = cxxExpr->getArg(0)->getType();
+    clang::QualType destType = cxxExpr->getType();
 
     if (sourceType == destType) {
       return true;
     }
-    conversionMap[currentFunctionName][make_pair(sourceType.getAsString(),
-                                                 destType.getAsString())]++;
+    conversionMap[currentFunctionName][std::make_pair(
+        sourceType.getAsString(), destType.getAsString())]++;
     return true;
   }
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *implCastExpr) {
-    CastKind castKind = implCastExpr->getCastKind();
+    clang::CastKind castKind = implCastExpr->getCastKind();
 
-    if (castKind == CK_LValueToRValue ||
-        castKind == CK_FunctionToPointerDecay) {
+    if (castKind == clang::CK_LValueToRValue ||
+        castKind == clang::CK_FunctionToPointerDecay) {
       return true;
     }
 
-    QualType sourceType =
+    clang::QualType sourceType =
         implCastExpr->getSubExpr()->getType().getCanonicalType();
-    QualType destType = implCastExpr->getType().getCanonicalType();
+    clang::QualType destType = implCastExpr->getType().getCanonicalType();
 
     if (sourceType == destType) {
       return true;
     }
-    conversionMap[currentFunctionName][make_pair(sourceType.getAsString(),
-                                                 destType.getAsString())]++;
+    conversionMap[currentFunctionName][std::make_pair(
+        sourceType.getAsString(), destType.getAsString())]++;
     return true;
   }
 
@@ -71,16 +68,17 @@ public:
     }
   }
 
-  void HandleTranslationUnit(ASTContext &Context) override {
+  void HandleTranslationUnit(clang::ASTContext &Context) override {
     TraverseDecl(Context.getTranslationUnitDecl());
     PrintResults();
   }
 
 private:
-  map<string, map<pair<string, string>, int>> conversionMap;
-  string currentFunctionName;
+  std::map<std::string, std::map<std::pair<std::string, std::string>, int>>
+      conversionMap;
+  std::string currentFunctionName;
   llvm::raw_ostream &OS;
-  vector<string> functionList;
+  std::vector<std::string> functionList;
 };
 
 class ImplicitConversionAction final : public clang::PluginASTAction {
@@ -91,7 +89,7 @@ public:
   }
 
   bool ParseArgs(const clang::CompilerInstance &CI,
-                 const vector<string> &Args) override {
+                 const std::vector<std::string> &Args) override {
     return true;
   }
 };
