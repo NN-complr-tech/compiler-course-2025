@@ -57,16 +57,16 @@ void foo() {
 }
 
 // CHECK: Function createX
-// CHECK-NEXT: double -> X: 1
+// CHECK-NEXT: int -> X: 1
 
 class X {
-    double x;
+    int x;
 public:
-    X(double val) : x(val) {}
+    X(int val) : x(val) {}
 };
 
 X createX() {
-    return 10.0;
+    return 10;
 }
 
 // CHECK: Total implicit conversions: 13
