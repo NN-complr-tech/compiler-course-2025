@@ -1,5 +1,5 @@
 set(Title "ClangAST_1_MamaevaO_FIIT3_ClangAST")
-set(Student "Mamaeva_Olga")
+set(Student "MamaevaO")
 set(Group "FIIT3")
 set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
 
