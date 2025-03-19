@@ -135,11 +135,6 @@ public:
   }
   return true;
 }
-      llvm::outs() << ")\n";
-    }
-  }
-  return true;
-}
 
 private : std::string
           getAccessSpecifierString(clang::AccessSpecifier access) {
@@ -156,7 +151,7 @@ private : std::string
   return "unknown";
 }
 };
-
+} // namespace
 
 class TypeInfoConsumer : public clang::ASTConsumer {
 public:
@@ -182,7 +177,6 @@ public:
     return true;
   }
 };
-} // namespace
 
 static clang::FrontendPluginRegistry::Add<TypeInfoAction>
     X("type_info_plugin", "Prints information about user-defined types");
