@@ -9,11 +9,11 @@
 // CHECK-NEXT: | |_ sleep (void()|public|virtual|pure)
 // CHECK-NEXT: | |_ eat (void()|public|virtual|pure)
 struct Human {
-    unsigned age;
-    unsigned height;
-    virtual void sleep() = 0;
-    virtual void eat() = 0;
-  };
+  unsigned age;
+  unsigned height;
+  virtual void sleep() = 0;
+  virtual void eat() = 0;
+};
 
 // CHECK: Engineer -> Human
 // CHECK-NEXT: |_Fields
