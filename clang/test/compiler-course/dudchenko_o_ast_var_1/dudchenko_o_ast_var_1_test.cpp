@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/Data_types_Dudchenko_Olesya_FIIT2_ClangAST%pluginext -plugin example_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/Data_types_Dudchenko_Olesya_FIIT2_ClangAST%pluginext -plugin type_info_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: Human
 // CHECK-NEXT: |_Fields
