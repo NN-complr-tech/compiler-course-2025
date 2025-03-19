@@ -124,4 +124,4 @@ public:
 
 // Регистрация плагина
 static clang::FrontendPluginRegistry::Add<MyClangPlugin>
-    X("myClangPlugin", "Counts implicit type conversions");
+    X("ClangAST_1_MamaevaO_FIIT3_ClangAST", "Counts implicit type conversions");
