@@ -66,6 +66,11 @@ public:
                                                 m_rewriter);
   }
 
+  void EndSourceFileAction() override {
+    m_rewriter.getEditBuffer(m_rewriter.getSourceMgr().getMainFileID())
+        .write(llvm::outs());
+  }
+
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
     return true;
