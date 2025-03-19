@@ -76,8 +76,8 @@ public:
     for (const auto &arg : args) {
       if (arg == "-h" || arg == "--help") {
         llvm::outs() << "The plugin adds the [[maybe_unused]] flag to "
-                        "variables and parameters that are not in use.";
-        return false;
+                        "variables and parameters that are not in use.\n";
+        return true;
       }
     }
     return true;
