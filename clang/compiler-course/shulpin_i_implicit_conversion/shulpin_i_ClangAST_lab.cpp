@@ -133,5 +133,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<ImplicitCastAction>
-X("ClangAST_Lab_ShulpinIlya_FIIT1_ClangAST",
-  "Counts implicit type conversions");
+    X("ClangAST_Lab_ShulpinIlya_FIIT1_ClangAST",
+      "Counts implicit type conversions");
