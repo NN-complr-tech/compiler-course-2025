@@ -48,8 +48,8 @@ public:
         llvm::outs() << "| |_ " << method->getNameAsString() << " (" 
                     << method->getReturnType().getAsString() << "()|"
                     << getAccessSpecifierString(method->getAccess()) << "|"
-                    << (method->isVirtual() ? "virtual|" : "")
-                    << (method->isPureVirtual() ? "pure|" : "")
+                    << (method->isVirtual() ? "virtual" : "")
+                    << (method->isPureVirtual() ? "pure" : "")
                     << (method->size_overridden_methods() > 0 ? "override" : "")
                     << ")\n";
       }
