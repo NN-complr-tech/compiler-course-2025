@@ -16,7 +16,8 @@ class ImplicitConversionAnalyzer
     : public clang::RecursiveASTVisitor<ImplicitConversionAnalyzer>,
       public clang::ASTConsumer {
 public:
-  ImplicitConversionAnalyzer(llvm::raw_ostream &outputStream) : OS(outputStream) {}
+  ImplicitConversionAnalyzer(llvm::raw_ostream &outputStream)
+      : OS(outputStream) {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *funcDecl) {
     currentFunctionName = funcDecl->getNameAsString();
@@ -35,8 +36,8 @@ public:
     if (sourceType == destType) {
       return true;
     }
-    conversionMap[currentFunctionName]
-                 [make_pair(sourceType.getAsString(), destType.getAsString())]++;
+    conversionMap[currentFunctionName][make_pair(sourceType.getAsString(),
+                                                 destType.getAsString())]++;
     return true;
   }
 
@@ -55,8 +56,8 @@ public:
     if (sourceType == destType) {
       return true;
     }
-    conversionMap[currentFunctionName]
-                 [make_pair(sourceType.getAsString(), destType.getAsString())]++;
+    conversionMap[currentFunctionName][make_pair(sourceType.getAsString(),
+                                                 destType.getAsString())]++;
     return true;
   }
 
