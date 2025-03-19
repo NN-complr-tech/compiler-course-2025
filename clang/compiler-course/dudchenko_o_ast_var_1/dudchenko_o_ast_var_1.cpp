@@ -47,25 +47,24 @@ public:
 
         llvm::outs() << "| |_ " << method->getNameAsString() << " (" 
         << method->getReturnType().getAsString() << "()|"
-        << getAccessSpecifierString(method->getAccess()) << "|";
+        << getAccessSpecifierString(method->getAccess());
 
         bool isVirtualMethod = method->isVirtual();
         bool isPureVirtual = method->isPureVirtual();
         bool hasOverride = method->size_overridden_methods() > 0;
 
-        // Обработка виртуальных методов
         if (isVirtualMethod) {
-          if (hasOverride) {
-            llvm::outs() << "override";
-          } else {
-            llvm::outs() << "virtual";
+        if (hasOverride) {
+          llvm::outs() << "|override";
+        } else {
+            llvm::outs() << "|virtual";
             if (isPureVirtual) {
               llvm::outs() << "|pure";
             }
           }
         } else {
           if (isPureVirtual) {
-            llvm::outs() << "pure";
+            llvm::outs() << "|pure";
           }
         }
 
