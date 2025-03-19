@@ -69,4 +69,4 @@ X createX() {
     return 10;
 }
 
-// CHECK: Total implicit conversions: 13
+// CHECK: Summary of total conversions: 13

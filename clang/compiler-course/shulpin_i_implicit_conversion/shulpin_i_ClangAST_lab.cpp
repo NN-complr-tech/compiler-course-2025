@@ -89,12 +89,15 @@ public:
   void CastsResult() {
     std::string LastFunction;
     for (const auto &Entry : CastInfo) {
-      if (std::get<0>(Entry) != LastFunction) {
-        llvm::outs() << "Function " << std::get<0>(Entry) << "\n";
-        LastFunction = std::get<0>(Entry);
+      const auto &FuncName = std::get<0>(Entry);
+      const auto &FromType = std::get<1>(Entry);
+      const auto &ToType = std::get<2>(Entry);
+
+      if (FuncName != LastFunction) {
+        llvm::outs() << "Function " << FuncName << "\n";
+        LastFunction = FuncName;
       }
-      llvm::outs() << getCastDescription(std::get<1>(Entry), std::get<2>(Entry))
-                   << ": 1\n";
+      llvm::outs() << getCastDescription(FromType, ToType) << ": 1\n";
     }
     llvm::outs() << "Summary of total conversions: " << CastInfo.size() << "\n";
   }
