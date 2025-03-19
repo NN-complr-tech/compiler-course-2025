@@ -1,7 +1,7 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST%pluginext -plugin PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST %s -fsyntax-only 2>&1 | FileCheck --match-full-lines %s
 
 // CHECK: int global_var1 = 0;
-// CHECK-NEXT: int static_global_var2 = 2;
+// CHECK-NEXT: int global_var2 = 2;
 // CHECK-NEXT: int foo(int param_a, int param_b) {
 // CHECK-NEXT:   static int static_var3 = 0;
 // CHECK-NEXT:   int local_var4 = 123;

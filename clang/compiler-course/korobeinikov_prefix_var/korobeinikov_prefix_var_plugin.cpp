@@ -17,9 +17,7 @@ public:
       return true;
     }
     std::string prefix;
-    if (var->hasGlobalStorage() && var->isStaticLocal()) {
-      prefix = "static_global_";
-    } else if (var->isStaticLocal()) {
+    if (var->isStaticLocal()) {
       prefix = "static_";
     } else if (var->isLocalVarDecl()) {
       prefix = "local_";
