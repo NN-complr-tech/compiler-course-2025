@@ -13,7 +13,7 @@ public:
       : m_rewriter(rewriter) {}
 
   bool VisitVarDecl(clang::VarDecl *var) {
-    if (!var || var->getNameAsString().empty()) {
+    if (!var || var->getName().empty()) {
       return true;
     }
     std::string prefix;
@@ -34,7 +34,7 @@ public:
   }
 
   bool VisitParmVarDecl(clang::ParmVarDecl *param) {
-    if (!param || param->getNameAsString().empty()) {
+    if (!param || param->getName().empty()) {
       return true;
     }
     std::string newName = "param_" + param->getNameAsString();
@@ -45,7 +45,7 @@ public:
 
   bool VisitDeclRefExpr(clang::DeclRefExpr *expr) {
     auto *decl = expr->getDecl();
-    if (!expr || !decl || decl->getNameAsString().empty()) {
+    if (!expr || !decl || decl->getName().empty()) {
       return true;
     }
     if (auto *var = clang::dyn_cast<clang::VarDecl>(decl)) {
@@ -63,8 +63,7 @@ private:
   std::unordered_map<clang::VarDecl *, std::string> m_renamedVars;
 
   void renameVar(clang::VarDecl *var, const std::string &newName) {
-    m_rewriter.ReplaceText(var->getLocation(), var->getNameAsString().size(),
-                           newName);
+    m_rewriter.ReplaceText(var->getLocation(), var->getName().size(), newName);
   }
 };
 
