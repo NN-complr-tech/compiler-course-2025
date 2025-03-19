@@ -10,8 +10,8 @@
 namespace {
 class RenameVisitor final : public clang::RecursiveASTVisitor<RenameVisitor> {
 public:
-  explicit RenameVisitor(clang::ASTContext *context, clang::Rewriter &rewriter,
-                         bool logChanges)
+  RenameVisitor(clang::ASTContext *context, clang::Rewriter &rewriter,
+                bool logChanges)
       : m_rewriter(rewriter), m_logChanges(logChanges) {}
 
   std::string getPrefixForVarDecl(const clang::VarDecl *varDecl) const {
@@ -99,8 +99,8 @@ private:
 
 class RenameConsumer final : public clang::ASTConsumer {
 public:
-  explicit RenameConsumer(clang::ASTContext *context, clang::Rewriter &rewriter,
-                          bool logChanges)
+  RenameConsumer(clang::ASTContext *context, clang::Rewriter &rewriter,
+                 bool logChanges)
       : m_visitor(context, rewriter, logChanges) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
@@ -125,10 +125,10 @@ public:
     for (const auto &arg : args) {
       if (arg == "--help") {
         llvm::outs()
-            << "Rename Plugin - Adds prefixes to variables and parameters.\n";
-        llvm::outs() << "Usage:\n";
-        llvm::outs() << "  --no-log         Disable logging of changes\n";
-        llvm::outs() << "  --help           Show this help message\n";
+            << "Rename Plugin - Adds prefixes to variables and parameters.\n"
+            << "Usage:\n"
+            << "  --no-log         Disable logging of changes\n"
+            << "  --help           Show this help message\n";
         return true;
       } else if (arg == "--no-log") {
         m_logChanges = false;
