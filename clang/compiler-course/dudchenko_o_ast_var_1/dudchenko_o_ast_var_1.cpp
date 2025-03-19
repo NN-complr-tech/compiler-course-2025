@@ -17,7 +17,9 @@ public:
     llvm::outs() << record->getName();
 
     if (record->getNumBases() > 0) {
-      llvm::outs() << " -> " << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
+      llvm::outs()
+          << " -> "
+          << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
     }
 
     llvm::outs() << " \n";
@@ -25,9 +27,9 @@ public:
     if (record->field_begin() != record->field_end()) {
       llvm::outs() << "|_Fields\n";
       for (const auto *field : record->fields()) {
-          llvm::outs() << "| |_ " << field->getName() << " (" 
-                      << field->getType().getAsString() << "|"
-                      << getAccessSpecifierString(field->getAccess()) << ")\n";
+        llvm::outs() << "| |_ " << field->getName() << " ("
+                     << field->getType().getAsString() << "|"
+                     << getAccessSpecifierString(field->getAccess()) << ")\n";
       }
     }
 
@@ -45,18 +47,18 @@ public:
           firstMethod = false;
         }
 
-        llvm::outs() << "| |_ " << method->getNameAsString() << " (" 
-        << method->getReturnType().getAsString() << "()|"
-        << getAccessSpecifierString(method->getAccess());
+        llvm::outs() << "| |_ " << method->getNameAsString() << " ("
+                     << method->getReturnType().getAsString() << "()|"
+                     << getAccessSpecifierString(method->getAccess());
 
         bool isVirtualMethod = method->isVirtual();
         bool isPureVirtual = method->isPureVirtual();
         bool hasOverride = method->size_overridden_methods() > 0;
 
         if (isVirtualMethod) {
-        if (hasOverride) {
-          llvm::outs() << "|override";
-        } else {
+          if (hasOverride) {
+            llvm::outs() << "|override";
+          } else {
             llvm::outs() << "|virtual";
             if (isPureVirtual) {
               llvm::outs() << "|pure";
@@ -78,14 +80,14 @@ public:
 private:
   std::string getAccessSpecifierString(clang::AccessSpecifier access) {
     switch (access) {
-      case clang::AS_public:
-        return "public";
-      case clang::AS_protected:
-        return "protected";
-      case clang::AS_private:
-        return "private";
-      case clang::AS_none:
-        return "none";
+    case clang::AS_public:
+      return "public";
+    case clang::AS_protected:
+      return "protected";
+    case clang::AS_private:
+      return "private";
+    case clang::AS_none:
+      return "none";
     }
     return "unknown";
   }
