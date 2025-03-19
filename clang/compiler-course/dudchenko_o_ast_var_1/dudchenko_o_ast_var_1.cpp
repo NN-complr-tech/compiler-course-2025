@@ -31,13 +31,18 @@ public:
 
     // Выводим методы
     if (record->method_begin() != record->method_end()) {
-      llvm::outs() << "|_Methods\n";
+      llvm::outs() << "|_Methods";
+      bool firstMethod = true;
       for (const auto *method : record->methods()) {
         // Пропускаем автоматически сгенерированные методы
         if (method->isImplicit() || method->isDefaulted()) {
           continue;
         }
 
+        if (firstMethod) {
+          llvm::outs() << "\n";
+          firstMethod = false;
+        }
         llvm::outs() << "| |_ " << method->getNameAsString() << " ("
                      << method->getReturnType().getAsString() << "()|"
                      << getAccessSpecifierString(method->getAccess()) << "|"
