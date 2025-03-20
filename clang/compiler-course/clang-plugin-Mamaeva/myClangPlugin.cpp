@@ -21,37 +21,47 @@ public:
   explicit MyClangVisitor(clang::ASTContext *context) : m_context(context) {}
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
-
-    auto castKind = ICE->getCastKind();
-    if (castKind == clang::CK_LValueToRValue || castKind == clang::CK_NoOp ||
-        castKind == clang::CK_FunctionToPointerDecay) {
-      return true;
-    }
-    clang::QualType SourceType = ICE->getSubExpr()->getType();
-    clang::QualType TargetType = ICE->getType();
-
-    if (SourceType.getCanonicalType() == TargetType.getCanonicalType()) {
-      return true;
-    }
-
-    auto Parents = m_context->getParents(*ICE);
-    while (!Parents.empty()) {
-      if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
-        recordConversion(FD, SourceType, TargetType);
-        break;
-      } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
-        if (const auto *CallOp = Lambda->getCallOperator()) {
-          recordConversion(CallOp, SourceType, TargetType);
-          break;
-        }
-      } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
-        recordConversion(ME, SourceType, TargetType);
-        break;
-      }
-      Parents = m_context->getParents(Parents[0]);
-    }
+  auto castKind = ICE->getCastKind();
+  if (castKind == clang::CK_LValueToRValue || castKind == clang::CK_NoOp ||
+      castKind == clang::CK_FunctionToPointerDecay) {
     return true;
   }
+
+  clang::QualType SourceType = ICE->getSubExpr()->getType();
+  clang::QualType TargetType = ICE->getType();
+
+  if (SourceType.getCanonicalType() == TargetType.getCanonicalType()) {
+    return true;
+  }
+
+  auto Parents = m_context->getParents(*ICE);
+  while (!Parents.empty()) {
+    if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
+      recordConversion(FD, SourceType, TargetType);
+      break;
+    } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
+      if (const auto *CallOp = Lambda->getCallOperator()) {
+        recordConversion(CallOp, SourceType, TargetType);
+        break;
+      }
+    } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
+      recordConversion(ME, SourceType, TargetType);
+      break;
+    } else if (const auto *CE = Parents[0].get<clang::CXXConstructExpr>()) {
+      // Обработка преобразований через конструкторы
+      if (const auto *Ctor = CE->getConstructor()) {
+        recordConversion(Ctor, SourceType, TargetType);
+        break;
+      }
+    } else if (const auto *CXXCE = Parents[0].get<clang::CXXConversionDecl>()) {
+      // Обработка преобразований через операторы приведения
+      recordConversion(CXXCE, SourceType, TargetType);
+      break;
+    }
+    Parents = m_context->getParents(Parents[0]);
+  }
+  return true;
+}
 
   std::string normalizeTypeName(std::string typeName) {
     const std::vector<std::string> prefixes = {"struct ", "class ", "enum "};
