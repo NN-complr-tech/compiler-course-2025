@@ -125,4 +125,4 @@
 
 // Регистрация плагина
 static clang::FrontendPluginRegistry::Add<MyClangPlugin>
-    X("ClangAST_1_Mamaeva_Olga_FIIT3_ClangAST", "Counts implicit type conversions");
+    X("ClangAST_1_MamaevaO_FIIT3_ClangAST", "Counts implicit type conversions");
