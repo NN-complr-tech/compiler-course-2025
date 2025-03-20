@@ -4,7 +4,7 @@
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
 
-double sum(int a, float b) {
+static double sum(int a, float b) {
     return a + b;
 }
 
@@ -13,7 +13,7 @@ double sum(int a, float b) {
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
 
-int mul(float a, float b) {
+static int mul(float a, float b) {
     return a + sum(a, b);
 }
 
@@ -24,32 +24,32 @@ int mul(float a, float b) {
 using FloatType = float;
 using IntType = int;
 
-void convertTypes() {
-    FloatType floatVar = IntType();
-    IntType intVar = floatVar;
+static void convertTypes() {
+    FloatType float_var = IntType();
+    IntType int_var = float_var;
 }
 
 // CHECK: Function `handlePointers`
 // CHECK-NEXT: int* -> void*: 1
 
-void handlePointers() {
+static void handlePointers() {
     int value;
-    void* voidPtr = &value;
+    void* void_ptr = &value;
 }
 
 // CHECK: Function `checkPointer`
 // CHECK-NEXT: int* -> bool: 1
 
-void checkPointer(int* ptr) {
+static void checkPointer(int* ptr) {
     if (ptr) {}
 }
 
 // CHECK: Function `convertToBool`
 // CHECK-NEXT: int -> bool: 1
 
-void convertToBool() {
+static void convertToBool() {
     int number = 7;
-    bool booleanValue = number;
+    bool boolean_value = number;
 }
 
 // CHECK: Function `classConversions`
@@ -66,10 +66,10 @@ public:
     AnotherClass(int x) {} // Преобразование int -> AnotherClass
 };
 
-void classConversions() {
+static void classConversions() {
     MyClass obj1;
-    int x = obj1; // MyClass -> int
-    AnotherClass obj2 = x; // int -> AnotherClass
+    int x = obj1;           // MyClass -> int
+    AnotherClass obj2 = x;  // int -> AnotherClass
 }
 
 // CHECK: Function `enumConversions`
@@ -79,10 +79,10 @@ void classConversions() {
 enum Color { Red, Green, Blue };
 enum Status { Ok = 0, Error = 1 };
 
-void enumConversions() {
+static void enumConversions() {
     Color color = Green;
-    int colorCode = color; // Color -> int
-    Status status = static_cast<Status>(colorCode); // int -> Status
+    int color_code = color;                       // Color -> int
+    Status status = static_cast<Status>(color_code); // int -> Status
 }
 
 // CHECK: Total implicit conversions: 14
