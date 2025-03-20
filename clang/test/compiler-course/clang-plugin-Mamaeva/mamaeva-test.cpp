@@ -58,18 +58,18 @@ static void convertToBool() {
 
 class MyClass {
 public:
-    operator int() const { return 42; } // Преобразование MyClass -> int
+  operator int() const { return 42; } // Преобразование MyClass -> int
 };
 
 class AnotherClass {
 public:
-    AnotherClass(int x) {} // Преобразование int -> AnotherClass
+  AnotherClass(int x) {} // Преобразование int -> AnotherClass
 };
 
-static void classConversions() {
-    MyClass obj1;
-    int x = obj1;           // MyClass -> int
-    AnotherClass obj2 = x;  // int -> AnotherClass
+void classConversions() {
+  MyClass obj1;
+  int x = obj1;           // MyClass -> int
+  AnotherClass obj2 = x;  // int -> AnotherClass
 }
 
 // CHECK: Function `enumConversions`
