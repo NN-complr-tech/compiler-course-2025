@@ -6,119 +6,120 @@
 #include "llvm/ADT/MapVector.h"
 #include "llvm/Support/raw_ostream.h"
 
-namespace {
+    namespace {
 
-class MyClangVisitor : public clang::RecursiveASTVisitor<MyClangVisitor> {
+  class MyClangVisitor : public clang::RecursiveASTVisitor<MyClangVisitor> {
 
-private:
-  clang::ASTContext *m_context;
-  llvm::MapVector<const clang::FunctionDecl *,
-                  std::map<std::pair<std::string, std::string>, int>>
-      m_functionStats;
-  int m_totalConversions = 0;
+  private:
+    clang::ASTContext *m_context;
+    llvm::MapVector<const clang::FunctionDecl *,
+                    std::map<std::pair<std::string, std::string>, int>>
+        m_functionStats;
+    int m_totalConversions = 0;
 
-public:
-  explicit MyClangVisitor(clang::ASTContext *context) : m_context(context) {}
+  public:
+    explicit MyClangVisitor(clang::ASTContext *context) : m_context(context) {}
 
-  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
+    bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
 
-    auto castKind = ICE->getCastKind();
-    if (castKind == clang::CK_LValueToRValue || castKind == clang::CK_NoOp ||
-        castKind == clang::CK_FunctionToPointerDecay) {
-      return true;
-    }
-    clang::QualType SourceType = ICE->getSubExpr()->getType();
-    clang::QualType TargetType = ICE->getType();
+      auto castKind = ICE->getCastKind();
+      if (castKind == clang::CK_LValueToRValue || castKind == clang::CK_NoOp ||
+          castKind == clang::CK_FunctionToPointerDecay) {
+        return true;
+      }
+      clang::QualType SourceType = ICE->getSubExpr()->getType();
+      clang::QualType TargetType = ICE->getType();
 
-    if (SourceType.getCanonicalType() == TargetType.getCanonicalType()) {
-      return true;
-    }
+      if (SourceType.getCanonicalType() == TargetType.getCanonicalType()) {
+        return true;
+      }
 
-    auto Parents = m_context->getParents(*ICE);
-    while (!Parents.empty()) {
-      if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
-        recordConversion(FD, SourceType, TargetType);
-        break;
-      } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
-        if (const auto *CallOp = Lambda->getCallOperator()) {
-          recordConversion(CallOp, SourceType, TargetType);
+      auto Parents = m_context->getParents(*ICE);
+      while (!Parents.empty()) {
+        if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
+          recordConversion(FD, SourceType, TargetType);
+          break;
+        } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
+          if (const auto *CallOp = Lambda->getCallOperator()) {
+            recordConversion(CallOp, SourceType, TargetType);
+            break;
+          }
+        } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
+          recordConversion(ME, SourceType, TargetType);
           break;
         }
-      } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
-        recordConversion(ME, SourceType, TargetType);
-        break;
+        Parents = m_context->getParents(Parents[0]);
       }
-      Parents = m_context->getParents(Parents[0]);
+      return true;
     }
-    return true;
-  }
 
-  std::string normalizeTypeName(std::string typeName) {
-    const std::vector<std::string> prefixes = {"struct ", "class ", "enum "};
-    for (const auto &prefix : prefixes) {
-      size_t pos = typeName.find(prefix);
-      if (pos == 0) {
-        typeName.erase(0, prefix.length());
-        break;
+    std::string normalizeTypeName(std::string typeName) {
+      const std::vector<std::string> prefixes = {"struct ", "class ", "enum "};
+      for (const auto &prefix : prefixes) {
+        size_t pos = typeName.find(prefix);
+        if (pos == 0) {
+          typeName.erase(0, prefix.length());
+          break;
+        }
       }
-    }
-    typeName.erase(
-        std::remove_if(typeName.begin(), typeName.end(),
-                       [](unsigned char c) { return std::isspace(c); }),
-        typeName.end());
-    size_t pos;
-    while ((pos = typeName.find("_Bool")) != std::string::npos) {
-      typeName.replace(pos, 5, "bool");
-    }
-    return typeName;
-  }
-
-  void recordConversion(const clang::FunctionDecl *FD, clang::QualType From,
-                        clang::QualType To) {
-    std::string FromStr =
-        normalizeTypeName(From.getCanonicalType().getAsString());
-    std::string ToStr = normalizeTypeName(To.getCanonicalType().getAsString());
-    m_functionStats[FD][std::make_pair(FromStr, ToStr)]++;
-    m_totalConversions++;
-  }
-
-  void printStats(llvm::raw_ostream &OS) {
-    for (const auto &[func, convs] : m_functionStats) {
-      OS << "Function `" << func->getName() << "`\n";
-      for (const auto &[conv, num] : convs) {
-        OS << conv.first << " -> " << conv.second << ": " << num << "\n";
+      typeName.erase(
+          std::remove_if(typeName.begin(), typeName.end(),
+                         [](unsigned char c) { return std::isspace(c); }),
+          typeName.end());
+      size_t pos;
+      while ((pos = typeName.find("_Bool")) != std::string::npos) {
+        typeName.replace(pos, 5, "bool");
       }
+      return typeName;
     }
-    OS << "Total implicit conversions: " << m_totalConversions << "\n";
-  }
-};
 
-class MyClangConsumer : public clang::ASTConsumer {
+    void recordConversion(const clang::FunctionDecl *FD, clang::QualType From,
+                          clang::QualType To) {
+      std::string FromStr =
+          normalizeTypeName(From.getCanonicalType().getAsString());
+      std::string ToStr =
+          normalizeTypeName(To.getCanonicalType().getAsString());
+      m_functionStats[FD][std::make_pair(FromStr, ToStr)]++;
+      m_totalConversions++;
+    }
 
-private:
-  MyClangVisitor m_visitor;
+    void printStats(llvm::raw_ostream &OS) {
+      for (const auto &[func, convs] : m_functionStats) {
+        OS << "Function `" << func->getName() << "`\n";
+        for (const auto &[conv, num] : convs) {
+          OS << conv.first << " -> " << conv.second << ": " << num << "\n";
+        }
+      }
+      OS << "Total implicit conversions: " << m_totalConversions << "\n";
+    }
+  };
 
-public:
-  explicit MyClangConsumer(clang::ASTContext *context) : m_visitor(context) {}
+  class MyClangConsumer : public clang::ASTConsumer {
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    m_visitor.TraverseDecl(context.getTranslationUnitDecl());
-    m_visitor.printStats(llvm::errs());
-  }
-};
+  private:
+    MyClangVisitor m_visitor;
 
-class MyClangPlugin : public clang::PluginASTAction {
-public:
-  std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<MyClangConsumer>(&ci.getASTContext());
-  }
+  public:
+    explicit MyClangConsumer(clang::ASTContext *context) : m_visitor(context) {}
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
-    return true;
-  }
-};
+    void HandleTranslationUnit(clang::ASTContext &context) override {
+      m_visitor.TraverseDecl(context.getTranslationUnitDecl());
+      m_visitor.printStats(llvm::errs());
+    }
+  };
+
+  class MyClangPlugin : public clang::PluginASTAction {
+  public:
+    std::unique_ptr<clang::ASTConsumer>
+    CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+      return std::make_unique<MyClangConsumer>(&ci.getASTContext());
+    }
+
+    bool ParseArgs(const clang::CompilerInstance &ci,
+                   const std::vector<std::string> &args) override {
+      return true;
+    }
+  };
 
 } // namespace
 
