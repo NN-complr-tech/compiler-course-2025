@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/myClangPlugin_Mamaeva_Olga_FIIT3_ClangAST%pluginext -plugin myClangPlugin -fsyntax-only %s 2>&1 | FileCheck %s -dump-input=always
+// RUN: %clang_cc1 -load %llvmshlibdir/ClangAST_1_Mamaeva_Olga_FIIT3_ClangAST%pluginext -plugin ClangAST_1 -fsyntax-only %s 2>&1 | FileCheck %s -dump-input=always
 
 // CHECK: Function `sum`
 // CHECK-NEXT: float -> double: 1
