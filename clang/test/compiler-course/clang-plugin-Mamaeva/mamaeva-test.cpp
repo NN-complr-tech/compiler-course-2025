@@ -4,14 +4,19 @@
 // CHECK-NEXT: int -> float: 1
 float testing = 7;
 
-// CHECK: In function: sum
+// CHECK: Function sum
+// CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
-// CHECK-NEXT: float -> double: 1
 
-double sum(int a, float b) { return a + b; }
+double sum(int a, float b) {
+    return a + b;
+}
 
-// CHECK: In function: mul
-// CHECK-NEXT: float -> double: 1
+// CHECK: Function mul
 // CHECK-NEXT: double -> int: 1
+// CHECK-NEXT: float -> double: 1
+// CHECK-NEXT: float -> int: 1
 
-int mul(float a, float b) { return a + sum(a, b); }
+int mul(float a, float b) {
+    return a + sum(a, b);
+}
