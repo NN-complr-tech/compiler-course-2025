@@ -124,4 +124,4 @@ public:
 
 // Регистрация плагина
 static clang::FrontendPluginRegistry::Add<MyClangPlugin>
-    X("myClangPlugin", "Counts implicit type conversions");
+    X("ClangAST_1", "Counts implicit type conversions");
