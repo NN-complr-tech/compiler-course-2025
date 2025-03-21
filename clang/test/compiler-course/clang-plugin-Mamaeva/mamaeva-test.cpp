@@ -5,7 +5,7 @@
 // CHECK-NEXT: int -> float: 1
 
 double sum(int a, float b) {
-	return a + b;
+    return a + b;
 }
 
 // CHECK-NEXT: Function `mul`
@@ -14,7 +14,7 @@ double sum(int a, float b) {
 // CHECK-NEXT: float -> int: 1
 
 int mul(float a, float b) {
-	return a + sum(a, b);
+    return a + sum(a, b);
 }
 
 // CHECK: Function `convertTypes`
@@ -52,4 +52,32 @@ void convertToBool() {
     bool booleanValue = number;
 }
 
-// CHECK: Total implicit conversions: 10
+// CHECK: Function `userDefinedClasses`
+// CHECK-NEXT: MyClass -> int: 1
+// CHECK-NEXT: int -> MyClass: 1
+
+class MyClass {
+public:
+    MyClass(int value) : m_value(value) {}
+    operator int() const { return m_value; }
+private:
+    int m_value;
+};
+
+void userDefinedClasses() {
+    MyClass obj = 42; // int -> MyClass
+    int value = obj;  // MyClass -> int
+}
+
+// CHECK: Function `userDefinedEnums`
+// CHECK-NEXT: MyEnum -> int: 1
+// CHECK-NEXT: int -> MyEnum: 1
+
+enum MyEnum { A, B, C };
+
+void userDefinedEnums() {
+    MyEnum e = static_cast<MyEnum>(1); // int -> MyEnum
+    int value = e;                     // MyEnum -> int
+}
+
+// CHECK: Total implicit conversions: 14
