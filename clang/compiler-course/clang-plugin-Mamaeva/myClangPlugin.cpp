@@ -4,57 +4,77 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
-#include <string>
 #include <vector>
+#include <algorithm>
 
 namespace {
 
 class MyClangVisitor final : public clang::RecursiveASTVisitor<MyClangVisitor> {
 public:
-  explicit MyClangVisitor(clang::ASTContext *context) : Context(context) {}
+  explicit MyClangVisitor() = default;
 
-  bool VisitFunctionDecl(clang::FunctionDecl *func) {
-    currentFunction = func->getNameInfo().getName().getAsString();
-    if (conversions.find(currentFunction) == conversions.end()) {
-      functionOrder.push_back(currentFunction);
+  bool VisitFunctionDecl(clang::FunctionDecl *Func) {
+    CurrentFunction = Func->getNameInfo().getName().getAsString();
+    return true;
+  }
+
+  bool VisitVarDecl(clang::VarDecl *Var) {
+    if (!Var->getType()->isFloatingType() && !Var->getType()->isIntegerType()) {
+      return true;
+    }
+
+    if (Var->hasInit()) {
+      clang::Expr *Init = Var->getInit();
+      clang::QualType FromType = Init->getType();
+      clang::QualType ToType = Var->getType();
+
+      if (FromType != ToType) {
+        std::string FromTypeStr = FromType.getAsString();
+        std::string ToTypeStr = ToType.getAsString();
+
+        FromTypeStr = (FromTypeStr == "_Bool") ? "bool" : FromTypeStr;
+        ToTypeStr = (ToTypeStr == "_Bool") ? "bool" : ToTypeStr;
+
+        std::string Conversion = FromTypeStr + " -> " + ToTypeStr;
+        GlobalConversions.push_back(Conversion);
+      }
     }
     return true;
   }
 
-  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *cast) {
-    if (!cast || !cast->getSubExpr()) {
+  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Cast) {
+    clang::CastKind Kind = Cast->getCastKind();
+    if (Kind == clang::CK_NoOp || Kind == clang::CK_LValueToRValue || Kind == clang::CK_FunctionToPointerDecay) {
       return true;
     }
 
-    clang::QualType fromType = cast->getSubExpr()->getType();
-    clang::QualType toType = cast->getType();
+    clang::QualType FromType = Cast->getSubExpr()->getType();
+    clang::QualType ToType = Cast->getType();
 
-    if (fromType == toType) {
+    if (FromType == ToType) {
       return true;
     }
 
-    std::string fromTypeStr = fromType.getAsString();
-    std::string toTypeStr = toType.getAsString();
+    std::string FromTypeStr = FromType.getAsString();
+    std::string ToTypeStr = ToType.getAsString();
 
-    // Заменяем "_Bool" на "bool" для читаемости
-    fromTypeStr = (fromTypeStr == "_Bool") ? "bool" : fromTypeStr;
-    toTypeStr = (toTypeStr == "_Bool") ? "bool" : toTypeStr;
+    FromTypeStr = (FromTypeStr == "_Bool") ? "bool" : FromTypeStr;
+    ToTypeStr = (ToTypeStr == "_Bool") ? "bool" : ToTypeStr;
 
-    std::string conversion = fromTypeStr + " -> " + toTypeStr;
+    std::string Conversion = FromTypeStr + " -> " + ToTypeStr;
 
-    // Увеличиваем счетчик для данного преобразования в текущей функции
-    auto &convList = conversions[currentFunction];
-    bool found = false;
-    for (auto &entry : convList) {
-      if (entry.first == conversion) {
-        entry.second++;
-        found = true;
+    auto &ConvList = FunctionConversions[CurrentFunction];
+    bool Found = false;
+    for (auto &Entry : ConvList) {
+      if (Entry.first == Conversion) {
+        Entry.second++;
+        Found = true;
         break;
       }
     }
 
-    if (!found) {
-      convList.push_back({conversion, 1});
+    if (!Found) {
+      ConvList.push_back({Conversion, 1});
     }
 
     return true;
@@ -62,28 +82,38 @@ public:
 
   void PrintResults() {
     auto &os = llvm::outs();
-    for (const auto &funcName : functionOrder) {
-      os << "Function: " << funcName << "\n";
-      for (const auto &conversion : conversions[funcName]) {
-        os << "  " << conversion.first << ": " << conversion.second << "\n";
+
+    // Вывод глобальных преобразований
+    if (!GlobalConversions.empty()) {
+      os << "In testing\n";
+      for (const auto &Conv : GlobalConversions) {
+        os << Conv << ": 1\n";
+      }
+      os << "\n";
+    }
+
+    // Вывод преобразований в функциях
+    for (const auto &FuncEntry : FunctionConversions) {
+      os << "In function: " << FuncEntry.first << "\n";
+      for (const auto &ConvEntry : FuncEntry.second) {
+        os << ConvEntry.first << ": " << ConvEntry.second << "\n";
       }
       os << "\n";
     }
   }
 
 private:
-  clang::ASTContext *Context;
-  std::string currentFunction;
-  std::vector<std::string> functionOrder;
-  std::map<std::string, std::vector<std::pair<std::string, int>>> conversions;
+  std::string CurrentFunction;
+  std::vector<std::string> GlobalConversions;
+  std::map<std::string, std::vector<std::pair<std::string, int>>> FunctionConversions;
 };
 
 class MyClangConsumer final : public clang::ASTConsumer {
 public:
-  explicit MyClangConsumer(clang::ASTContext *context) : Visitor(context) {}
+  explicit MyClangConsumer() = default;
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    Visitor.TraverseDecl(context.getTranslationUnitDecl());
+  void HandleTranslationUnit(clang::ASTContext &Context) override {
+    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
     Visitor.PrintResults();
   }
 
@@ -93,13 +123,11 @@ private:
 
 class MyClangPlugin final : public clang::PluginASTAction {
 public:
-  std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<MyClangConsumer>(&ci.getASTContext());
+  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
+    return std::make_unique<MyClangConsumer>();
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &Args) override {
     return true;
   }
 };
