@@ -82,16 +82,18 @@ public:
     m_totalConversions++;
   }
 
-  void printStats(llvm::raw_ostream &OS) {
+void printStats(llvm::raw_ostream &OS) {
+    // Вывод результатов для функций в правильном порядке
     for (const auto &[func, convs] : m_functionStats) {
-      OS << "Function `" << func->getName() << "`\n";
-      for (const auto &[conv, num] : convs) {
-        OS << conv.first << " -> " << conv.second << ": " << num << "\n";
-      }
+        OS << "Function `" << func->getName() << "`\n";
+        for (const auto &[conv, num] : convs) {
+            OS << conv.first << " -> " << conv.second << ": " << num << "\n";
+        }
     }
+
+    // Вывод общего количества преобразований
     OS << "Total implicit conversions: " << m_totalConversions << "\n";
-  }
-};
+}
 
 class MyClangConsumer : public clang::ASTConsumer {
 
