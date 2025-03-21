@@ -17,7 +17,7 @@ public:
   bool VisitParamVarDecl(clang::ParmVarDecl *param) {
     if (!param->isUsed() && !param->hasAttr<clang::UnusedAttr>()) {
       clang::SourceLocation loc = param->getSourceRange().getBegin();
-      TheRewriter.InsertText(loc, "[[maybe_unused]] ", true, true);
+      TheRewriter.InsertText(loc, "[[maybe_unused]] ");
     }
     return true;
   }
@@ -25,7 +25,7 @@ public:
   bool VisitVarDecl(clang::VarDecl *var) {
     if (!var->isUsed() && !var->hasAttr<clang::UnusedAttr>()) {
       clang::SourceLocation loc = var->getSourceRange().getBegin();
-      TheRewriter.InsertText(loc, "[[maybe_unused]] ", true, true);
+      TheRewriter.InsertText(loc, "[[maybe_unused]] ");
     }
     return true;
   }
