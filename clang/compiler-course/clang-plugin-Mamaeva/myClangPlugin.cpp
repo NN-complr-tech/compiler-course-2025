@@ -3,9 +3,9 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
-#include <algorithm>
 #include <map>
 #include <vector>
+#include <algorithm>
 
 namespace {
 
@@ -19,33 +19,32 @@ public:
   }
 
   bool VisitVarDecl(clang::VarDecl *Var) {
-    if (!Var->getType()->isFloatingType() && !Var->getType()->isIntegerType()) {
+    if (Var->isLocalVarDecl() || !Var->hasInit()) {
       return true;
     }
 
-    if (Var->hasInit()) {
-      clang::Expr *Init = Var->getInit();
-      clang::QualType FromType = Init->getType();
-      clang::QualType ToType = Var->getType();
+    clang::QualType FromType = Var->getInit()->getType();
+    clang::QualType ToType = Var->getType();
 
-      if (FromType != ToType) {
-        std::string FromTypeStr = FromType.getAsString();
-        std::string ToTypeStr = ToType.getAsString();
-
-        FromTypeStr = (FromTypeStr == "_Bool") ? "bool" : FromTypeStr;
-        ToTypeStr = (ToTypeStr == "_Bool") ? "bool" : ToTypeStr;
-
-        std::string Conversion = FromTypeStr + " -> " + ToTypeStr;
-        GlobalConversions.push_back(Conversion);
-      }
+    if (FromType == ToType) {
+      return true;
     }
+
+    std::string FromTypeStr = FromType.getAsString();
+    std::string ToTypeStr = ToType.getAsString();
+
+    FromTypeStr = (FromTypeStr == "_Bool") ? "bool" : FromTypeStr;
+    ToTypeStr = (ToTypeStr == "_Bool") ? "bool" : ToTypeStr;
+
+    std::string Conversion = FromTypeStr + " -> " + ToTypeStr;
+    GlobalConversions.push_back(Conversion);
+
     return true;
   }
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Cast) {
     clang::CastKind Kind = Cast->getCastKind();
-    if (Kind == clang::CK_NoOp || Kind == clang::CK_LValueToRValue ||
-        Kind == clang::CK_FunctionToPointerDecay) {
+    if (Kind == clang::CK_NoOp || Kind == clang::CK_LValueToRValue || Kind == clang::CK_FunctionToPointerDecay) {
       return true;
     }
 
@@ -106,8 +105,7 @@ public:
 private:
   std::string CurrentFunction;
   std::vector<std::string> GlobalConversions;
-  std::map<std::string, std::vector<std::pair<std::string, int>>>
-      FunctionConversions;
+  std::map<std::string, std::vector<std::pair<std::string, int>>> FunctionConversions;
 };
 
 class MyClangConsumer final : public clang::ASTConsumer {
@@ -125,13 +123,11 @@ private:
 
 class MyClangPlugin final : public clang::PluginASTAction {
 public:
-  std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
+  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
     return std::make_unique<MyClangConsumer>();
   }
 
-  bool ParseArgs(const clang::CompilerInstance &CI,
-                 const std::vector<std::string> &Args) override {
+  bool ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &Args) override {
     return true;
   }
 };
