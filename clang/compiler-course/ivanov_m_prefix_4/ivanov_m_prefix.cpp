@@ -94,4 +94,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<NewPrefixAction>
-    X("Prefix_Plugin_Ivanov_Mikhail_FIIT1_ClangAST", "Plugin adds corresponding prefixes to static, local and global variables and parameters");
+    X("Prefix_Plugin_Ivanov_Mikhail_FIIT1_ClangAST", 
+      "Plugin adds corresponding prefixes to static, local and global variables and parameters");
