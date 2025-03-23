@@ -10,7 +10,7 @@ namespace {
 class NewPrefixVisitor final
     : public clang::RecursiveASTVisitor<NewPrefixVisitor> {
   clang::Rewriter &m_rewriter;
-  std::unordered_map<clang::VarDecl*, std::string> rewrittenDecl;
+  std::unordered_map<clang::VarDecl *, std::string> rewrittenDecl;
 
 public:
   explicit NewPrefixVisitor(clang::ASTContext *context,
@@ -101,6 +101,6 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<NewPrefixAction>
-    X("Prefix_Plugin_Ivanov_Mikhail_FIIT1_ClangAST", 
+    X("Prefix_Plugin_Ivanov_Mikhail_FIIT1_ClangAST",
       "Plugin adds corresponding prefixes to static, local and global "
       "variables and parameters");
