@@ -1,6 +1,10 @@
 name: Build LLVM
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/course-spring-2025' && github.event_name != 'merge_group' && !startsWith(github.ref, 'refs/heads/gh-readonly-queue') }}
+
 jobs:
   ubuntu-gcc-build:
     runs-on: ubuntu-latest
@@ -19,8 +23,9 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          max-size: 500M
-          key: ccache-${{ github.job }}
+          key: ${{ runner.os }}
+          create-symlink: true
+          max-size: 1.5G
       - name: Build
         run: |
           cmake -S llvm -B build \
@@ -54,8 +59,9 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          max-size: 500M
-          key: ccache-${{ github.job }}
+          key: ${{ runner.os }}
+          create-symlink: true
+          max-size: 1.5G
       - name: Build
         run: |
           cmake -S llvm -B build \
