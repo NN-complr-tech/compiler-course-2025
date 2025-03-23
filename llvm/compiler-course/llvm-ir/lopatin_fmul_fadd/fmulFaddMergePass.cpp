@@ -7,10 +7,10 @@
 
 namespace {
 struct FmulFaddMergePass : llvm::PassInfoMixin<FmulFaddMergePass> {
-  llvm::PreservedAnalyses run(llvm::Function &func,
+  llvm::PreservedAnalyses run(llvm::Function &Func,
                               llvm::FunctionAnalysisManager &) {
-    bool changed = false;
-    for (llvm::BasicBlock &bb : func) {
+    bool Changed = false;
+    for (llvm::BasicBlock &bb : Func) {
       std::vector<llvm::BinaryOperator *> toReplace;
       for (llvm::Instruction &inst : bb) {
         if (auto *fadd = llvm::dyn_cast<llvm::BinaryOperator>(&inst)) {
@@ -62,10 +62,10 @@ struct FmulFaddMergePass : llvm::PassInfoMixin<FmulFaddMergePass> {
           fmul->eraseFromParent();
         }
 
-        changed = true;
+        Changed = true;
       }
     }
-    return changed ? llvm::PreservedAnalyses::none()
+    return Changed ? llvm::PreservedAnalyses::none()
                    : llvm::PreservedAnalyses::all();
   }
   static bool isRequired() { return true; }
@@ -77,9 +77,9 @@ llvmGetPassPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "FmulFaddMergePass", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
+                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                  if (name == "FmulFaddMergePass") {
+                  if (Name == "FmulFaddMergePass") {
                     FPM.addPass(FmulFaddMergePass{});
                     return true;
                   }
