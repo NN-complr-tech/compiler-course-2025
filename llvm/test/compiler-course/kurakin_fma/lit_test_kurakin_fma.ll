@@ -17,6 +17,23 @@ entry:
   ret double %add
 }
 
+; CHECK: define dso_local noundef float @fma_floata(float noundef %a, float noundef %b, float noundef %c) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %0 = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
+; CHECK-NEXT: ret float %0
+; CHECK-NEXT: }
+
+; float fma_float(float a, float b, float c) {
+;     return a * b + c;
+; }
+
+define dso_local noundef float @fma_floata(float noundef %a, float noundef %b, float noundef %c) {
+entry:
+  %mul = fmul float %a, %b
+  %add = fadd float %mul, %c
+  ret float %add
+}
+
 
 ; CHECK: define dso_local noundef double @fam(double noundef %a, double noundef %b, double noundef %c) {
 ; CHECK-NEXT: entry:
@@ -94,4 +111,25 @@ entry:
   %add = fadd double %mul, %c
   %add2 = fadd double %mul, %add
   ret double %add2
+}
+
+; CHECK: define dso_local noundef double @fmasm(double noundef %a, double noundef %b, double noundef %c) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT:   %mul = fmul double %a, %b
+; CHECK-NEXT:   %0 = call double @llvm.fmuladd.f64(double %a, double %b, double %c)
+; CHECK-NEXT:   %sub = fsub double %0, %mul
+; CHECK-NEXT:   ret double %sub
+; CHECK-NEXT: }
+
+; double fmasm(double a, double b, double c) {
+;     double x = a * b;
+;     return x + c - x ;
+; }
+
+define dso_local noundef double @fmasm(double noundef %a, double noundef %b, double noundef %c) {
+entry:
+  %mul = fmul double %a, %b
+  %add = fadd double %mul, %c
+  %sub = fsub double %add, %mul
+  ret double %sub
 }
