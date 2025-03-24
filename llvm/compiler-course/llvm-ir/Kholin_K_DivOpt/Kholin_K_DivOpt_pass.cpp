@@ -14,8 +14,7 @@ namespace {
 void visitor(Function &F) {
   errs() << "Start processing function: " << F.getName() << "\n";
   for (auto &BB : F) { // function cycle block//
-    errs() << ">Start processing basic block"
-           << "\n";
+    errs() << ">Start processing basic block" << "\n";
     std::vector<BinaryOperator *> DivsToReplace;
     for (auto &I : BB) { // instruction cycle block
       if (auto *BinOp = dyn_cast<BinaryOperator>(&I)) {
@@ -69,8 +68,7 @@ void visitor(Function &F) {
       BinOp->eraseFromParent(); // remove old
       errs() << "Div instruction successfully removed!\n";
     }
-    errs() << ">End processing basic block"
-           << "\n";
+    errs() << ">End processing basic block" << "\n";
   }
   errs() << "End processing function: " << F.getName() << "\n";
 }
