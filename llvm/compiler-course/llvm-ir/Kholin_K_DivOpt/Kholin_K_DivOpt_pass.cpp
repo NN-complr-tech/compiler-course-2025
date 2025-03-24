@@ -90,7 +90,7 @@ llvm::PassPluginLibraryInfo getDivToShiftPluginInfo() {
             PB.registerPipelineParsingCallback(
                 [](StringRef Name, FunctionPassManager &FPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "div-to-shift") {
+                  if (Name == "div-opt-pass") {
                     FPM.addPass(DivOptPass());
                     return true;
                   }
