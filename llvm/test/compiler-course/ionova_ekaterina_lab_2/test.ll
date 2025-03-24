@@ -16,6 +16,7 @@ define dso_local noundef double @_Z2f1ddd(double noundef %0, double noundef %1, 
 ; CHECK-NEXT: ret double %fma
 
 
+
 ; double f2(double a, double b, double c, double d, double e) {
 ;     double result1 = a * b + c;
 ;     double result2 = d * e + result1;
