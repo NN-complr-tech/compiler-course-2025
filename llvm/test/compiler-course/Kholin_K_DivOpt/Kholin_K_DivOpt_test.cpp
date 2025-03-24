@@ -1,7 +1,3 @@
-//run ס ןמלמשü‏ opt
-//checks
-//ג .ll פאיכו
-
 #include <iostream>
 
 using namespace std;
