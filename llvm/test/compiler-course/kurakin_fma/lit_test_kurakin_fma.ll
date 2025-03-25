@@ -134,26 +134,27 @@ entry:
   ret double %sub
 }
 
-; CHECK: define dso_local noundef float @foo(float noundef %a, float noundef %b, float noundef %c, float noundef %d) {
+; CHECK: define dso_local noundef float @foo(float noundef %a, float noundef %b, float noundef %c) {
 ; CHECK-NEXT: entry:
-; CHECK-NEXT: %add = fadd float %a, %c
-; CHECK-NEXT: %add1 = fadd float %add, %d
-; CHECK-NEXT: %add2 = fadd float %add, %add1
-; CHECK-NEXT: ret float %add2
+; CHECK-NEXT: %mul = fmul float %a, %b
+; CHECK-NEXT: %0 = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
+; CHECK-NEXT: %div = fdiv float %0, %mul
+; CHECK-NEXT: %add1 = fadd float %div, 1.000000e+00
+; CHECK-NEXT: ret float %add1
 ; CHECK-NEXT: }
 
-; float foo(float a, float b, float c, float d) {
-;     float res = 0.f;
-;     float tmp = a * b;
-;     tmp = a + c;
-;     res = tmp+ d;
-;     return res + tmp;
-; }  
+; float foo(float a, float b, float c) {
+;     float t1 = a * b;
+;     float t2 = t1 + c;
+;     float t3 = t2 / t1 + 1;
+;     return t3;
+; }
 
-define dso_local noundef float @foo(float noundef %a, float noundef %b, float noundef %c, float noundef %d) {
+define dso_local noundef float @foo(float noundef %a, float noundef %b, float noundef %c) {
 entry:
-  %add = fadd float %a, %c
-  %add1 = fadd float %add, %d
-  %add2 = fadd float %add, %add1
-  ret float %add2
+  %mul = fmul float %a, %b
+  %add = fadd float %mul, %c
+  %div = fdiv float %add, %mul
+  %add1 = fadd float %div, 1.000000e+00
+  ret float %add1
 }
