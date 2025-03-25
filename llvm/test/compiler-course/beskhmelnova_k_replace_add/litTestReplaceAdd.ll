@@ -22,3 +22,25 @@ entry:
   %sum = add i32 %x, %y
   ret i32 %sum
 }
+
+; CHECK: define i32 @sub(i32 %a, i32 %b)
+; CHECK: %result = sub i32 %a, %b
+; CHECK: ret i32 %result
+
+; CHECK: define i32 @boo(i32 %x, i32 %y)
+; CHECK: call i32 @sub(i32 %x, i32 %y)
+; CHECK: ret i32 %sum
+
+; CHECK-NOT: sub i32
+
+define i32 @sub(i32 %a, i32 %b) {
+entry:
+  %result = sub i32 %a, %b
+  ret i32 %result
+}
+
+define i32 @boo(i32 %x, i32 %y) {
+entry:
+  %sum = sub i32 %x, %y
+  ret i32 %sum
+}
