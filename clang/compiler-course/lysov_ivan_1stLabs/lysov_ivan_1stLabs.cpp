@@ -10,7 +10,7 @@ namespace {
 class UnusedVarMyVisitor final
     : public clang::RecursiveASTVisitor<UnusedVarMyVisitor> {
 public:
-  explicit UnusedVarMyVisitor(clang::ASTContext *ctx, clang::Rewriter &rwrt)
+  UnusedVarMyVisitor(clang::ASTContext *ctx, clang::Rewriter &rwrt)
       : context(ctx), rewriter(rwrt) {}
   bool VisitVarDecl(clang::VarDecl *var) {
     if (!var->isUsed() && !var->hasAttr<clang::UnusedAttr>()) {
@@ -35,7 +35,7 @@ private:
 
 class UnusedVarConsumer final : public clang::ASTConsumer {
 public:
-  explicit UnusedVarConsumer(clang::ASTContext *ctx, clang::Rewriter &rwrt)
+  UnusedVarConsumer(clang::ASTContext *ctx, clang::Rewriter &rwrt)
       : Label(ctx, rwrt) {}
 
   void HandleTranslationUnit(clang::ASTContext &ctx) override {
