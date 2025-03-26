@@ -9,21 +9,22 @@
 
 namespace {
 struct ReplaceAddPass : llvm::PassInfoMixin<ReplaceAddPass> {
+  llvm::SmallDenseMap<unsigned, std::string, 4> opToFunc = {
+      {llvm::Instruction::Add, "add"},
+      {llvm::Instruction::Sub, "sub"},
+      {llvm::Instruction::Mul, "mul"},
+      {llvm::Instruction::SDiv, "div"}};
+
   llvm::PreservedAnalyses run(llvm::Function &F,
                               llvm::FunctionAnalysisManager &) {
-    if (F.getName() == "add" || F.getName() == "sub" || F.getName() == "mul" ||
-        F.getName() == "div") {
+    if (llvm::any_of(opToFunc, [&](const auto &entry) {
+          return F.getName() == entry.second;
+        })) {
       return llvm::PreservedAnalyses::all();
     }
 
     bool changed = false;
     llvm::Module *M = F.getParent();
-
-    std::map<unsigned, std::string> opToFunc = {
-        {llvm::Instruction::Add, "add"},
-        {llvm::Instruction::Sub, "sub"},
-        {llvm::Instruction::Mul, "mul"},
-        {llvm::Instruction::SDiv, "div"}};
 
     std::map<unsigned, llvm::Function *> funcMap;
     for (llvm::Function &Func : M->functions()) {
