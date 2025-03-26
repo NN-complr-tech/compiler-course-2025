@@ -58,7 +58,7 @@ public:
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *declaration) {
     auto &os = llvm::outs();
     os << declaration->getNameAsString()
-       << (declaration->isStruct() ? "(struct" 
+       << (declaration->isStruct()  ? "(struct" 
            : declaration->isUnion() ? "(union" 
                                     : "(class")
        << (declaration->isTemplated() ? "|template)" : ")") << '\n';
