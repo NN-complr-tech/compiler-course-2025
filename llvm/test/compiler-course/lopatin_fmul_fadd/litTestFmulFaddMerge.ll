@@ -24,6 +24,8 @@ entry:
 }
 
 ; CHECK-LABEL: @recursiveTest
+; CHECK: fadd float %B, %C
+; CHECK: fadd float %A, %B
 ; CHECK: call float @llvm.fmuladd.f32
 define dso_local noundef float @recursiveTest(float %A, float %B, float %C) {
 entry:
@@ -34,16 +36,30 @@ entry:
   ret float %add2
 }
 
+; CHECK-LABEL: @foo
+; CHECK: call float @llvm.fmuladd.f32(float %A, float %B, float %C)
+; CHECK: call float @llvm.fmuladd.f32(float %A, float %B, float 1.000000e+00)
+; CHECK: fdiv float %0, %1
+; CHECK-NOT: fmul float
+; CHECK-NOT: fadd float
+define float @foo(float %A, float %B, float %C) {
+entry:
+  %mul = fmul float %A, %B
+  %add = fadd float %mul, %C
+  %add1 = fadd float %mul, 1.000000e+00
+  %div = fdiv float %add, %add1
+  ret float %div
+}
+
 ; CHECK-LABEL: @noFusionTest
-; CHECK: fmul float %x, %y
-; CHECK: fmul float %y, %z
+; CHECK: fmul float %A, %B
+; CHECK: fmul float %B, %C
 ; CHECK: fadd float %mul1, %mul2
 ; CHECK-NOT: call float @llvm.fmuladd.f32
-define float @noFusionTest(float %x, float %y, float %z) {
+define float @noFusionTest(float %A, float %B, float %C) {
 entry:
-  %mul1 = fmul float %x, %y
-  %mul2 = fmul float %y, %z
+  %mul1 = fmul float %A, %B
+  %mul2 = fmul float %B, %C
   %sum = fadd float %mul1, %mul2
   ret float %sum
 }
-             

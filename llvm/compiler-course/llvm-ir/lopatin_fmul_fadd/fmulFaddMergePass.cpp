@@ -28,8 +28,8 @@ struct FmulFaddMergePass : llvm::PassInfoMixin<FmulFaddMergePass> {
             llvm::Value *Op1 = FAdd->getOperand(1);
 
             auto CheckOperand =
-                [&](llvm::Value *Operand,
-                    llvm::Value *OtherOperand) -> llvm::BinaryOperator * {
+                [](llvm::Value *Operand,
+                   llvm::Value *OtherOperand) -> llvm::BinaryOperator * {
               if (auto *FMul = llvm::dyn_cast<llvm::BinaryOperator>(Operand)) {
                 if (FMul->getOpcode() == llvm::Instruction::FMul) {
                   // checking that 2nd operand is NOT fmul
