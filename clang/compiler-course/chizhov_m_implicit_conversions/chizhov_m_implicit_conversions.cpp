@@ -11,16 +11,17 @@ namespace {
 class ImplicitCastVisitor final
     : public clang::RecursiveASTVisitor<ImplicitCastVisitor> {
 public:
-  explicit ImplicitCastVisitor() = default;
-
   void Conversions(const clang::QualType &FromType,
                    const clang::QualType &ToType) {
-    std::string fromTypeStr = FromType.getAsString();
-    std::string toTypeStr = ToType.getAsString();
-
-    if (fromTypeStr == toTypeStr) {
+    if (FromType == ToType) {
       return;
     }
+
+    clang::QualType canonicalFromType = FromType.getCanonicalType();
+    clang::QualType canonicalToType = ToType.getCanonicalType();
+
+    std::string fromTypeStr = canonicalFromType.getAsString();
+    std::string toTypeStr = canonicalToType.getAsString();
 
     std::string conversion = fromTypeStr + " -> " + toTypeStr;
 
@@ -28,13 +29,13 @@ public:
     for (auto &entry : converList) {
       if (entry.funcName == currentFunction) {
         bool foundConversion = false;
-        for (auto &convEntry : entry.conv) {
-          if (convEntry.first == conversion) {
-            convEntry.second++;
-            foundConversion = true;
-            break;
+          for (auto &[conversionStr, count] : entry.conv) {
+            if (conversionStr == conversion) {
+              count++;
+              foundConversion = true;
+              break;
+            }
           }
-        }
 
         if (!foundConversion) {
           entry.conv.push_back({conversion, 1});
@@ -103,8 +104,6 @@ private:
 
 class ImplicitCastConsumer final : public clang::ASTConsumer {
 public:
-  explicit ImplicitCastConsumer() = default;
-
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
     Visitor.PrintResults();
