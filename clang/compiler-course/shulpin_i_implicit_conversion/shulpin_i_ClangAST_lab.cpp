@@ -4,9 +4,8 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
-#include <tuple>
+#include <numeric>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace {
@@ -37,16 +36,14 @@ public:
     std::string FromStr = FromType.getAsString();
     std::string ToStr = ToType.getAsString();
 
-    if (TypeComparisonCache.count(FromStr + ToStr) == 0) {
-      TypeComparisonCache[FromStr + ToStr] = (FromType == ToType);
-    }
+    TypeComparisonCache.try_emplace(FromStr + ToStr, FromType == ToType);
 
     if (TypeComparisonCache[FromStr + ToStr]) {
       return true;
     }
 
-    CastInfo.emplace_back(FunctionToCheck, std::move(FromStr),
-                          std::move(ToStr));
+    CastInfo.emplace_back(CastAgrigation{FunctionToCheck, std::move(FromStr),
+                                         std::move(ToStr), 1});
     return true;
   }
 
@@ -74,37 +71,59 @@ public:
 
       if (!FromType.isNull() && !ToType.isNull() &&
           FromType.getTypePtr() != ToType.getTypePtr()) {
-        CastInfo.emplace_back(FunctionToCheck, FromType.getAsString(),
-                              ToType.getAsString());
+
+        std::string FromStr = FromType.getAsString();
+        std::string ToStr = ToType.getAsString();
+
+        auto it = std::find_if(
+            CastInfo.begin(), CastInfo.end(), [&](const CastAgrigation &entry) {
+              return entry.FuncName == FunctionToCheck &&
+                     entry.FromType == FromStr && entry.ToType == ToStr;
+            });
+
+        if (it != CastInfo.end()) {
+          it->CastNum++;
+        } else {
+          CastInfo.emplace_back(CastAgrigation{
+              FunctionToCheck, std::move(FromStr), std::move(ToStr), 1});
+        }
       }
     }
     return true;
   }
 
-  std::string getCastDescription(const std::string &from,
-                                 const std::string &to) {
-    return from + " -> " + to;
-  }
-
   void CastsResult() {
     std::string LastFunction;
-    for (const auto &Entry : CastInfo) {
-      const auto &FuncName = std::get<0>(Entry);
-      const auto &FromType = std::get<1>(Entry);
-      const auto &ToType = std::get<2>(Entry);
 
-      if (FuncName != LastFunction) {
-        llvm::outs() << "Function " << FuncName << "\n";
-        LastFunction = FuncName;
+    std::size_t totalCasts =
+        std::accumulate(CastInfo.begin(), CastInfo.end(), 0,
+                        [](std::size_t sum, const CastAgrigation &cast) {
+                          return sum + cast.CastNum;
+                        });
+
+    for (const auto &Entry : CastInfo) {
+      if (Entry.FuncName != LastFunction) {
+        llvm::outs() << "Function " << Entry.FuncName << "\n";
+        LastFunction = Entry.FuncName;
       }
-      llvm::outs() << getCastDescription(FromType, ToType) << ": 1\n";
+      llvm::outs() << Entry.getCastDescription() << "\n";
     }
-    llvm::outs() << "Summary of total conversions: " << CastInfo.size() << "\n";
+    llvm::outs() << "Summary of total conversions: " << totalCasts << "\n";
   }
 
 private:
+  struct CastAgrigation {
+    std::string FuncName;
+    std::string FromType;
+    std::string ToType;
+    std::size_t CastNum;
+
+    std::string getCastDescription() const {
+      return FromType + " -> " + ToType + ": " + std::to_string(CastNum);
+    }
+  };
   std::string FunctionToCheck;
-  std::vector<std::tuple<std::string, std::string, std::string>> CastInfo;
+  std::vector<CastAgrigation> CastInfo;
 };
 
 class ImplicitCastConsumer final : public clang::ASTConsumer {

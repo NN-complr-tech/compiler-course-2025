@@ -69,4 +69,22 @@ X createX() {
     return 10;
 }
 
-// CHECK: Summary of total conversions: 13
+// CHECK: Function multCast
+// CHECK-NEXT: int -> float: 5
+// CHECK-NEXT: float -> int: 5
+
+void multCast() {
+    float f1 = 1;
+    float f2 = 2;
+    float f3 = 3;
+    float f4 = 4;
+    float f5 = 5;
+
+    int i1 = f1;
+    int i2 = f2;
+    int i3 = f3;
+    int i4 = f4;
+    int i5 = f5;
+}
+
+// CHECK: Summary of total conversions: 23
