@@ -20,28 +20,23 @@ struct FmulFaddMergePass : llvm::PassInfoMixin<FmulFaddMergePass> {
     for (llvm::BasicBlock &BB : Func) {
       std::vector<ReplacementStruct> ToReplace;
 
-      // 1st pass, collecting info about replacements
+      auto CheckOperand =
+          [](llvm::Value *Operand,
+             llvm::Value *OtherOperand) -> llvm::BinaryOperator * {
+        if (auto *FMul = llvm::dyn_cast<llvm::BinaryOperator>(Operand)) {
+          if (FMul->getOpcode() == llvm::Instruction::FMul) {
+            return FMul;
+          }
+        }
+        return nullptr;
+      };
+
+      // 1st pass: Collect replacements
       for (llvm::Instruction &Inst : BB) {
         if (auto *FAdd = llvm::dyn_cast<llvm::BinaryOperator>(&Inst)) {
           if (FAdd->getOpcode() == llvm::Instruction::FAdd) {
             llvm::Value *Op0 = FAdd->getOperand(0);
             llvm::Value *Op1 = FAdd->getOperand(1);
-
-            auto CheckOperand =
-                [](llvm::Value *Operand,
-                   llvm::Value *OtherOperand) -> llvm::BinaryOperator * {
-              if (auto *FMul = llvm::dyn_cast<llvm::BinaryOperator>(Operand)) {
-                if (FMul->getOpcode() == llvm::Instruction::FMul) {
-                  // checking that 2nd operand is NOT fmul
-                  if (!llvm::isa<llvm::BinaryOperator>(OtherOperand) ||
-                      llvm::cast<llvm::BinaryOperator>(OtherOperand)
-                              ->getOpcode() != llvm::Instruction::FMul) {
-                    return FMul;
-                  }
-                }
-              }
-              return nullptr;
-            };
 
             if (auto *FMul = CheckOperand(Op0, Op1)) {
               ToReplace.push_back({FAdd, FMul, Op1});
