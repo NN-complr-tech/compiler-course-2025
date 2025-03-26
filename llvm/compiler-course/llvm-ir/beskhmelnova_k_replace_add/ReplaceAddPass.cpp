@@ -39,9 +39,7 @@ struct ReplaceAddPass : llvm::PassInfoMixin<ReplaceAddPass> {
     }
 
     for (llvm::BasicBlock &BB : F) {
-      for (auto It = BB.begin(); It != BB.end();) {
-        llvm::Instruction &I = *It++;
-
+      for (llvm::Instruction &I : llvm::make_early_inc_range(BB)) {
         if (auto *binOp = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
           auto it = funcMap.find(binOp->getOpcode());
           if (it != funcMap.end()) {
