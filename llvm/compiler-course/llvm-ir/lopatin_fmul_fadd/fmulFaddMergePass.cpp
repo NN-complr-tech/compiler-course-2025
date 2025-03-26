@@ -10,64 +10,71 @@ struct FmulFaddMergePass : llvm::PassInfoMixin<FmulFaddMergePass> {
   llvm::PreservedAnalyses run(llvm::Function &Func,
                               llvm::FunctionAnalysisManager &) {
     bool Changed = false;
-    for (llvm::BasicBlock &bb : Func) {
-      std::vector<llvm::BinaryOperator *> toReplace;
-      for (llvm::Instruction &inst : bb) {
-        if (auto *fadd = llvm::dyn_cast<llvm::BinaryOperator>(&inst)) {
-          if (fadd->getOpcode() == llvm::Instruction::FAdd) {
-            if (auto *fmul =
-                    llvm::dyn_cast<llvm::BinaryOperator>(fadd->getOperand(0))) {
-              if (fmul->getOpcode() == llvm::Instruction::FMul) {
-                toReplace.push_back(fadd);
+
+    struct ReplacementStruct {
+      llvm::BinaryOperator *FAdd;
+      llvm::BinaryOperator *FMul;
+      llvm::Value *ThirdOperand;
+    };
+
+    for (llvm::BasicBlock &BB : Func) {
+      std::vector<ReplacementStruct> ToReplace;
+
+      // 1st pass, collecting info about replacements
+      for (llvm::Instruction &Inst : BB) {
+        if (auto *FAdd = llvm::dyn_cast<llvm::BinaryOperator>(&Inst)) {
+          if (FAdd->getOpcode() == llvm::Instruction::FAdd) {
+            llvm::Value *Op0 = FAdd->getOperand(0);
+            llvm::Value *Op1 = FAdd->getOperand(1);
+
+            auto CheckOperand =
+                [&](llvm::Value *Operand,
+                    llvm::Value *OtherOperand) -> llvm::BinaryOperator * {
+              if (auto *FMul = llvm::dyn_cast<llvm::BinaryOperator>(Operand)) {
+                if (FMul->getOpcode() == llvm::Instruction::FMul) {
+                  // checking that 2nd operand is NOT fmul
+                  if (!llvm::isa<llvm::BinaryOperator>(OtherOperand) ||
+                      llvm::cast<llvm::BinaryOperator>(OtherOperand)
+                              ->getOpcode() != llvm::Instruction::FMul) {
+                    return FMul;
+                  }
+                }
               }
-            } else if (auto *fmul = llvm::dyn_cast<llvm::BinaryOperator>(
-                           fadd->getOperand(1))) {
-              if (fmul->getOpcode() == llvm::Instruction::FMul) {
-                toReplace.push_back(fadd);
-              }
+              return nullptr;
+            };
+
+            if (auto *FMul = CheckOperand(Op0, Op1)) {
+              ToReplace.push_back({FAdd, FMul, Op1});
+            } else if (auto *FMul = CheckOperand(Op1, Op0)) {
+              ToReplace.push_back({FAdd, FMul, Op0});
             }
           }
         }
       }
 
-      for (auto *fadd : toReplace) {
-        llvm::BinaryOperator *fmul = nullptr;
-        llvm::Value *thirdOp = nullptr;
+      // 2nd pass, replacing
+      for (const auto &Info : ToReplace) {
+        llvm::IRBuilder<> Builder(Info.FAdd);
+        llvm::Value *FMulAdd = Builder.CreateIntrinsic(
+            llvm::Intrinsic::fmuladd, Info.FMul->getType(),
+            {Info.FMul->getOperand(0), Info.FMul->getOperand(1),
+             Info.ThirdOperand});
 
-        if (auto *op =
-                llvm::dyn_cast<llvm::BinaryOperator>(fadd->getOperand(0))) {
-          if (op->getOpcode() == llvm::Instruction::FMul) {
-            fmul = op;
-            thirdOp = fadd->getOperand(1);
-          }
-        } else if (auto *op = llvm::dyn_cast<llvm::BinaryOperator>(
-                       fadd->getOperand(1))) {
-          if (op->getOpcode() == llvm::Instruction::FMul) {
-            fmul = op;
-            thirdOp = fadd->getOperand(0);
-          }
-        }
+        Info.FAdd->replaceAllUsesWith(FMulAdd);
+        Info.FAdd->eraseFromParent();
 
-        if (!fmul || !thirdOp) {
-          continue;
-        }
-
-        llvm::IRBuilder<> leBuilder(fadd);
-        llvm::Value *fmulfaddmerged = leBuilder.CreateIntrinsic(
-            llvm::Intrinsic::fmuladd, fmul->getType(),
-            {fmul->getOperand(0), fmul->getOperand(1), thirdOp});
-        fadd->replaceAllUsesWith(fmulfaddmerged);
-        fadd->eraseFromParent();
-        if (fmul->use_empty()) {
-          fmul->eraseFromParent();
+        if (Info.FMul->use_empty()) {
+          Info.FMul->eraseFromParent();
         }
 
         Changed = true;
       }
     }
+
     return Changed ? llvm::PreservedAnalyses::none()
                    : llvm::PreservedAnalyses::all();
   }
+
   static bool isRequired() { return true; }
 };
 } // namespace
