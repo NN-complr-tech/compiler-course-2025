@@ -60,7 +60,7 @@ public:
     os << declaration->getNameAsString()
        << (declaration->isStruct() ? "(struct" 
            : declaration->isUnion() ? "(union" 
-           : "(class")
+                                    : "(class")
        << (declaration->isTemplated() ? "|template)" : ")") << '\n';
 
     if (!declaration->bases().empty()) {
