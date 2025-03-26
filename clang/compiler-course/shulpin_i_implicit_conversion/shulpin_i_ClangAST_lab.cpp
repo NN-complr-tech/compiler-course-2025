@@ -12,7 +12,7 @@ namespace {
 class ImplicitVisitor final
     : public clang::RecursiveASTVisitor<ImplicitVisitor> {
 public:
-  ImplicitVisitor() noexcept {}
+  ImplicitVisitor() = default;
 
   bool VisitFunctionDecl(clang::FunctionDecl *Func) {
     FunctionToCheck = Func->getNameInfo().getName().getAsString();
@@ -128,7 +128,7 @@ private:
 
 class ImplicitCastConsumer final : public clang::ASTConsumer {
 public:
-  explicit ImplicitCastConsumer() noexcept {}
+  ImplicitCastConsumer() = default;
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
