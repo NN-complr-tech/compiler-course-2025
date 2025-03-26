@@ -7,11 +7,12 @@
 namespace {
 
 class FmuladdPass : public llvm::PassInfoMixin<FmuladdPass> {
- private:
+private:
   bool changed = false;
 
   bool ProcessFAdd(llvm::BinaryOperator *add_op) {
-    if (auto *mul_op = llvm::dyn_cast<llvm::BinaryOperator>(add_op->getOperand(0));
+    if (auto *mul_op =
+            llvm::dyn_cast<llvm::BinaryOperator>(add_op->getOperand(0));
         mul_op && mul_op->getOpcode() == llvm::Instruction::FMul) {
       ReplaceWithFMA(add_op, mul_op);
       changed = true;
@@ -21,9 +22,9 @@ class FmuladdPass : public llvm::PassInfoMixin<FmuladdPass> {
 
   void ReplaceWithFMA(llvm::BinaryOperator *add, llvm::BinaryOperator *mul) {
     llvm::IRBuilder<> irb(add);
-    auto fma = irb.CreateIntrinsic(llvm::Intrinsic::fmuladd,
-                                  {mul->getOperand(0)->getType()},
-                                  {mul->getOperand(0), mul->getOperand(1), add->getOperand(1)});
+    auto fma = irb.CreateIntrinsic(
+        llvm::Intrinsic::fmuladd, {mul->getOperand(0)->getType()},
+        {mul->getOperand(0), mul->getOperand(1), add->getOperand(1)});
 
     add->replaceAllUsesWith(fma);
     add->eraseFromParent();
@@ -32,9 +33,9 @@ class FmuladdPass : public llvm::PassInfoMixin<FmuladdPass> {
     }
   }
 
- public:
+public:
   llvm::PreservedAnalyses run(llvm::Function &function,
-                               llvm::FunctionAnalysisManager &) {
+                              llvm::FunctionAnalysisManager &) {
     for (llvm::BasicBlock &basic_block : function) {
       for (auto it = basic_block.begin(); it != basic_block.end();) {
         llvm::Instruction *instruction = &*(it++);
@@ -51,15 +52,14 @@ class FmuladdPass : public llvm::PassInfoMixin<FmuladdPass> {
   }
 };
 
-}  // namespace
+} // namespace
 
 llvm::PassPluginLibraryInfo GetPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "FmuladdPass", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
-                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>)
-                    -> bool {
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
                   if (name == "FmuladdPass") {
                     FPM.addPass(FmuladdPass{});
                     return true;
