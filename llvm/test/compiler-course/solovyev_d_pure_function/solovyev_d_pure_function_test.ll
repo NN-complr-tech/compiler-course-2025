@@ -1,4 +1,4 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/PureFunctionPass_Solovyev_Danila_FIIT3_LLVM_IR.so -passes="PureFunctionPass" -S %s | FileCheck %s 
+; RUN: opt -load-pass-plugin %llvmshlibdir/PureFunctionPass_Solovyev_Danila_FIIT3_LLVM_IR%pluginext -passes="PureFunctionPass" -S %s | FileCheck %s 
 
 @g_value = external local_unnamed_addr global float, align 4
 
