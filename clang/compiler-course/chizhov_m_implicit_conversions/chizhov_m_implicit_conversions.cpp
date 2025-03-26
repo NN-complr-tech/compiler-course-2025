@@ -29,13 +29,13 @@ public:
     for (auto &entry : converList) {
       if (entry.funcName == currentFunction) {
         bool foundConversion = false;
-          for (auto &[conversionStr, count] : entry.conv) {
-            if (conversionStr == conversion) {
-              count++;
-              foundConversion = true;
-              break;
-            }
+        for (auto &[conversionStr, count] : entry.conv) {
+          if (conversionStr == conversion) {
+            count++;
+            foundConversion = true;
+            break;
           }
+        }
 
         if (!foundConversion) {
           entry.conv.push_back({conversion, 1});
