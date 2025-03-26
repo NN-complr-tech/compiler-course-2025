@@ -51,12 +51,12 @@ entry:
   ret float %div
 }
 
-; CHECK-LABEL: @noFusionTest
+; CHECK-LABEL: @negativeTest
 ; CHECK: fmul float %A, %B
 ; CHECK: fmul float %B, %C
 ; CHECK: fadd float %mul1, %mul2
 ; CHECK-NOT: call float @llvm.fmuladd.f32
-define float @noFusionTest(float %A, float %B, float %C) {
+define float @negativeTest(float %A, float %B, float %C) {
 entry:
   %mul1 = fmul float %A, %B
   %mul2 = fmul float %B, %C
