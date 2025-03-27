@@ -11,13 +11,10 @@ struct FMAPass : llvm::PassInfoMixin<FMAPass> {
     llvm::PreservedAnalyses out = llvm::PreservedAnalyses::all();
 
     for (llvm::BasicBlock &basic_block : func) {
-      for (auto start = basic_block.begin(), end = basic_block.end();
-           start != end;) {
-        llvm::Instruction *instruction = &*start;
-        ++start;
-
+      for (llvm::Instruction &instruction :
+           llvm::make_early_inc_range(basic_block)) {
         if (llvm::BinaryOperator *add =
-                llvm::dyn_cast<llvm::BinaryOperator>(instruction)) {
+                llvm::dyn_cast<llvm::BinaryOperator>(&instruction)) {
           if (add->getOpcode() == llvm::Instruction::FAdd) {
 
             if (llvm::BinaryOperator *mul =
