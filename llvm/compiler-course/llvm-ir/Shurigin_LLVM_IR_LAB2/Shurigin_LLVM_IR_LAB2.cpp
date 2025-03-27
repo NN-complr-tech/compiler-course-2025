@@ -6,8 +6,6 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
-using namespace llvm;
-
 namespace {
 
 static bool isPowerOfTwo(int64_t n) {
@@ -32,7 +30,7 @@ struct DivisionToShiftPass : PassInfoMixin<DivisionToShiftPass> {
     bool changed = false;
 
     for (auto &BB : F) {
-      std::vector<Instruction *> toReplace;
+      llvm::SmallVector<Instruction *> toReplace;
 
       for (auto &I : BB) {
         if (auto *BO = dyn_cast<BinaryOperator>(&I)) {
