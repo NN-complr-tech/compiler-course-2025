@@ -1,3 +1,4 @@
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
@@ -5,7 +6,6 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/ADT/SmallVector.h"
 
 namespace {
 
@@ -27,7 +27,8 @@ static unsigned getLog2(int64_t n) {
 }
 
 struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
-  llvm::PreservedAnalyses run(llvm::Function &F, llvm::FunctionAnalysisManager &) {
+  llvm::PreservedAnalyses run(llvm::Function &F,
+                              llvm::FunctionAnalysisManager &) {
     bool changed = false;
 
     for (auto &BB : F) {
@@ -37,7 +38,8 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
         if (auto *BO = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
           if (BO->getOpcode() == llvm::Instruction::SDiv ||
               BO->getOpcode() == llvm::Instruction::UDiv) {
-            if (auto *C = llvm::dyn_cast<llvm::ConstantInt>(BO->getOperand(1))) {
+            if (auto *C =
+                    llvm::dyn_cast<llvm::ConstantInt>(BO->getOperand(1))) {
               int64_t divisor = C->getSExtValue();
 
               if (divisor == 1) {
@@ -57,10 +59,12 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
 
                 if (BO->getOpcode() == llvm::Instruction::SDiv) {
                   ShiftResult = Builder.CreateAShr(
-                      BO->getOperand(0), llvm::ConstantInt::get(C->getType(), shift));
+                      BO->getOperand(0), 
+                      llvm::ConstantInt::get(C->getType(), shift));
                 } else {
                   ShiftResult = Builder.CreateLShr(
-                      BO->getOperand(0), llvm::ConstantInt::get(C->getType(), shift));
+                      BO->getOperand(0), 
+                      llvm::ConstantInt::get(C->getType(), shift));
                 }
 
                 if (divisor < 0) {
@@ -82,7 +86,8 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
       }
     }
 
-    return changed ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
+    return changed ? llvm::PreservedAnalyses::none() 
+                   : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
