@@ -1,6 +1,6 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/FmuladdPass_Chistov_Alexey_FIIT1_LLVM_IR%pluginext -passes=FmuladdPass -S %s | FileCheck %s
 
-; a+b (test checks that no transformation is applied for a simple addition operation)
+; a+b(test checks that no transformation is applied for a simple addition operation)
 ; CHECK-LABEL: define dso_local noundef double @simple_sum(double noundef %0, double noundef %1) {
 ; CHECK-NEXT: entry:
 ; CHECK-NEXT: %add = fadd double %0, %1
@@ -13,19 +13,19 @@ entry:
   ret double %add
 }
 
-; a * b(separately) + c (test where optimization is not applied)
-; CHECK-LABEL: define dso_local noundef double @no_fma_separate(double noundef %a, double noundef %b, double noundef %c) {
+; (a + b) * c (test checks that no transformation is applied when addition occurs before multiplication)
+; CHECK-LABEL: define dso_local noundef double @no_optimization(double noundef %0, double noundef %1, double noundef %2) {
 ; CHECK-NEXT: entry:
-; CHECK-NEXT: %mul = fmul double %a, %b
-; CHECK-NEXT: %add = fadd double %c, %mul
-; CHECK-NEXT: ret double %add
+; CHECK-NEXT: %sum = fadd double %0, %1
+; CHECK-NEXT: %mul = fmul double %sum, %2
+; CHECK-NEXT: ret double %mul
 ; CHECK-NEXT: }
 
-define dso_local noundef double @no_fma_separate(double noundef %a, double noundef %b, double noundef %c) {
+define dso_local noundef double @no_optimization(double noundef %0, double noundef %1, double noundef %2) {
 entry:
-  %mul = fmul double %a, %b
-  %add = fadd double %c, %mul
-  ret double %add
+  %sum = fadd double %0, %1
+  %mul = fmul double %sum, %2
+  ret double %mul
 }
 
 ; a * b + c
@@ -89,4 +89,25 @@ entry:
   %add2 = fadd double %mul2, %z
   %sum = fadd double %add1, %add2
   ret double %sum
+}
+
+; float fmax2(float a, float b, float c) {
+;   float x1 = a * b;
+;   float x2 = x1 + c;
+;   float x3 = x1 + x2;
+;   return x3;
+; }
+; CHECK-LABEL: define dso_local noundef float @review(float noundef %a, float noundef %b, float noundef %c) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %0 = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
+; CHECK-NEXT: %1 = call float @llvm.fmuladd.f32(float %a, float %b, float %0)
+; CHECK-NEXT: ret float %1
+; CHECK-NEXT: }
+
+define dso_local noundef float @review(float noundef %a, float noundef %b, float noundef %c) {
+entry:
+  %x1 = fmul float %a, %b
+  %x2 = fadd float %x1, %c
+  %add1 = fadd float %x1, %x2
+  ret float %add1
 }
