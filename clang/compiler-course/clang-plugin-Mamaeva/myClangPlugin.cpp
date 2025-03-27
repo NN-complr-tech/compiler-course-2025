@@ -83,44 +83,42 @@ public:
   }
 
   void printStats(llvm::raw_ostream &OS) {
-    // Вывод результатов для функций в правильном порядке
     for (const auto &[func, convs] : m_functionStats) {
       OS << "Function `" << func->getName() << "`\n";
       for (const auto &[conv, num] : convs) {
         OS << conv.first << " -> " << conv.second << ": " << num << "\n";
       }
     }
-
-    // Вывод общего количества преобразований
     OS << "Total implicit conversions: " << m_totalConversions << "\n";
   }
+};
 
-  class MyClangConsumer : public clang::ASTConsumer {
+class MyClangConsumer : public clang::ASTConsumer {
 
-  private:
-    MyClangVisitor m_visitor;
+private:
+  MyClangVisitor m_visitor;
 
-  public:
-    explicit MyClangConsumer(clang::ASTContext *context) : m_visitor(context) {}
+public:
+  explicit MyClangConsumer(clang::ASTContext *context) : m_visitor(context) {}
 
-    void HandleTranslationUnit(clang::ASTContext &context) override {
-      m_visitor.TraverseDecl(context.getTranslationUnitDecl());
-      m_visitor.printStats(llvm::errs());
-    }
-  };
+  void HandleTranslationUnit(clang::ASTContext &context) override {
+    m_visitor.TraverseDecl(context.getTranslationUnitDecl());
+    m_visitor.printStats(llvm::errs());
+  }
+};
 
-  class MyClangPlugin : public clang::PluginASTAction {
-  public:
-    std::unique_ptr<clang::ASTConsumer>
-    CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-      return std::make_unique<MyClangConsumer>(&ci.getASTContext());
-    }
+class MyClangPlugin : public clang::PluginASTAction {
+public:
+  std::unique_ptr<clang::ASTConsumer>
+  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+    return std::make_unique<MyClangConsumer>(&ci.getASTContext());
+  }
 
-    bool ParseArgs(const clang::CompilerInstance &ci,
-                   const std::vector<std::string> &args) override {
-      return true;
-    }
-  };
+  bool ParseArgs(const clang::CompilerInstance &ci,
+                 const std::vector<std::string> &args) override {
+    return true;
+  }
+};
 
 } // namespace
 
