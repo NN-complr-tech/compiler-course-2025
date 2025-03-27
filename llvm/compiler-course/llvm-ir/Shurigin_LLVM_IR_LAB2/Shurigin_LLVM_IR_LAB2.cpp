@@ -59,11 +59,11 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
 
                 if (BO->getOpcode() == llvm::Instruction::SDiv) {
                   ShiftResult = Builder.CreateAShr(
-                      BO->getOperand(0), 
+                      BO->getOperand(0),
                       llvm::ConstantInt::get(C->getType(), shift));
                 } else {
                   ShiftResult = Builder.CreateLShr(
-                      BO->getOperand(0), 
+                      BO->getOperand(0),
                       llvm::ConstantInt::get(C->getType(), shift));
                 }
 
@@ -86,7 +86,7 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
       }
     }
 
-    return changed ? llvm::PreservedAnalyses::none() 
+    return changed ? llvm::PreservedAnalyses::none()
                    : llvm::PreservedAnalyses::all();
   }
 
