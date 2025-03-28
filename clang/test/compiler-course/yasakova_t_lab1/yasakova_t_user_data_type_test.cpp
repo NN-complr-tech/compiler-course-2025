@@ -1,5 +1,27 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/PrintData_Yasakova_Tatiana_FIIT1_ClangAST%pluginext -plugin PrintDataPlugin %s -fsyntax-only 2>&1 | FileCheck %s
 
+// Проверка пустой структуры (уже есть в ваших тестах, оставляем для контекста)
+// CHECK: A(struct)
+struct A {};
+
+// Проверка вложенной структуры с тем же именем
+// CHECK: B(struct)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ A (struct A|public)
+struct B {
+  struct A {};
+};
+
+// Проверка union с полями
+// CHECK: C(union)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ a (int|public)
+// CHECK-NEXT: | |_ b (float|public)
+union C {
+  int a;
+  float b;
+};
+
 // CHECK: A(class)
 class A {};
 
@@ -100,26 +122,4 @@ class Student : public Person {
 public:
     void sleep() override {}
     void eat() override = 0;
-};
-
-// Проверка пустой структуры (уже есть в ваших тестах, оставляем для контекста)
-// CHECK: A(struct)
-struct A {};
-
-// Проверка вложенной структуры с тем же именем
-// CHECK: B(struct)
-// CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ A (struct A|public)
-struct B {
-  struct A {};
-};
-
-// Проверка union с полями
-// CHECK: C(union)
-// CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ a (int|public)
-// CHECK-NEXT: | |_ b (float|public)
-union C {
-  int a;
-  float b;
 };
