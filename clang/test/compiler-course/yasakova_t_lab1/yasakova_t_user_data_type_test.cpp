@@ -1,6 +1,5 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/PrintData_Yasakova_Tatiana_FIIT1_ClangAST%pluginext -plugin PrintDataPlugin %s -fsyntax-only 2>&1 | FileCheck %s
 
-// Проверка базовых структур
 // CHECK: A(struct)
 struct A {};
 
@@ -13,73 +12,71 @@ struct B {
 
 // CHECK: C(union)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ a (int|public)
-// CHECK-NEXT: | |_ b (float|public)
+// CHECK-NEXT: | |_ first_int (int|public)
+// CHECK-NEXT: | |_ first_float (float|public)
 union C {
-  int a;
-  float b;
+  int first_int;
+  float first_float;
 };
 
-// Проверка классов с разными спецификаторами доступа
 // CHECK: AccessModifiers(class)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ x (float|private)
-// CHECK-NEXT: | |_ y (double|protected)
-// CHECK-NEXT: | |_ z (long long|public)
+// CHECK-NEXT: | |_ m_x (float|private)
+// CHECK-NEXT: | |_ m_y (double|protected)
+// CHECK-NEXT: | |_ m_z (long long|public)
 class AccessModifiers {
 private:
-    float x;
+    float m_x;
 protected:
-    double y;
+    double m_y;
 public:
-    long long z;
+    long long m_z;
 };
 
-// Проверка простой структуры с методами
 // CHECK: Simple(struct)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ x (int|public)
-// CHECK-NEXT: | |_ y (double|public)
+// CHECK-NEXT: | |_ m_x (int|public)
+// CHECK-NEXT: | |_ m_y (double|public)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ method (int|public)
 struct Simple {
-    int x;
-    double y;
-    int method(int x, int y) {}
+    int m_x;
+    double m_y;
+    int method(int param_x, int param_y) { return 0; }
 };
 
-// Проверка статического метода
 // CHECK: Static(class)
 // CHECK-NEXT: |_Methods
-// CHECK-NEXT: | |_ method (void|private|static)
+// CHECK-NEXT: | |_ staticMethod (void|private|static)
 class Static {
-    static void method() {}
+    static void staticMethod() {}
 };
 
-// Проверка шаблонных классов
 // CHECK: Template(class|template)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ x (T|private)
-// CHECK-NEXT: | |_ z (int|private)
+// CHECK-NEXT: | |_ m_value (T|private)
+// CHECK-NEXT: | |_ m_id (int|private)
 template <typename T>
 class Template {
-    T x;
-    int z;
+    T m_value;
+    int m_id;
 };
 
 // CHECK: MultiTemplate(class|template)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ first (T|private)
-// CHECK-NEXT: | |_ second (U|private)
+// CHECK-NEXT: | |_ m_first (T|private)
+// CHECK-NEXT: | |_ m_second (U|private)
 template <typename T, typename U>
 class MultiTemplate {
-    T first;
-    U second;
+    T m_first;
+    U m_second;
 };
 
-// Проверка наследования
 // CHECK: Base(class)
-class Base {};
+class Base {
+public:
+    virtual ~Base() = default;
+};
 
 // CHECK: PublicDerived(class)
 // CHECK-NEXT: PublicDerived -> public Base
@@ -93,33 +90,32 @@ class ProtectedDerived : protected Base {};
 // CHECK-NEXT: PrivateDerived -> private Base
 class PrivateDerived : private Base {};
 
-// Проверка множественного наследования
-// CHECK: A_Class(class)
-class A_Class {};
+// CHECK: AClass(class)
+class AClass {};
 
-// CHECK: B_Struct(struct)
+// CHECK: BStruct(struct)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ a (A_Class|public)
-struct B_Struct {
-    A_Class a;
+// CHECK-NEXT: | |_ m_a (AClass|public)
+struct BStruct {
+    AClass m_a;
 };
 
-// CHECK: C_Multiple(class)
-// CHECK-NEXT: C_Multiple -> public A_Class
-// CHECK-NEXT: C_Multiple -> public B_Struct
-class C_Multiple : public A_Class, public B_Struct {};
+// CHECK: CMultiple(class)
+// CHECK-NEXT: CMultiple -> public AClass
+// CHECK-NEXT: CMultiple -> public BStruct
+class CMultiple : public AClass, public BStruct {};
 
-// Проверка абстрактных классов и виртуальных методов
 // CHECK: Person(struct)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ age (unsigned int|public)
-// CHECK-NEXT: | |_ height (unsigned int|public)
+// CHECK-NEXT: | |_ m_age (unsigned int|public)
+// CHECK-NEXT: | |_ m_height (unsigned int|public)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ sleep (void|public|virtual|pure)
 // CHECK-NEXT: | |_ eat (void|public|virtual|pure)
 struct Person {
-    unsigned age;
-    unsigned height;
+    unsigned m_age;
+    unsigned m_height;
+    virtual ~Person() = default;
     virtual void sleep() = 0;
     virtual void eat() = 0;
 };
@@ -133,4 +129,5 @@ class Student : public Person {
 public:
     void sleep() override {}
     void eat() override = 0;
+    ~Student() override = default;
 };
