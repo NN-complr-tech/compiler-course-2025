@@ -124,9 +124,9 @@ struct Person {
 // CHECK: Student(class)
 // CHECK-NEXT: Student -> public Person
 // CHECK-NEXT: |_Methods
-// CHECK-DAG: | |_ ~Student (void|public|virtual)
 // CHECK-DAG: | |_ sleep (void|public|virtual|override)
 // CHECK-DAG: | |_ eat (void|public|virtual|pure)
+// CHECK-DAG: | |_ ~Student (void|public|virtual|override)
 class Student : public Person {
 public:
     void sleep() override {}
