@@ -11,11 +11,11 @@ namespace {
 
 class DivToShiftPass : public llvm::PassInfoMixin<DivToShiftPass> {
 public:
-  llvm::PreservedAnalyses run(llvm::Function& F,
-                              llvm::FunctionAnalysisManager& FAM) {
+  llvm::PreservedAnalyses run(llvm::Function &F,
+                              llvm::FunctionAnalysisManager &FAM) {
     bool changed = false;
-    for (auto& BB : F) {
-      for (auto& I : llvm::make_early_inc_range(BB)) {
+    for (auto &BB : F) {
+      for (auto &I : llvm::make_early_inc_range(BB)) {
         if (auto *SDiv = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
           if (SDiv->getOpcode() == llvm::Instruction::SDiv) {
             if (auto *ConstInt =
@@ -33,7 +33,7 @@ public:
                 SDiv->eraseFromParent();
                 changed = true;
                 continue;
-              } 
+              }
               if (divisor != 0 && (abs(divisor) & (abs(divisor) - 1)) == 0) {
                 int shiftAmount = llvm::Log2_64(abs(divisor));
                 llvm::Value *Shifted = Builder.CreateAShr(
@@ -59,16 +59,16 @@ public:
 
 extern "C" llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
 llvmGetPassPluginInfo() {
-  return { LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "v0.4",
-           [](llvm::PassBuilder& PB) {
-             PB.registerPipelineParsingCallback(
-                 [](llvm::StringRef Name, llvm::FunctionPassManager& FPM,
-                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                   if (Name == "div-to-shift") {
-                     FPM.addPass(DivToShiftPass());
-                     return true;
-                   }
-                   return false;
-                 });
-           }};
+  return {LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "v0.4",
+          [](llvm::PassBuilder& PB) {
+            PB.registerPipelineParsingCallback(
+                [](llvm::StringRef Name, llvm::FunctionPassManager& FPM,
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                  if (Name == "div-to-shift") {
+                    FPM.addPass(DivToShiftPass());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }
