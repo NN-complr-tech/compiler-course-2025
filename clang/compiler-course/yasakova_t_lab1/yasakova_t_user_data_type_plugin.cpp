@@ -37,7 +37,7 @@ class PrintDataVisitor final
       if (method->isVirtual()) {
         os << "|virtual";
       }
-      if (method->isOverloadedOperator()) {
+      if (method->size_overridden_methods() > 0) {
         os << "|override";
       }
       if (method->isPureVirtual()) {
