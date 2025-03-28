@@ -60,9 +60,9 @@ public:
 extern "C" llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
 llvmGetPassPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "v0.4",
-          [](llvm::PassBuilder& PB) {
+          [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](llvm::StringRef Name, llvm::FunctionPassManager& FPM,
+                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
                   if (Name == "div-to-shift") {
                     FPM.addPass(DivToShiftPass());
