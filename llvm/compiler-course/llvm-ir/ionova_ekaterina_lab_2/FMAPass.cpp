@@ -2,7 +2,6 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
-#include "llvm/Support/raw_ostream.h"
 
 namespace {
 struct FMAPass : llvm::PassInfoMixin<FMAPass> {
@@ -11,9 +10,7 @@ struct FMAPass : llvm::PassInfoMixin<FMAPass> {
     bool Changed = false;
 
     for (llvm::BasicBlock &BB : F) {
-      llvm::SmallVector<llvm::BinaryOperator *, 8> Candidates;
-
-      for (llvm::Instruction &I : BB) {
+      for (llvm::Instruction &I : llvm::make_early_inc_range(BB)) {
         if (auto *AddOp = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
           if (AddOp->getOpcode() != llvm::Instruction::FAdd) {
             continue;
@@ -24,34 +21,15 @@ struct FMAPass : llvm::PassInfoMixin<FMAPass> {
                     AddOp->getOperand(i))) {
               if (MultiplyOp->getOpcode() == llvm::Instruction::FMul &&
                   canReplaceFMul(MultiplyOp, AddOp)) {
-                Candidates.push_back(AddOp);
+                llvm::Value *Addend = AddOp->getOperand(1 - i);
+                replaceWithFMA(AddOp, MultiplyOp, Addend);
+                Changed = true;
+
+                break;
               }
             }
           }
         }
-      }
-
-      for (auto *AddOp : Candidates) {
-        llvm::BinaryOperator *MultiplyOp = nullptr;
-        llvm::Value *Addend = nullptr;
-
-        for (unsigned i = 0; i < 2; ++i) {
-          if (auto *Op =
-                  llvm::dyn_cast<llvm::BinaryOperator>(AddOp->getOperand(i))) {
-            if (Op->getOpcode() == llvm::Instruction::FMul) {
-              MultiplyOp = Op;
-              Addend = AddOp->getOperand(1 - i);
-              break;
-            }
-          }
-        }
-
-        if (!MultiplyOp || !Addend) {
-          continue;
-        }
-
-        replaceWithFMA(AddOp, MultiplyOp, Addend);
-        Changed = true;
       }
     }
 
@@ -65,7 +43,7 @@ private:
   bool canReplaceFMul(llvm::BinaryOperator *MultiplyOp,
                       llvm::BinaryOperator *AddOp) {
     return MultiplyOp->getOpcode() == llvm::Instruction::FMul &&
-           std::distance(MultiplyOp->user_begin(), MultiplyOp->user_end()) == 1;
+           MultiplyOp->hasOneUse();
   }
 
   void replaceWithFMA(llvm::BinaryOperator *AddOp,

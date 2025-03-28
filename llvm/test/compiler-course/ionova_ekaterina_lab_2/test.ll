@@ -6,7 +6,7 @@
 ; }
 
 ; CHECK-LABEL: @_Z2f1ddd
-; CHECK: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
+; CHECK-NEXT: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
 ; CHECK-NEXT: ret double %fma
 
 define dso_local noundef double @_Z2f1ddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr {
@@ -23,8 +23,8 @@ define dso_local noundef double @_Z2f1ddd(double noundef %0, double noundef %1, 
 ; }
 
 ; CHECK-LABEL: @_Z2f2ddddd
-; CHECK: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
-; CHECK: %fma1 = call double @llvm.fmuladd.f64(double %3, double %4, double %fma)
+; CHECK-NEXT: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
+; CHECK-NEXT: %fma1 = call double @llvm.fmuladd.f64(double %3, double %4, double %fma)
 ; CHECK-NEXT: ret double %fma1
 
 define dso_local noundef double @_Z2f2ddddd(double noundef %0, double noundef %1, double noundef %2, double noundef %3, double noundef %4) local_unnamed_addr {
@@ -67,7 +67,7 @@ define dso_local noundef double @_Z2f3dddd(double noundef %0, double noundef %1,
 
 ; CHECK-LABEL: @_Z2f4ddd
 ; CHECK: %4 = fadd double %2, 1.000000e+00
-; CHECK: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %4)
+; CHECK-NEXT: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %4)
 ; CHECK-NEXT: ret double %fma
 
 define dso_local noundef double @_Z2f4ddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr {
@@ -85,8 +85,8 @@ define dso_local noundef double @_Z2f4ddd(double noundef %0, double noundef %1, 
 ; }
 
 ; CHECK-LABEL: @_Z2f5dddd
-; CHECK: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
-; CHECK: %fma1 = call double @llvm.fmuladd.f64(double %fma, double %3, double %2)
+; CHECK-NEXT: %fma = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
+; CHECK-NEXT: %fma1 = call double @llvm.fmuladd.f64(double %fma, double %3, double %2)
 ; CHECK-NEXT: ret double %fma1
 
 define dso_local noundef double @_Z2f5dddd(double noundef %0, double noundef %1, double noundef %2, double noundef %3) local_unnamed_addr {
@@ -103,7 +103,7 @@ define dso_local noundef double @_Z2f5dddd(double noundef %0, double noundef %1,
 ; }
 
 ; CHECK-LABEL: @_Z2f6fff
-; CHECK: %fma = call float @llvm.fmuladd.f32(float %0, float %1, float %2)
+; CHECK-NEXT: %fma = call float @llvm.fmuladd.f32(float %0, float %1, float %2)
 ; CHECK-NEXT: ret float %fma
 
 define dso_local noundef float @_Z2f6fff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr {
@@ -120,8 +120,8 @@ define dso_local noundef float @_Z2f6fff(float noundef %0, float noundef %1, flo
 ; }
 
 ; CHECK-LABEL: @_Z2f7fffff
-; CHECK: %fma = call float @llvm.fmuladd.f32(float %0, float %1, float %2)
-; CHECK: %fma1 = call float @llvm.fmuladd.f32(float %3, float %4, float %fma)
+; CHECK-NEXT: %fma = call float @llvm.fmuladd.f32(float %0, float %1, float %2)
+; CHECK-NEXT: %fma1 = call float @llvm.fmuladd.f32(float %3, float %4, float %fma)
 ; CHECK-NEXT: ret float %fma1
 
 define dso_local noundef float @_Z2f7fffff(float noundef %0, float noundef %1, float noundef %2, float noundef %3, float noundef %4) local_unnamed_addr {
