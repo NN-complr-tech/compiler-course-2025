@@ -1,10 +1,8 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/PrintData_Yasakova_Tatiana_FIIT1_ClangAST%pluginext -plugin PrintDataPlugin %s -fsyntax-only 2>&1 | FileCheck %s
 
-// Проверяем вывод для пустой структуры A
 // CHECK: A(struct)
 struct A {};
 
-// Проверяем структуру B с вложенным объявлением A
 // CHECK: B(struct)
 // CHECK-NOT: |_Fields
 // CHECK: A(struct)
@@ -12,7 +10,6 @@ struct B {
   struct A {};
 };
 
-// Проверяем union C
 // CHECK: C(union)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ a (int|public)
@@ -22,14 +19,14 @@ union C {
   float b;
 };
 
-// CHECK: A(class)
-class A {};
+// CHECK: A_Class(class)
+class A_Class {};
 
-// CHECK: B(struct)
+// CHECK: B_Struct(struct)
 // CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ a (A|public)
-struct B {
-    A a;
+// CHECK-NEXT: | |_ a (A_Class|public)
+struct B_Struct {
+    A_Class a;
 };
 
 // CHECK: Simple(struct)
