@@ -101,3 +101,25 @@ public:
     void sleep() override {}
     void eat() override = 0;
 };
+
+// Проверка пустой структуры (уже есть в ваших тестах, оставляем для контекста)
+// CHECK: A(struct)
+struct A {};
+
+// Проверка вложенной структуры с тем же именем
+// CHECK: B(struct)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ A (struct A|public)
+struct B {
+  struct A {};
+};
+
+// Проверка union с полями
+// CHECK: C(union)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ a (int|public)
+// CHECK-NEXT: | |_ b (float|public)
+union C {
+  int a;
+  float b;
+};
