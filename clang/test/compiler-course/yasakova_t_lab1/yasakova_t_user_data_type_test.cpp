@@ -110,8 +110,9 @@ class CMultiple : public AClass, public BStruct {};
 // CHECK-NEXT: | |_ m_age (unsigned int|public)
 // CHECK-NEXT: | |_ m_height (unsigned int|public)
 // CHECK-NEXT: |_Methods
-// CHECK-NEXT: | |_ sleep (void|public|virtual|pure)
-// CHECK-NEXT: | |_ eat (void|public|virtual|pure)
+// CHECK-DAG: | |_ ~Person (void|public|virtual)
+// CHECK-DAG: | |_ sleep (void|public|virtual|pure)
+// CHECK-DAG: | |_ eat (void|public|virtual|pure)
 struct Person {
     unsigned m_age;
     unsigned m_height;
@@ -123,8 +124,9 @@ struct Person {
 // CHECK: Student(class)
 // CHECK-NEXT: Student -> public Person
 // CHECK-NEXT: |_Methods
-// CHECK-NEXT: | |_ sleep (void|public|virtual|override)
-// CHECK-NEXT: | |_ eat (void|public|virtual|pure)
+// CHECK-DAG: | |_ ~Student (void|public|virtual)
+// CHECK-DAG: | |_ sleep (void|public|virtual|override)
+// CHECK-DAG: | |_ eat (void|public|virtual|pure)
 class Student : public Person {
 public:
     void sleep() override {}
