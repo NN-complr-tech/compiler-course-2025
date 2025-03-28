@@ -90,3 +90,14 @@ struct Person {
     virtual void sleep() = 0;
     virtual void eat() = 0;
 };
+
+// CHECK: Student
+// CHECK-NEXT: Student -> public Person
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ sleep (void|public|virtual|override)
+// CHECK-NEXT: | |_ eat (void|public|virtual|pure)
+class Student : public Person {
+public:
+    void sleep() override {}
+    void eat() override = 0;
+};
