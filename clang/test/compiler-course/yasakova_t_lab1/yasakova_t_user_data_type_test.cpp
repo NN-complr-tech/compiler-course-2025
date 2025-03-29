@@ -5,9 +5,9 @@ struct A {};
 
 // CHECK: B(struct)
 // CHECK-NOT: |_Fields
-// CHECK: A(struct)
+// CHECK: B::A(struct)
 struct B {
-  struct A {};
+    struct A {};
 };
 
 // CHECK: C(union)
