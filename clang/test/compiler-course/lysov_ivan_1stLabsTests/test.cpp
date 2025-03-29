@@ -30,3 +30,11 @@ void checkWithoutReturn(int a, long d){
 void checkConstantParamsFunction(const int x, float j){
     float y = j;
 }
+
+//CHECK: void funcforReview(){
+//CHECK: int x __attribute__((unused));
+//CHECK: \[\[maybe_unused\]\] int y;
+void funcforReview() {
+    int x __attribute__((unused));
+    int y;
+}
