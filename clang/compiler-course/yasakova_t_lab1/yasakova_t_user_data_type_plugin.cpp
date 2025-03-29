@@ -57,7 +57,8 @@ public:
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *declaration) {
     auto &os = llvm::outs();
-    os << declaration->getNameAsString()
+    std::string fullName = declaration->getQualifiedNameAsString();
+    os << fullName
        << (declaration->isStruct()  ? "(struct"
            : declaration->isUnion() ? "(union"
                                     : "(class")
