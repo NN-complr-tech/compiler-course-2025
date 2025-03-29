@@ -7,7 +7,7 @@ struct A {};
 // CHECK-NOT: |_Fields
 // CHECK: B::A(struct)
 struct B {
-    struct A {};
+  struct A {};
 };
 
 // CHECK: C(union)
