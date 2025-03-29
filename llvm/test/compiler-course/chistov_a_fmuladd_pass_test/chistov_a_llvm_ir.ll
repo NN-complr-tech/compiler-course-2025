@@ -111,3 +111,20 @@ entry:
   %add1 = fadd float %x1, %x2
   ret float %add1
 }
+
+; float faddmul(float a, float b, float c) {
+;   float x = a * b;
+;   return c+x;
+; }
+; CHECK-LABEL: define dso_local noundef float @review2(float noundef %a, float noundef %b, float noundef %c) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %0 = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
+; CHECK-NEXT: ret float %0
+; CHECK-NEXT: }
+
+define dso_local noundef float @review2(float noundef %a, float noundef %b, float noundef %c){
+entry:
+  %mul = fmul float %a, %b
+  %add = fadd float %mul, %c
+  ret float %add
+}
