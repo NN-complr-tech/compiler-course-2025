@@ -125,6 +125,6 @@ entry:
 define dso_local noundef float @review2(float noundef %a, float noundef %b, float noundef %c){
 entry:
   %mul = fmul float %a, %b
-  %add = fadd float %mul, %c
+  %add = fadd float %c, %mul
   ret float %add
 }
