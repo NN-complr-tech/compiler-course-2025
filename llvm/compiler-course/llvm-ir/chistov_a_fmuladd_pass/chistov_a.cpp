@@ -11,18 +11,13 @@ private:
   bool changed = false;
 
   void ProcessFAdd(llvm::BinaryOperator *add_op) {
-    if (auto *mul_op1 =
-            llvm::dyn_cast<llvm::BinaryOperator>(add_op->getOperand(0));
-        mul_op1 && mul_op1->getOpcode() == llvm::Instruction::FMul) {
-      ReplaceWithFMA(add_op, mul_op1);
-      changed = true;
-      return;
-    }
-    if (auto *mul_op2 =
-            llvm::dyn_cast<llvm::BinaryOperator>(add_op->getOperand(1));
-        mul_op2 && mul_op2->getOpcode() == llvm::Instruction::FMul) {
-      ReplaceWithFMA(add_op, mul_op2);
-      changed = true;
+    for (int i = 0; i < 2; ++i) {
+      if (auto *mul_op =
+              llvm::dyn_cast<llvm::BinaryOperator>(add_op->getOperand(i));
+          mul_op && mul_op->getOpcode() == llvm::Instruction::FMul) {
+        ReplaceWithFMA(add_op, mul_op);
+        return;
+      }
     }
   }
 
@@ -36,8 +31,10 @@ private:
         {mul->getOperand(0), mul->getOperand(1), other_op}));
 
     add->eraseFromParent();
-    if (mul->use_empty())
+    if (mul->use_empty()) {
       mul->eraseFromParent();
+    }
+    changed = true;
   }
 
 public:
