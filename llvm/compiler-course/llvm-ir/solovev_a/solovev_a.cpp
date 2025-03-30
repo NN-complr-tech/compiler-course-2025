@@ -20,14 +20,19 @@ public:
           bool isSigned = Div->getOpcode() == llvm::Instruction::SDiv;
           bool isUnsigned = Div->getOpcode() == llvm::Instruction::UDiv;
           if (isSigned || isUnsigned) {
-            if (auto *ConstInt = llvm::dyn_cast<llvm::ConstantInt>(Div->getOperand(1))) {
-              int64_t divisor = isSigned ? ConstInt->getSExtValue() : ConstInt->getZExtValue();
+            if (auto *ConstInt =
+                    llvm::dyn_cast<llvm::ConstantInt>(Div->getOperand(1))) {
+              int64_t divisor = isSigned ? ConstInt->getSExtValue()
+                                         : ConstInt->getZExtValue();
               llvm::IRBuilder<> Builder(Div);
-              llvm::Value *Dividend = Div->getOperand(0);                                
+              llvm::Value *Dividend = Div->getOperand(0);
               if (divisor == 1 || (isSigned && divisor == -1)) {
-                llvm::Value *NewVal = (divisor == 1) ?
-                Builder.CreateAdd(Dividend, llvm::ConstantInt::get(Div->getType(), 0), "add_zero") :
-                Builder.CreateNeg(Dividend, "neg_tmp");
+                llvm::Value *NewVal =
+                    (divisor == 1) ? Builder.CreateAdd(Dividend,
+                                                       llvm::ConstantInt::get(
+                                                           Div->getType(), 0),
+                                                       "add_zero")
+                                   : Builder.CreateNeg(Dividend, "neg_tmp");
                 Div->replaceAllUsesWith(NewVal);
                 Div->eraseFromParent();
                 changed = true;
@@ -35,11 +40,12 @@ public:
               }
               if (divisor != 0 && (abs(divisor) & (abs(divisor) - 1)) == 0) {
                 int shiftAmount = llvm::Log2_64(abs(divisor));
-                llvm::Value *Shifted = isSigned ?
-                Builder.CreateAShr(Dividend, shiftAmount, "sh_tmp") :
-                Builder.CreateLShr(Dividend, shiftAmount, "lsh_tmp");
+                llvm::Value *Shifted =
+                    isSigned 
+                        ? Builder.CreateAShr(Dividend, shiftAmount, "sh_tmp") 
+                        : Builder.CreateLShr(Dividend, shiftAmount, "lsh_tmp");
                 if (isSigned && divisor < 0) {
-                Shifted = Builder.CreateNeg(Shifted, "neg_tmp");
+                  Shifted = Builder.CreateNeg(Shifted, "neg_tmp");
                 }
                 Div->replaceAllUsesWith(Shifted);
                 Div->eraseFromParent();
@@ -59,16 +65,16 @@ public:
 
 extern "C" llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
 llvmGetPassPluginInfo() {
-    return {LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "v1.0",
-            [](llvm::PassBuilder &PB) {
-              PB.registerPipelineParsingCallback(
-                  [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
-                     llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                    if (Name == "div-to-shift") {
-                      FPM.addPass(DivToShiftPass());
-                      return true;
-                    }
-                    return false;
-                  });
-            }};
+return {LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "v1.0",
+        [](llvm::PassBuilder &PB) {
+          PB.registerPipelineParsingCallback(
+              [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
+                 llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                if (Name == "div-to-shift") {
+                  FPM.addPass(DivToShiftPass());
+                  return true;
+                }
+                return false;
+              });
+        }};
 }
