@@ -28,10 +28,7 @@ public:
               llvm::Value *Dividend = Div->getOperand(0);
               if (divisor == 1 || (isSigned && divisor == -1)) {
                 llvm::Value *NewVal =
-                    (divisor == 1) ? Builder.CreateAdd(Dividend,
-                                                       llvm::ConstantInt::get(
-                                                           Div->getType(), 0),
-                                                       "add_zero")
+                    (divisor == 1) ? Dividend
                                    : Builder.CreateNeg(Dividend, "neg_tmp");
                 Div->replaceAllUsesWith(NewVal);
                 Div->eraseFromParent();
