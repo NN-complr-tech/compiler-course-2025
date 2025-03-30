@@ -64,19 +64,9 @@ public:
         .write(llvm::outs());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &CI,
-                 const std::vector<std::string> &args) override {
-    for (const auto &arg : args) {
-      if (arg == "--help" || arg == "-h") {
-        llvm::outs()
-            << "UnusedVarPlugin: Marks unused variables with [[maybe_unused]]\n"
-            << "Usage: No arguments required\n"
-            << "Options:\n"
-            << "  --help, -h: Display this help message\n";
-        return false;
-      }
-    }
-    return true;
+  bool ParseArgs(const clang::CompilerInstance& ci,
+      const std::vector<std::string>& args) override {
+      return true;
   }
 };
 
