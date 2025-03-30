@@ -64,9 +64,9 @@ public:
         .write(llvm::outs());
   }
 
-  bool ParseArgs(const clang::CompilerInstance& ci,
-      const std::vector<std::string>& args) override {
-      return true;
+  bool ParseArgs(const clang::CompilerInstance &ci,
+                 const std::vector<std::string> &args) override {
+    return true;
   }
 };
 
