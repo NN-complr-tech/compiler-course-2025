@@ -24,7 +24,7 @@ define i32 @test2(i32 %value) {
 
 define i32 @test3(i32 %value) {
 ; CHECK-LABEL: @test3
-; CHECK-NEXT: add i32 %value, 0
+; CHECK-NEXT: ret i32 %value
   %div = sdiv i32 %value, 1
   ret i32 %div
 }
