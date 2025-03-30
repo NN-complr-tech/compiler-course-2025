@@ -41,8 +41,8 @@ public:
               if (divisor != 0 && (abs(divisor) & (abs(divisor) - 1)) == 0) {
                 int shiftAmount = llvm::Log2_64(abs(divisor));
                 llvm::Value *Shifted =
-                    isSigned 
-                        ? Builder.CreateAShr(Dividend, shiftAmount, "sh_tmp") 
+                    isSigned
+                        ? Builder.CreateAShr(Dividend, shiftAmount, "sh_tmp")
                         : Builder.CreateLShr(Dividend, shiftAmount, "lsh_tmp");
                 if (isSigned && divisor < 0) {
                   Shifted = Builder.CreateNeg(Shifted, "neg_tmp");
@@ -65,16 +65,16 @@ public:
 
 extern "C" llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
 llvmGetPassPluginInfo() {
-return {LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "v1.0",
-        [](llvm::PassBuilder &PB) {
-          PB.registerPipelineParsingCallback(
-              [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
-                 llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                if (Name == "div-to-shift") {
-                  FPM.addPass(DivToShiftPass());
-                  return true;
-                }
-                return false;
-              });
-        }};
+  return {LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "v1.0",
+          [](llvm::PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                  if (Name == "div-to-shift") {
+                    FPM.addPass(DivToShiftPass());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }
