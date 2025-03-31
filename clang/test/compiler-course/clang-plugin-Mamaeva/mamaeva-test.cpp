@@ -1,8 +1,16 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/ClangAST_1_Mamaeva_Olga_FIIT3_ClangAST%pluginext -plugin ClangAST_1 -fsyntax-only %s 2>&1 | FileCheck %s -dump-input=always
+
+enum class Color { Red, Green, Blue };
+enum OldStyleEnum { ONE, TWO, THREE };
+
+class NumberWrapper {
+public:
+    operator int() const { return 42; }
+};
+
 // CHECK: Function `sum`
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
-
 double sum(int a, float b) {
     return a + b;
 }
@@ -11,7 +19,6 @@ double sum(int a, float b) {
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
-
 int mul(float a, float b) {
     return a + sum(a, b);
 }
@@ -46,31 +53,22 @@ void convertToBool() {
     bool booleanValue = number;
 }
 
-enum class Color { Red };  
-
-class NumberWrapper {      
-public:
-    operator int() const { return 42; }
-};
-
-// CHECK: Function `classConversions`
+// CHECK: Function `useNumberWrapper`
 // CHECK-NEXT: NumberWrapper -> int: 1
-class NumberWrapper {
-public:
-    operator int() const { return 42; }
-};
-
-void classConversions() {
+void useNumberWrapper() {
     NumberWrapper n;
-    int x = n;
+    int value = n;
 }
 
-// CHECK: Function `enumConversions`
+// CHECK: Function `useEnums`
 // CHECK-NEXT: Color -> int: 1
-enum class Color { Red };
-void enumConversions() {
+// CHECK-NEXT: OldStyleEnum -> int: 1
+void useEnums() {
     Color c = Color::Red;
-    int x = static_cast<int>(c);
+    int colorCode = static_cast<int>(c);
+    
+    OldStyleEnum e = TWO;
+    int enumValue = e;
 }
 
 // CHECK: Total implicit conversions: 12
