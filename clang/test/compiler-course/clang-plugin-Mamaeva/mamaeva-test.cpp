@@ -53,18 +53,24 @@ public:
     operator int() const { return 42; }
 };
 
-// CHECK: Function `useEnums`
-// CHECK-NEXT: Color -> int: 1
-void useEnums() {
-    Color c = Color::Red;
-    int code = static_cast<int>(c);
+// CHECK: Function `classConversions`
+// CHECK-NEXT: NumberWrapper -> int: 1
+class NumberWrapper {
+public:
+    operator int() const { return 42; }
+};
+
+void classConversions() {
+    NumberWrapper n;
+    int x = n;
 }
 
-// CHECK: Function `useNumberWrapper`
-// CHECK-NEXT: NumberWrapper -> int: 1
-void useNumberWrapper() {
-    NumberWrapper n;
-    int value = n;
+// CHECK: Function `enumConversions`
+// CHECK-NEXT: Color -> int: 1
+enum class Color { Red };
+void enumConversions() {
+    Color c = Color::Red;
+    int x = static_cast<int>(c);
 }
 
 // CHECK: Total implicit conversions: 12
