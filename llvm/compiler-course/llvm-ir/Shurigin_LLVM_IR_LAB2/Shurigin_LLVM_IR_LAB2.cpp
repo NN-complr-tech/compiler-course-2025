@@ -5,6 +5,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
@@ -12,22 +13,18 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
   llvm::PreservedAnalyses run(llvm::Function &F,
                               llvm::FunctionAnalysisManager &) {
     bool changed = false;
-
     for (auto &BB : F) {
       llvm::SmallVector<llvm::Instruction *, 8> toReplace;
-
       for (auto &I : BB) {
         auto *BO = llvm::dyn_cast<llvm::BinaryOperator>(&I);
         if (!BO || (BO->getOpcode() != llvm::Instruction::SDiv &&
                     BO->getOpcode() != llvm::Instruction::UDiv)) {
           continue;
         }
-
         auto *C = llvm::dyn_cast<llvm::ConstantInt>(BO->getOperand(1));
         if (!C) {
           continue;
         }
-
         int64_t divisor = C->getSExtValue();
         if (divisor == 1) {
           llvm::IRBuilder<> Builder(BO);
@@ -38,12 +35,10 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
           changed = true;
           continue;
         }
-
         if (llvm::isPowerOf2_64(std::abs(divisor))) {
-          unsigned shift = llvm::Log2(std::abs(divisor));
+          unsigned shift = llvm::Log2_64(std::abs(divisor));
           llvm::IRBuilder<> Builder(BO);
           llvm::Value *ShiftResult;
-
           if (BO->getOpcode() == llvm::Instruction::SDiv) {
             ShiftResult = Builder.CreateAShr(
                 BO->getOperand(0), llvm::ConstantInt::get(C->getType(), shift));
@@ -51,33 +46,28 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
             ShiftResult = Builder.CreateLShr(
                 BO->getOperand(0), llvm::ConstantInt::get(C->getType(), shift));
           }
-
           if (divisor < 0) {
             ShiftResult = Builder.CreateSub(
                 llvm::ConstantInt::get(C->getType(), 0), ShiftResult);
           }
-
           BO->replaceAllUsesWith(ShiftResult);
           toReplace.push_back(BO);
           changed = true;
         }
       }
+
+      for (auto *I : toReplace) {
+        I->eraseFromParent();
+      }
     }
+
+    return changed ? llvm::PreservedAnalyses::none()
+                   : llvm::PreservedAnalyses::all();
   }
-}
 
-for (auto *I : toReplace) {
-  I->eraseFromParent();
-}
-}
+  static bool isRequired() { return true; }
+};
 
-return changed ? llvm::PreservedAnalyses::none()
-               : llvm::PreservedAnalyses::all();
-}
-
-static bool isRequired() { return true; }
-}
-;
 } // namespace
 
 llvm::PassPluginLibraryInfo getDivToShiftPluginInfo() {
