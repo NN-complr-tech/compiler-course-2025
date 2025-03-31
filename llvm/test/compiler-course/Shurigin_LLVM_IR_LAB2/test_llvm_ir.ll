@@ -56,3 +56,52 @@ define i32 @f15(i32 %value) {
   %div = sdiv i32 %value, 33  
   ret i32 %div
 }
+
+define i32 @u1(i32 %value) {
+; CHECK: @u1
+; CHECK-NEXT: lshr i32 %value, 3
+  %div = udiv i32 %value, 8
+  ret i32 %div
+}
+
+define i32 @u2(i32 %value) {
+; CHECK: @u2
+; CHECK-NEXT: lshr i32 %value, 1
+  %div = udiv i32 %value, 2
+  ret i32 %div
+}
+
+define i32 @u3(i32 %value) {
+; CHECK: @u3
+; CHECK-NEXT: udiv i32 %value, 3
+  %div = udiv i32 %value, 3
+  ret i32 %div
+}
+
+define i32 @u4(i32 %value) {
+; CHECK: @u4
+; CHECK-NEXT: lshr i32 %value, 10
+  %div = udiv i32 %value, 1024
+  ret i32 %div
+}
+
+define i32 @u6(i32 %value) {
+; CHECK: @u6
+; CHECK-NEXT: add i32 %value, 0
+  %div = udiv i32 %value, 1
+  ret i32 %div
+}
+
+define i32 @u7(i32 %value) {
+; CHECK: @u7
+; CHECK-NEXT: lshr i32 %value, 30
+  %div = udiv i32 %value, 1073741824  ; 2^30
+  ret i32 %div
+}
+
+define i32 @u8(i32 %value) {
+; CHECK: @u8
+; CHECK-NEXT: udiv i32 %value, 33
+  %div = udiv i32 %value, 33  
+  ret i32 %div
+}
