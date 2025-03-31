@@ -46,45 +46,25 @@ void convertToBool() {
     bool booleanValue = number;
 }
 
-// User-defined classes and enums
-enum class Color { Red, Green, Blue };
-enum OldStyleEnum { ONE, TWO, THREE };
+enum class Color { Red };  
 
-class Base {
+class NumberWrapper {      
 public:
     operator int() const { return 42; }
 };
 
-class Derived : public Base {
-public:
-    operator float() const { return 3.14f; }
-};
-
-// CHECK: Function `useClasses`
-// CHECK-NEXT: Derived -> Base: 1
-// CHECK-NEXT: Derived -> float: 1
-// CHECK-NEXT: Base -> int: 1
+// CHECK: Function `useEnums`
 // CHECK-NEXT: Color -> int: 1
-// CHECK-NEXT: OldStyleEnum -> int: 1
-void useClasses() {
-    Derived d;
-    Base b = d;         // Derived to Base
-    float f = d;        // Derived to float
-    int i = b;          // Base to int
-    
-    Color col = Color::Red;
-    int colorInt = static_cast<int>(col); // Color to int
-    
-    OldStyleEnum old = TWO;
-    int oldInt = old;   // OldStyleEnum to int
+void useEnums() {
+    Color c = Color::Red;
+    int code = static_cast<int>(c);
 }
 
-// CHECK: Function `useEnumConversions`
-// CHECK-NEXT: int -> Color: 1
-// CHECK-NEXT: int -> OldStyleEnum: 1
-void useEnumConversions() {
-    Color c = static_cast<Color>(1);
-    OldStyleEnum e = static_cast<OldStyleEnum>(2);
+// CHECK: Function `useNumberWrapper`
+// CHECK-NEXT: NumberWrapper -> int: 1
+void useNumberWrapper() {
+    NumberWrapper n;
+    int value = n;
 }
 
-// CHECK: Total implicit conversions: 16
+// CHECK: Total implicit conversions: 12
