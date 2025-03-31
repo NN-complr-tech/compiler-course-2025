@@ -5,6 +5,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
@@ -52,8 +53,8 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
                 continue;
               }
 
-              if (isPowerOfTwo(std::abs(divisor))) {
-                unsigned shift = getLog2(std::abs(divisor));
+              if (llvm::isPowerOf2_64(std::abs(divisor))) {
+                unsigned shift = llvm::exactLog2_64(std::abs(divisor));
                 llvm::IRBuilder<> Builder(BO);
                 llvm::Value *ShiftResult;
 
