@@ -173,6 +173,6 @@ entry:
 define dso_local noundef float @faddmul(float noundef %a, float noundef %b, float noundef %c) {
 entry:
   %mul = fmul float %a, %b
-  %conv2 = fadd float %mul, %c
+  %conv2 = fadd float %c, %mul
   ret float %conv2
 }

@@ -6,6 +6,22 @@
 
 namespace {
 struct FMAPass : llvm::PassInfoMixin<FMAPass> {
+  void createFMA(llvm::BinaryOperator *add, llvm::BinaryOperator *mul, int op) {
+    llvm::Value *a = mul->getOperand(0);
+    llvm::Value *b = mul->getOperand(1);
+    llvm::Value *c = add->getOperand(op);
+
+    llvm::IRBuilder<> irb(add);
+    llvm::Value *fma = irb.CreateIntrinsic(llvm::Intrinsic::fmuladd,
+                                           {a->getType()}, {a, b, c});
+
+    add->replaceAllUsesWith(fma);
+    add->eraseFromParent();
+    if (mul->use_empty()) {
+      mul->eraseFromParent();
+    }
+  }
+
   llvm::PreservedAnalyses run(llvm::Function &func,
                               llvm::FunctionAnalysisManager &) {
     llvm::PreservedAnalyses out = llvm::PreservedAnalyses::all();
@@ -20,20 +36,14 @@ struct FMAPass : llvm::PassInfoMixin<FMAPass> {
             if (llvm::BinaryOperator *mul =
                     llvm::dyn_cast<llvm::BinaryOperator>(add->getOperand(0))) {
               if (mul->getOpcode() == llvm::Instruction::FMul) {
-                llvm::Value *a = mul->getOperand(0);
-                llvm::Value *b = mul->getOperand(1);
-                llvm::Value *c = add->getOperand(1);
-
-                llvm::IRBuilder<> irb(add);
-                llvm::Value *fma = irb.CreateIntrinsic(
-                    llvm::Intrinsic::fmuladd, {a->getType()}, {a, b, c});
-
-                add->replaceAllUsesWith(fma);
-                add->eraseFromParent();
-                if (mul->use_empty()) {
-                  mul->eraseFromParent();
-                }
-
+                createFMA(add, mul, 1);
+                out = llvm::PreservedAnalyses::none();
+              }
+            } else if (llvm::BinaryOperator *mul =
+                           llvm::dyn_cast<llvm::BinaryOperator>(
+                               add->getOperand(1))) {
+              if (mul->getOpcode() == llvm::Instruction::FMul) {
+                createFMA(add, mul, 0);
                 out = llvm::PreservedAnalyses::none();
               }
             }
