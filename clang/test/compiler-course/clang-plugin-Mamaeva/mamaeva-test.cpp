@@ -4,7 +4,7 @@
 // CHECK-NEXT: int -> float: 1
 
 double sum(int a, float b) {
-	return a + b;
+    return a + b;
 }
 
 // CHECK-NEXT: Function `mul`
@@ -13,7 +13,7 @@ double sum(int a, float b) {
 // CHECK-NEXT: float -> int: 1
 
 int mul(float a, float b) {
-	return a + sum(a, b);
+    return a + sum(a, b);
 }
 
 // CHECK: Function `convertTypes`
@@ -25,17 +25,20 @@ void convertTypes() {
     FloatType floatVar = IntType();
     IntType intVar = floatVar;
 }
+
 // CHECK: Function `handlePointers`
 // CHECK-NEXT: int* -> void*: 1
 void handlePointers() {
     int value;
     void* voidPtr = &value;
 }
+
 // CHECK: Function `checkPointer`
 // CHECK-NEXT: int* -> bool: 1
 void checkPointer(int* ptr) {
     if (ptr) {}
 }
+
 // CHECK: Function `convertToBool`
 // CHECK-NEXT: int -> bool: 1
 void convertToBool() {
@@ -43,4 +46,45 @@ void convertToBool() {
     bool booleanValue = number;
 }
 
-// CHECK: Total implicit conversions: 10
+// User-defined classes and enums
+enum class Color { Red, Green, Blue };
+enum OldStyleEnum { ONE, TWO, THREE };
+
+class Base {
+public:
+    operator int() const { return 42; }
+};
+
+class Derived : public Base {
+public:
+    operator float() const { return 3.14f; }
+};
+
+// CHECK: Function `useClasses`
+// CHECK-NEXT: Derived -> Base: 1
+// CHECK-NEXT: Derived -> float: 1
+// CHECK-NEXT: Base -> int: 1
+// CHECK-NEXT: Color -> int: 1
+// CHECK-NEXT: OldStyleEnum -> int: 1
+void useClasses() {
+    Derived d;
+    Base b = d;         // Derived to Base
+    float f = d;        // Derived to float
+    int i = b;          // Base to int
+    
+    Color col = Color::Red;
+    int colorInt = static_cast<int>(col); // Color to int
+    
+    OldStyleEnum old = TWO;
+    int oldInt = old;   // OldStyleEnum to int
+}
+
+// CHECK: Function `useEnumConversions`
+// CHECK-NEXT: int -> Color: 1
+// CHECK-NEXT: int -> OldStyleEnum: 1
+void useEnumConversions() {
+    Color c = static_cast<Color>(1);
+    OldStyleEnum e = static_cast<OldStyleEnum>(2);
+}
+
+// CHECK: Total implicit conversions: 16
