@@ -18,7 +18,7 @@ struct MarkPurePass : llvm::PassInfoMixin<MarkPurePass> {
 
     // Use inst iterators from thi ref:
     // https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/InstIterator.h
-    bool Pure = !std::any_of(llvm::inst_begin(Func), llvm::inst_end(Func),
+    bool Pure = std::none_of(llvm::inst_begin(Func), llvm::inst_end(Func),
                              [](const llvm::Instruction &Instruction) {
                                return Instruction.mayReadOrWriteMemory();
                              });
