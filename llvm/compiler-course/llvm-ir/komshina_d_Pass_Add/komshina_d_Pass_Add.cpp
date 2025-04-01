@@ -6,28 +6,36 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
-namespace {
-    struct ReplaceAddPass : llvm::PassInfoMixin<ReplaceAddPass> {
-        llvm::PreservedAnalyses run(llvm::Function& F,
-            llvm::FunctionAnalysisManager&) {
-            llvm::Module* M = F.getParent();
-            llvm::Function* addFunction = M->getFunction("add");
+using namespace llvm;
 
-            if (!addFunction || addFunction->arg_size() != 2) {
-                return llvm::PreservedAnalyses::all();
+namespace {
+    struct ExamplePass : PassInfoMixin<ExamplePass> {
+        PreservedAnalyses run(Function& F, FunctionAnalysisManager&) {
+            Module* M = F.getParent();
+            Function* addFunc = nullptr;
+
+            for (Function& Func : M->functions()) {
+                if (Func.getName() == "add" && Func.arg_size() == 2) {
+                    addFunc = &Func;
+                    break;
+                }
+            }
+
+            if (!addFunc) {
+                return PreservedAnalyses::all();
             }
 
             bool changed = false;
-            for (llvm::BasicBlock& BB : F) {
-                for (llvm::Instruction& I : llvm::make_early_inc_range(BB)) {
-                    if (auto* binOp = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
-                        if (binOp->getOpcode() == llvm::Instruction::Add) {
-                            llvm::Type* opType = binOp->getType();
-                            if (addFunction->getFunctionType()->getReturnType() == opType &&
-                                addFunction->getArg(0)->getType() == binOp->getOperand(0)->getType() &&
-                                addFunction->getArg(1)->getType() == binOp->getOperand(1)->getType()) {
-                                llvm::IRBuilder<> builder(binOp);
-                                llvm::Value* call = builder.CreateCall(addFunction, { binOp->getOperand(0), binOp->getOperand(1) });
+
+            for (BasicBlock& BB : F) {
+                for (Instruction& I : make_early_inc_range(BB)) {
+                    if (auto* binOp = dyn_cast<BinaryOperator>(&I)) {
+                        if (binOp->getOpcode() == Instruction::Add) {
+                            if (addFunc->getFunctionType()->getReturnType() == binOp->getType() &&
+                                addFunc->getFunctionType()->getParamType(0) == binOp->getOperand(0)->getType() &&
+                                addFunc->getFunctionType()->getParamType(1) == binOp->getOperand(1)->getType()) {
+                                IRBuilder<> builder(binOp);
+                                Value* call = builder.CreateCall(addFunc, { binOp->getOperand(0), binOp->getOperand(1) });
                                 binOp->replaceAllUsesWith(call);
                                 binOp->eraseFromParent();
                                 changed = true;
@@ -36,23 +44,22 @@ namespace {
                     }
                 }
             }
-            return changed ? llvm::PreservedAnalyses::none()
-                : llvm::PreservedAnalyses::all();
+
+            return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
         }
 
         static bool isRequired() { return true; }
     };
 } // namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-    return { LLVM_PLUGIN_API_VERSION, "ReplaceAddPass", "0.1",
-            [](llvm::PassBuilder& PB) {
+extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo llvmGetPassPluginInfo() {
+    return { LLVM_PLUGIN_API_VERSION, "ExamplePass", "0.1",
+            [](PassBuilder& PB) {
               PB.registerPipelineParsingCallback(
-                  [](llvm::StringRef name, llvm::FunctionPassManager& FPM,
-                     llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                    if (name == "ReplaceAddPass") {
-                      FPM.addPass(ReplaceAddPass{});
+                  [](StringRef Name, FunctionPassManager& FPM,
+                     ArrayRef<PassBuilder::PipelineElement>) -> bool {
+                    if (Name == "example") {
+                      FPM.addPass(ExamplePass{});
                       return true;
                     }
                     return false;
