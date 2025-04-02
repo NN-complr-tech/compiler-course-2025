@@ -1,5 +1,5 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/Pass_Add_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
-; RUN: -passes="ReplaceAddPass" -S %s | FileCheck %s
+; RUN: -passes="Pass_Add" -S %s | FileCheck %s
 
 ; CHECK: define i32 @add(i32 %a, i32 %b)
 ; CHECK: %result = add i32 %a, %b
