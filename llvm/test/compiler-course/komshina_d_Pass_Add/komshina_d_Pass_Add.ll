@@ -22,3 +22,13 @@ define i32 @foo(i32 %x, i32 %y) {
   %sum = add i32 %x, %y
   ret i32 %sum
 }
+
+; CHECK: define i64 @bar(i64 %m, i64 %n) {
+; CHECK-NOT: call i64 @add
+; CHECK: %sum = add i64 %m, %n
+; CHECK: ret i64 %sum
+
+define i64 @bar(i64 %m, i64 %n) {
+  %sum = add i64 %m, %n
+  ret i64 %sum
+}
