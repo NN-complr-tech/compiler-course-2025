@@ -7,7 +7,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-    struct ReplaceAddSubPass : llvm::PassInfoMixin<ReplaceAddSubPass> {
+    struct ReplaceAddPass : llvm::PassInfoMixin<ReplaceAddPass> {
         llvm::PreservedAnalyses run(llvm::Function& F,
             llvm::FunctionAnalysisManager&) {
             if (F.getName() == "add" || F.getName() == "sub") {
@@ -65,13 +65,13 @@ namespace {
 
 extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-    return { LLVM_PLUGIN_API_VERSION, "ReplaceAddSubPass", "0.1",
+    return { LLVM_PLUGIN_API_VERSION, "ReplaceAddPass", "0.1",
             [](llvm::PassBuilder& PB) {
               PB.registerPipelineParsingCallback(
                   [](llvm::StringRef name, llvm::FunctionPassManager& FPM,
                      llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                    if (name == "ReplaceAddSubPass") {
-                      FPM.addPass(ReplaceAddSubPass{});
+                    if (name == "ReplaceAddPass") {
+                      FPM.addPass(ReplaceAddPass{});
                       return true;
                     }
                     return false;
