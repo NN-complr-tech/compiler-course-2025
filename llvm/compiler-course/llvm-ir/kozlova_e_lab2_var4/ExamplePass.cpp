@@ -79,13 +79,13 @@ extern "C" llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
 llvmGetPassPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "ReplaceDivPass", "0.1",
           [](llvm::PassBuilder &PB) {
-             PB.registerPipelineParsingCallback(
+            PB.registerPipelineParsingCallback(
                 [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
-                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                    if (Name == "replace-div") {
-                    FPM.addPass(ReplaceDivPass());
-                    return true;
-                  }
+                  llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                 if (Name == "replace-div") {
+                   FPM.addPass(ReplaceDivPass());
+                   return true;
+                 }
                   return false;
                 });
           }};
