@@ -9,14 +9,15 @@
 namespace {
 class myVisitor final : public clang::RecursiveASTVisitor<myVisitor> {
 public:
-  explicit myVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
-      : m_context(context), m_rewriter(rewriter) {}
+  myVisitor(clang::ASTContext *context, clang::Rewriter &rewriter,
+            std::string &attr)
+      : m_context(context), m_rewriter(rewriter), m_attr(attr) {}
 
   bool VisitVarDecl(clang::VarDecl *var) {
     if (!var->isUsed()) {
       clang::SourceLocation loc = var->getLocation();
       if (loc.isValid()) {
-        m_rewriter.InsertText(loc, "[[maybe_unused]] ");
+        m_rewriter.InsertText(loc, m_attr);
       } else
         return false;
     }
@@ -26,7 +27,7 @@ public:
     if (!param->isUsed()) {
       clang::SourceLocation loc = param->getLocation();
       if (loc.isValid()) {
-        m_rewriter.InsertText(loc, "[[maybe_unused]] ");
+        m_rewriter.InsertText(loc, m_attr);
       } else
         return false;
     }
@@ -36,12 +37,13 @@ public:
 private:
   clang::ASTContext *m_context;
   clang::Rewriter &m_rewriter;
+  std::string m_attr;
 };
 
 class myConsumer final : public clang::ASTConsumer {
 public:
-  explicit myConsumer(clang::ASTContext *context, clang::Rewriter &rewriter)
-      : m_visitor(context, rewriter) {}
+  myConsumer(clang::ASTContext *context, clang::Rewriter &rewriter, std::string& attr)
+      : m_visitor(context, rewriter, attr) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
@@ -56,11 +58,18 @@ public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
-    return std::make_unique<myConsumer>(&ci.getASTContext(), m_rewriter);
+    return std::make_unique<myConsumer>(&ci.getASTContext(), m_rewriter, m_attr);
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
+    for (const auto &arg : args) {
+      if (arg == "--gcc") {
+        m_attr = "__attribute__((unused)) ";
+      } else if (arg == "--c++17") {
+        m_attr = "[[maybe_unused]] ";
+      }
+    }
     return true;
   }
 
@@ -71,6 +80,7 @@ public:
 
 private:
   clang::Rewriter m_rewriter;
+  std::string m_attr = "[[maybe_unused]] ";
 };
 
 } // namespace
