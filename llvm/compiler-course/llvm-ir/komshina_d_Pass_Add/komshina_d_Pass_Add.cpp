@@ -28,26 +28,28 @@ namespace {
                 return llvm::PreservedAnalyses::all();
             }
 
-            bool changed = false;
+            bool modified = false;
+
             for (llvm::BasicBlock& BB : F) {
-                for (llvm::Instruction& I : llvm::make_early_inc_range(BB)) {
-                    if (auto* binOp = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
-                        if (binOp->getOpcode() == llvm::Instruction::Add) {
-                            if (binOp->getOperand(0)->getType() == addFunction->getArg(0)->getType() &&
-                                binOp->getOperand(1)->getType() == addFunction->getArg(1)->getType()) {
-                                llvm::IRBuilder<> builder(binOp);
-                                llvm::Value* call = builder.CreateCall(
-                                    addFunction, { binOp->getOperand(0), binOp->getOperand(1) });
-                                call->setName(binOp->getName());
-                                binOp->replaceAllUsesWith(call);
-                                binOp->eraseFromParent();
-                                changed = true;
-                            }
+                for (auto it = BB.begin(), end = BB.end(); it != end;) {
+                    llvm::Instruction* I = &*it++;
+                    if (auto* binOp = llvm::dyn_cast<llvm::BinaryOperator>(I)) {
+                        if (binOp->getOpcode() == llvm::Instruction::Add &&
+                            binOp->getOperand(0)->getType() == addFunction->getArg(0)->getType() &&
+                            binOp->getOperand(1)->getType() == addFunction->getArg(1)->getType()) {
+
+                            llvm::IRBuilder<> builder(binOp);
+                            llvm::Value* call = builder.CreateCall(addFunction, { binOp->getOperand(0), binOp->getOperand(1) });
+                            call->setName(binOp->getName());
+                            binOp->replaceAllUsesWith(call);
+                            binOp->eraseFromParent();
+                            modified = true;
                         }
                     }
                 }
             }
-            return changed ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
+
+            return modified ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
         }
 
         static bool isRequired() { return true; }
