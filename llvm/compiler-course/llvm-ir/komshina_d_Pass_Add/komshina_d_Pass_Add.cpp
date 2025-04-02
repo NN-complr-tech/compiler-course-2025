@@ -14,12 +14,12 @@ struct Pass_Add : llvm::PassInfoMixin<Pass_Add> {
       return llvm::PreservedAnalyses::all();
     }
 
-    llvm::Module *M = F.getParent();
-    auto it = llvm::find_if(M->functions(), [](llvm::Function &Func) {
+    llvm::Module *Mod = F.getParent();
+    auto it = llvm::find_if(Mod->functions(), [](llvm::Function &Func) {
       return Func.getName() == "add" && Func.arg_size() == 2;
     });
 
-    if (it == M->functions().end()) {
+    if (it == Mod->functions().end()) {
       return llvm::PreservedAnalyses::all();
     }
 
@@ -28,22 +28,25 @@ struct Pass_Add : llvm::PassInfoMixin<Pass_Add> {
     bool modified = false;
     std::vector<llvm::Instruction *> toErase;
 
-    for (llvm::BasicBlock &BB : F) {
-      for (llvm::Instruction &I : BB) {
-        if (auto *binOp = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
-          if (binOp->getOpcode() == llvm::Instruction::Add &&
-              binOp->getOperand(0)->getType() ==
-                  addFunction->getArg(0)->getType() &&
-              binOp->getOperand(1)->getType() ==
-                  addFunction->getArg(1)->getType()) {
+    for (auto& block : F) {
+      for (auto& instr : block) {
+        if (auto* binaryOp = llvm::dyn_cast<llvm::BinaryOperator>(&instr)) {
+          if (binaryOp->getOpcode() == llvm::Instruction::Add) {
+            auto* firstOperand = binaryOp->getOperand(0);
+            auto* secondOperand = binaryOp->getOperand(1);
 
-            llvm::IRBuilder<> builder(binOp);
-            llvm::Value *call = builder.CreateCall(
-                addFunction, {binOp->getOperand(0), binOp->getOperand(1)});
-            call->setName(binOp->getName());
-            binOp->replaceAllUsesWith(call);
-            toErase.push_back(binOp);
-            modified = true;
+            if (firstOperand->getType() == addFunction->getArg(0)->getType() &&
+              secondOperand->getType() == addFunction->getArg(1)->getType()) {
+
+              llvm::IRBuilder<> builder(binaryOp);
+              llvm::Value* functionCall = builder.CreateCall(
+                  addFunction, { firstOperand, secondOperand });
+              functionCall->setName(binaryOp->getName());
+
+              binaryOp->replaceAllUsesWith(functionCall);
+              toErase.push_back(binaryOp);
+              modified = true;
+            }
           }
         }
       }
