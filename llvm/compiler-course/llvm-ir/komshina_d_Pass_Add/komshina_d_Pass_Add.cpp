@@ -54,7 +54,7 @@ namespace {
     };
 } // namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo
+extern "C" LLVM_ATTRIBUTE_WEAK::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
     return { LLVM_PLUGIN_API_VERSION, "ReplaceAddPass", "0.1",
             [](llvm::PassBuilder& PB) {
@@ -68,4 +68,4 @@ llvmGetPassPluginInfo() {
                     return false;
                   });
             } };
-};
+}
