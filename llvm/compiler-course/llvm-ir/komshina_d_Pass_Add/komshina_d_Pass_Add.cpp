@@ -14,7 +14,6 @@ namespace {
                 return llvm::PreservedAnalyses::all();
             }
 
-            llvm::Function* addFunction = nullptr;
             llvm::Module* M = F.getParent();
 
             llvm::Function* addFunction = llvm::find_if(M->functions(), [](llvm::Function& Func) {
