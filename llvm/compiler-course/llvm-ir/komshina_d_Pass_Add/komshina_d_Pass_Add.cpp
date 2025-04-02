@@ -17,12 +17,9 @@ namespace {
             llvm::Function* addFunction = nullptr;
             llvm::Module* M = F.getParent();
 
-            for (llvm::Function& Func : M->functions()) {
-                if (Func.getName() == "add" && Func.arg_size() == 2) {
-                    addFunction = &Func;
-                    break;
-                }
-            }
+            llvm::Function* addFunction = llvm::find_if(M->functions(), [](llvm::Function& Func) {
+                return Func.getName() == "add" && Func.arg_size() == 2;
+                });
 
             if (!addFunction) {
                 return llvm::PreservedAnalyses::all();
