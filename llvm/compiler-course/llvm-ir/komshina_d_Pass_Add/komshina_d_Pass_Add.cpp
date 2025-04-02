@@ -28,19 +28,18 @@ struct Pass_Add : llvm::PassInfoMixin<Pass_Add> {
     bool modified = false;
     std::vector<llvm::Instruction *> toErase;
 
-    for (auto& block : F) {
-      for (auto& instr : block) {
-        if (auto* binaryOp = llvm::dyn_cast<llvm::BinaryOperator>(&instr)) {
+    for (auto &block : F) {
+      for (auto &instr : block) {
+        if (auto *binaryOp = llvm::dyn_cast<llvm::BinaryOperator>(&instr)) {
           if (binaryOp->getOpcode() == llvm::Instruction::Add) {
-            auto* firstOperand = binaryOp->getOperand(0);
-            auto* secondOperand = binaryOp->getOperand(1);
+            auto *firstOperand = binaryOp->getOperand(0);
+            auto *secondOperand = binaryOp->getOperand(1);
 
             if (firstOperand->getType() == addFunction->getArg(0)->getType() &&
-              secondOperand->getType() == addFunction->getArg(1)->getType()) {
-
+                secondOperand->getType() == addFunction->getArg(1)->getType()) {
               llvm::IRBuilder<> builder(binaryOp);
-              llvm::Value* functionCall = builder.CreateCall(
-                  addFunction, { firstOperand, secondOperand });
+              llvm::Value *functionCall = builder.CreateCall(
+                  addFunction, {firstOperand, secondOperand});
               functionCall->setName(binaryOp->getName());
 
               binaryOp->replaceAllUsesWith(functionCall);
