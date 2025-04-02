@@ -82,10 +82,10 @@ llvmGetPassPluginInfo() {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                 if (Name == "replace-div") {
-                   FPM.addPass(ReplaceDivPass());
-                   return true;
-                 }
+                  if (Name == "replace-div") {
+                    FPM.addPass(ReplaceDivPass());
+                    return true;
+                  }
                   return false;
                 });
           }};
