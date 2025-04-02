@@ -21,13 +21,13 @@ public:
           if (FAdd->getOpcode() == llvm::Instruction::FAdd) {
             for (int idx = 0; idx < 2; ++idx) {
               if (auto *FMul = llvm::dyn_cast<llvm::BinaryOperator>(
-			          FAdd->getOperand(idx))) {
+                      FAdd->getOperand(idx))) {
                 if (FMul->getOpcode() == llvm::Instruction::FMul) {
                   llvm::IRBuilder<> Builder(FAdd);
                   auto *fmaInst = Builder.CreateIntrinsic(
                     llvm::Intrinsic::fmuladd, {FMul->getType()},
                     {FMul->getOperand(0), FMul->getOperand(1),
-					 FAdd->getOperand(1 - idx)});
+                     FAdd->getOperand(1 - idx)});
                   FAdd->replaceAllUsesWith(fmaInst);
                   FAdd->eraseFromParent();
                   if (FMul->use_empty()) {
