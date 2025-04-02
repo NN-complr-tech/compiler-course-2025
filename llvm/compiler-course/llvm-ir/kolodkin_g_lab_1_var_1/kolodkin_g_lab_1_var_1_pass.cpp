@@ -25,9 +25,9 @@ public:
                 if (FMul->getOpcode() == llvm::Instruction::FMul) {
                   llvm::IRBuilder<> Builder(FAdd);
                   auto *fmaInst = Builder.CreateIntrinsic(
-                    llvm::Intrinsic::fmuladd, {FMul->getType()},
-                    {FMul->getOperand(0), FMul->getOperand(1),
-                     FAdd->getOperand(1 - idx)});
+                      llvm::Intrinsic::fmuladd, {FMul->getType()},
+                      {FMul->getOperand(0), FMul->getOperand(1),
+                       FAdd->getOperand(1 - idx)});
                   FAdd->replaceAllUsesWith(fmaInst);
                   FAdd->eraseFromParent();
                   if (FMul->use_empty()) {
