@@ -6,8 +6,8 @@
 ; CHECK: ret i32 %result
 
 ; CHECK-LABEL: define i32 @foo(
-; CHECK: %result = call i32 @add(i32 %x, i32 %y)
-; CHECK: ret i32 %result
+; CHECK: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
+; CHECK: ret i32 %[[RESULT]]
 
 define i32 @add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
