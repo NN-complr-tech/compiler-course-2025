@@ -6,12 +6,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Install clang-format
       run: |
         sudo apt-get install -y clang-format
     - name: Run clang-format
       run: |
-        git-clang-format --diff `git merge-base ${GITHUB_SHA} ${GITHUB_BASE_REF}`
+        git-clang-format --diff `git merge-base ${GITHUB_SHA} origin/${GITHUB_BASE_REF}` ${GITHUB_SHA} 2>&1 | tee log.txt
+        exit `grep -c diff log.txt`
   clang-tidy:
     runs-on: ubuntu-latest
     steps:
@@ -20,10 +23,13 @@ jobs:
         submodules: recursive
     - name: Update submodules
       run: git submodule update --init --recursive
-    - name: ccache
+
+    - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-          key: ${{ github.job }}
+        key: ${{ runner.os }}
+        create-symlink: true
+        max-size: 1.5G
     - uses: aobolensk/clang-tidy-review@v0.20.1-patch-clang-tidy-19
       id: review
       with:
