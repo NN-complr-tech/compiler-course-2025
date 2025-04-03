@@ -1,6 +1,7 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/PureFunctionPass_Solovyev_Danila_FIIT3_LLVM_IR%pluginext -passes="PureFunctionPass" -S %s | FileCheck %s 
 
 @g_value = external local_unnamed_addr global float, align 4
+@x_atomic = dso_local local_unnamed_addr global { i32 } zeroinitializer, align 4
 
 ; CHECK: #0
 define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) local_unnamed_addr{
@@ -60,5 +61,28 @@ entry:
   ret float %conv.i
 }
 
+; CHECK-NOT: #0
+define dso_local void @_Z5writev() local_unnamed_addr personality ptr @__gxx_personality_v0 {
+entry:
+  store atomic i32 42, ptr @x_atomic monotonic, align 4
+  ret void
+}
+
+; CHECK-NOT: #0
+define dso_local noundef i32 @_Z4readv() local_unnamed_addr {
+entry:
+  %0 = load atomic i32, ptr @x_atomic monotonic, align 4
+  ret i32 %0
+}
+
+declare i32 @__gxx_personality_v0(...)
+
 ; CHECK: #0
+; CHECK-SAME: pure
 attributes #0 = {"pure"}
+
+; Current tests working this way:
+; We have predefined attribute set with "pure" attribute
+; If function pure - opt assign this set to pure function, otherwise it'll NOT
+; So we checking function - if opt assigned attribute set to function
+; Also, we checking that attribute set containing attribute "pure"
