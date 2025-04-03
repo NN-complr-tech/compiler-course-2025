@@ -42,7 +42,8 @@ private:
 
 class myConsumer final : public clang::ASTConsumer {
 public:
-  myConsumer(clang::ASTContext *context, clang::Rewriter &rewriter, std::string& attr)
+  myConsumer(clang::ASTContext *context, clang::Rewriter &rewriter,
+             std::string &attr)
       : m_visitor(context, rewriter, attr) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
@@ -58,7 +59,8 @@ public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
-    return std::make_unique<myConsumer>(&ci.getASTContext(), m_rewriter, m_attr);
+    return std::make_unique<myConsumer>(&ci.getASTContext(), m_rewriter,
+                                        m_attr);
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
