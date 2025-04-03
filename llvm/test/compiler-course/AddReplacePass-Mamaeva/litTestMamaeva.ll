@@ -1,5 +1,5 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass%pluginext \
-; RUN: -passes=add-replace -S %s | FileCheck %s
+; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Mamaeva_Olga_FIIT3_LLVM_IR%pluginext \
+; RUN: -passes="add-replace" -S %s | FileCheck %s
 
 ; CHECK-LABEL: define i32 @add(
 ; CHECK: %result = add i32 %a, %b
