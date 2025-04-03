@@ -8,8 +8,7 @@
 
 namespace {
 struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
-  llvm::PreservedAnalyses run(llvm::Module &M,
-                              llvm::ModuleAnalysisManager &) {
+  llvm::PreservedAnalyses run(llvm::Module &M, llvm::ModuleAnalysisManager &) {
     bool Changed = false;
 
     // Находим функцию add в модуле
@@ -24,10 +23,11 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
 
     for (llvm::Function &F : M) {
       // Пропускаем саму функцию add
-      if (&F == TargetFunc) continue;
+      if (&F == TargetFunc)
+        continue;
 
       for (llvm::BasicBlock &BB : F) {
-        std::vector<llvm::BinaryOperator*> AddInstructions;
+        std::vector<llvm::BinaryOperator *> AddInstructions;
 
         // Собираем все инструкции add для замены
         for (llvm::Instruction &I : BB) {
@@ -45,9 +45,10 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
         // Выполняем замену
         for (auto *AddInst : AddInstructions) {
           llvm::IRBuilder<> Builder(AddInst);
-          llvm::Value *Args[] = {AddInst->getOperand(0), AddInst->getOperand(1)};
+          llvm::Value *Args[] = {AddInst->getOperand(0),
+                                 AddInst->getOperand(1)};
           llvm::CallInst *Call = Builder.CreateCall(TargetFunc, Args);
-          
+
           AddInst->replaceAllUsesWith(Call);
           AddInst->eraseFromParent();
           Changed = true;
@@ -56,7 +57,7 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
     }
 
     return Changed ? llvm::PreservedAnalyses::none()
-                  : llvm::PreservedAnalyses::all();
+                   : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
@@ -65,19 +66,16 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {
-      LLVM_PLUGIN_API_VERSION,
-      "AddReplacePass",  
-      "0.1",
-      [](llvm::PassBuilder &PB) {
-        PB.registerPipelineParsingCallback(
-            [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
-               llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-              if (Name == "add-replace") {  // Имя для вызова пасса
-                MPM.addPass(AddReplacePass{});
-                return true;
-              }
-              return false;
-            });
-      }};
+  return {LLVM_PLUGIN_API_VERSION, "AddReplacePass", "0.1",
+          [](llvm::PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
+                  if (Name == "add-replace") { // Имя для вызова пасса
+                    MPM.addPass(AddReplacePass{});
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }
