@@ -1,9 +1,9 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/IR/Module.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 namespace {
@@ -13,35 +13,43 @@ struct CallFunctionPass : llvm::PassInfoMixin<CallFunctionPass> {
     bool status = false;
     llvm::Module *mod = func.getParent();
     llvm::Function *CallFunc = mod->getFunction("add");
+<<<<<<< HEAD
     llvm::SmallVector<llvm::BinaryOperator*, 16> WorkList;
+=======
+    vector<llvm::BinaryOperator *> WorkList;
+>>>>>>> d4d34f744c4bb20137bf4767e7434bbcf43ca762
     if (!CallFunc || &func == CallFunc) {
-    	return llvm::PreservedAnalyses::all();
+      return llvm::PreservedAnalyses::all();
     }
-    
+
     for (auto &block : func) {
-    	for (auto &inst : block) {
-    		if (auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst)) {
-    			if (op->getOpcode() == llvm::Instruction::Add) {
-    				if (CallFunc->getFunctionType()->getNumParams() == 2 && 
-    						CallFunc->getFunctionType()->getParamType(0) == op->getOperand(0)->getType() &&
-    						CallFunc->getFunctionType()->getParamType(1) == op->getOperand(1)->getType() &&
-    						CallFunc->getFunctionType()->getReturnType() == op-> getType()) {
-    						WorkList.push_back(op);
-    				}
-    			}
-    		}
-    	}
-  	}
-  	
-  	for (auto *op : WorkList){
-  		llvm::IRBuilder<> Builder(op);
-  		llvm::Value *call = Builder.CreateCall(CallFunc, {op->getOperand(0), op->getOperand(1)}, op->getName());
-  		op->replaceAllUsesWith(call);
-    	op->eraseFromParent();
-    	status = true;
-  	}
-  	
-  	return status ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
+      for (auto &inst : block) {
+        if (auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst)) {
+          if (op->getOpcode() == llvm::Instruction::Add) {
+            if (CallFunc->getFunctionType()->getNumParams() == 2 &&
+                CallFunc->getFunctionType()->getParamType(0) ==
+                    op->getOperand(0)->getType() &&
+                CallFunc->getFunctionType()->getParamType(1) ==
+                    op->getOperand(1)->getType() &&
+                CallFunc->getFunctionType()->getReturnType() == op->getType()) {
+              WorkList.push_back(op);
+            }
+          }
+        }
+      }
+    }
+
+    for (auto *op : WorkList) {
+      llvm::IRBuilder<> Builder(op);
+      llvm::Value *call = Builder.CreateCall(
+          CallFunc, {op->getOperand(0), op->getOperand(1)}, op->getName());
+      op->replaceAllUsesWith(call);
+      op->eraseFromParent();
+      status = true;
+    }
+
+    return status ? llvm::PreservedAnalyses::none()
+                  : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
