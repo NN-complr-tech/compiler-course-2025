@@ -5,8 +5,6 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
-#include <vector>
-using std::vector;
 
 namespace {
 struct CallFunctionPass : llvm::PassInfoMixin<CallFunctionPass> {
@@ -15,7 +13,7 @@ struct CallFunctionPass : llvm::PassInfoMixin<CallFunctionPass> {
     bool status = false;
     llvm::Module *mod = func.getParent();
     llvm::Function *CallFunc = mod->getFunction("add");
-    vector<llvm::BinaryOperator*> WorkList;
+    llvm::SmallVector<llvm::BinaryOperator*, 16> WorkList;
     if (!CallFunc || &func == CallFunc) {
     	return llvm::PreservedAnalyses::all();
     }
