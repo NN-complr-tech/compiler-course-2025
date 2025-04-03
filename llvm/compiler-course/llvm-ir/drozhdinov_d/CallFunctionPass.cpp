@@ -13,11 +13,7 @@ struct CallFunctionPass : llvm::PassInfoMixin<CallFunctionPass> {
     bool status = false;
     llvm::Module *mod = func.getParent();
     llvm::Function *CallFunc = mod->getFunction("add");
-<<<<<<< HEAD
     llvm::SmallVector<llvm::BinaryOperator*, 16> WorkList;
-=======
-    vector<llvm::BinaryOperator *> WorkList;
->>>>>>> d4d34f744c4bb20137bf4767e7434bbcf43ca762
     if (!CallFunc || &func == CallFunc) {
       return llvm::PreservedAnalyses::all();
     }
