@@ -26,7 +26,7 @@ struct PureFunctionPass : llvm::PassInfoMixin<PureFunctionPass> {
         func.addFnAttr("pure");
       }
     }
-    b return llvm::PreservedAnalyses::all();
+    return llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
