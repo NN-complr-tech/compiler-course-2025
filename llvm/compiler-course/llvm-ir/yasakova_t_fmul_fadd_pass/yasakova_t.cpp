@@ -14,7 +14,8 @@ private:
     for (int i = 0; i < 2; ++i) {
       if (auto *multiplicationOp =
               llvm::dyn_cast<llvm::BinaryOperator>(additionOp->getOperand(i));
-          multiplicationOp && multiplicationOp->getOpcode() == llvm::Instruction::FMul) {
+          multiplicationOp &&
+          multiplicationOp->getOpcode() == llvm::Instruction::FMul) {
         TransformToFMAIntrinsic(additionOp, multiplicationOp);
         return;
       }
