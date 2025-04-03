@@ -14,14 +14,14 @@ private:
     for (int i = 0; i < 2; ++i) {
       if (auto *multiplicationOp =
               llvm::dyn_cast<llvm::BinaryOperator>(additionOp->getOperand(i));
-          multiplicationOp  && mul_op->getOpcode() == llvm::Instruction::FMul) {
+          multiplicationOp && mul_op->getOpcode() == llvm::Instruction::FMul) {
         TransformToFMAIntrinsic(additionOp, mul_op);
         return;
       }
     }
   }
 
-  void TransformToFMAIntrinsic(llvm::BinaryOperator *addition, 
+  void TransformToFMAIntrinsic(llvm::BinaryOperator *addition,
                                llvm::BinaryOperator *multiplication) {
     llvm::IRBuilder<> builder(addition);
     llvm::Value *remainingOperand = addition->getOperand(0) == multiplication
