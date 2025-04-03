@@ -25,7 +25,7 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
         continue;
       }
       for (llvm::BasicBlock &BB : F) {
-        std::vector<llvm::BinaryOperator *> ToReplace;
+        llvm::SmallVector<llvm::BinaryOperator *> ToReplace;
 
         for (llvm::Instruction &I : BB) {
           if (auto *BinOp = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
