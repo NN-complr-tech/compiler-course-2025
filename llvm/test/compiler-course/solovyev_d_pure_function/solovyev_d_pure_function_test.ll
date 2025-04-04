@@ -3,6 +3,7 @@
 @g_value = external local_unnamed_addr global float, align 4
 @x_atomic = dso_local local_unnamed_addr global { i32 } zeroinitializer, align 4
 
+; CHECK: @_Z3addii
 ; CHECK: #0
 define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) local_unnamed_addr{
 entry:
@@ -10,6 +11,7 @@ entry:
   ret i32 %add
 }
 
+; CHECK: @_Z3foof
 ; CHECK-NOT: #0
 define dso_local noundef float @_Z3foof(float noundef %a) local_unnamed_addr {
 entry:
@@ -18,6 +20,7 @@ entry:
   ret float %mul
 }
 
+; CHECK: @_Z3barRi
 ; CHECK-NOT: #0
 define dso_local noundef float @_Z3barRi(ptr nocapture noundef nonnull readonly align 4 dereferenceable(4) %c) local_unnamed_addr {
 entry:
@@ -27,6 +30,7 @@ entry:
   ret float %conv
 }
 
+; CHECK: @_Z3bazv
 ; CHECK-NOT: #0
 define dso_local noundef float @_Z3bazv() local_unnamed_addr {
 entry:
@@ -39,6 +43,7 @@ entry:
   ret float %conv
 }
 
+; CHECK: @_Z3quxif
 ; CHECK: #0
 define dso_local noundef float @_Z3quxif(i32 noundef %a, float noundef %c) local_unnamed_addr {
 entry:
@@ -47,6 +52,7 @@ entry:
   ret float %div
 }
 
+; CHECK: @_Z5corgev
 ; CHECK-NOT: #0
 define dso_local noundef float @_Z5corgev() local_unnamed_addr {
 entry:
@@ -61,6 +67,7 @@ entry:
   ret float %conv.i
 }
 
+; CHECK: @_Z5writev
 ; CHECK-NOT: #0
 define dso_local void @_Z5writev() local_unnamed_addr personality ptr @__gxx_personality_v0 {
 entry:
@@ -68,6 +75,7 @@ entry:
   ret void
 }
 
+; CHECK: @_Z4readv
 ; CHECK-NOT: #0
 define dso_local noundef i32 @_Z4readv() local_unnamed_addr {
 entry:
