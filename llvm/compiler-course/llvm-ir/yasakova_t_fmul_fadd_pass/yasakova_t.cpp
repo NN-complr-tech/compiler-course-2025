@@ -6,7 +6,7 @@
 
 namespace {
 
-class Fmul_fadd_pass : public llvm::PassInfoMixin<Fmul_fadd_pass> {
+class FmulFaddPass : public llvm::PassInfoMixin<FmulFaddPass> {
 private:
   bool wasModified = false;
 
@@ -14,25 +14,21 @@ private:
     for (int i = 0; i < 2; ++i) {
       if (auto *multiplicationOp =
               llvm::dyn_cast<llvm::BinaryOperator>(additionOp->getOperand(i));
-          multiplicationOp &&
-          multiplicationOp->getOpcode() == llvm::Instruction::FMul) {
+          multiplicationOp && multiplicationOp->getOpcode() == llvm::Instruction::FMul) {
         TransformToFMAIntrinsic(additionOp, multiplicationOp);
         return;
       }
     }
   }
 
-  void TransformToFMAIntrinsic(llvm::BinaryOperator *addition,
-                               llvm::BinaryOperator *multiplication) {
+  void TransformToFMAIntrinsic(llvm::BinaryOperator *addition, llvm::BinaryOperator *multiplication) {
     llvm::IRBuilder<> builder(addition);
-    llvm::Value *remainingOperand = addition->getOperand(0) == multiplication
-                                        ? addition->getOperand(1)
-                                        : addition->getOperand(0);
+    llvm::Value *remainingOperand =
+        addition->getOperand(0) == multiplication ? addition->getOperand(1) : addition->getOperand(0);
 
     addition->replaceAllUsesWith(builder.CreateIntrinsic(
         llvm::Intrinsic::fmuladd, {multiplication->getType()},
-        {multiplication->getOperand(0), multiplication->getOperand(1),
-         remainingOperand}));
+        {multiplication->getOperand(0), multiplication->getOperand(1), remainingOperand}));
 
     addition->eraseFromParent();
     if (multiplication->use_empty()) {
@@ -54,20 +50,20 @@ public:
     }
 
     return wasModified ? llvm::PreservedAnalyses::none()
-                       : llvm::PreservedAnalyses::all();
+                   : llvm::PreservedAnalyses::all();
   }
 };
 
 } // namespace
 
 llvm::PassPluginLibraryInfo GetPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "Fmul_fadd_pass", "0.1",
+  return {LLVM_PLUGIN_API_VERSION, "FmulFaddPass", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                  if (name == "Fmul_fadd_pass") {
-                    FPM.addPass(Fmul_fadd_pass{});
+                  if (name == "FmulFaddPass") {
+                    FPM.addPass(FmulFaddPass{});
                     return true;
                   }
                   return false;

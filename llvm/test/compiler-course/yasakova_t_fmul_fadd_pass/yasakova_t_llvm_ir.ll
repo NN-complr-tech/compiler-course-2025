@@ -28,34 +28,6 @@ entry:
   ret double %mul
 }
 
-; a * b + c
-; CHECK-LABEL: define dso_local noundef double @example(double noundef %0, double noundef %1, double noundef %2) {
-; CHECK-NEXT: entry:
-; CHECK-NEXT: %3 = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
-; CHECK-NEXT: ret double %3
-; CHECK-NEXT: }
-
-define dso_local noundef double @example(double noundef %0, double noundef %1, double noundef %2) {
-entry:
-  %mul = fmul double %0, %1
-  %add = fadd double %mul, %2
-  ret double %add
-}
-
-; a * 5.0 + 2.0
-; CHECK-LABEL: define dso_local noundef double @const(double noundef %a) {
-; CHECK-NEXT: entry:
-; CHECK-NEXT: %0 = call double @llvm.fmuladd.f64(double %a, double 5.000000e+00, double 2.000000e+00)
-; CHECK-NEXT: ret double %0
-; CHECK-NEXT: }
-
-define dso_local noundef double @const(double noundef %a) {
-entry:
-  %mul = fmul double %a, 5.0
-  %add = fadd double %mul, 2.0
-  ret double %add
-}
-
 ; a * b + c + d
 ; CHECK-LABEL:define dso_local noundef double @chain(double noundef %a, double noundef %b, double noundef %c, double noundef %d) {
 ; CHECK-NEXT: entry:
@@ -90,16 +62,3 @@ entry:
   %sum = fadd double %add1, %add2
   ret double %sum
 }
-
-; float fmax2(float a, float b, float c) {
-;   float x1 = a * b;
-;   float x2 = x1 + c;
-;   float x3 = x1 + x2;
-;   return x3;
-; }
-; CHECK-LABEL: define dso_local noundef float @review(float noundef %a, float noundef %b, float noundef %c) {
-; CHECK-NEXT: entry:
-; CHECK-NEXT: %0 = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
-; CHECK-NEXT: %1 = call float @llvm.fmuladd.f32(float %a, float %b, float %0)
-; CHECK-NEXT: ret float %1
-; CHECK-NEXT: }

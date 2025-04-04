@@ -1,4 +1,4 @@
-set(Title "Fmul_fadd_pass")
+set(Title "FmulFaddPass")
 set(Student "Yasakova_Tatiana")
 set(Group "FIIT1")
 set(TARGET_NAME "${Title}_${Student}_${Group}_LLVM_IR")
