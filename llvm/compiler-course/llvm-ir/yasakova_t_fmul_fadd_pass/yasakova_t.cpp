@@ -14,21 +14,25 @@ private:
     for (int i = 0; i < 2; ++i) {
       if (auto *multiplicationOp =
               llvm::dyn_cast<llvm::BinaryOperator>(additionOp->getOperand(i));
-          multiplicationOp && multiplicationOp->getOpcode() == llvm::Instruction::FMul) {
+          multiplicationOp &&
+          multiplicationOp->getOpcode() == llvm::Instruction::FMul) {
         TransformToFMAIntrinsic(additionOp, multiplicationOp);
         return;
       }
     }
   }
 
-  void TransformToFMAIntrinsic(llvm::BinaryOperator *addition, llvm::BinaryOperator *multiplication) {
+  void TransformToFMAIntrinsic(llvm::BinaryOperator *addition,
+                               llvm::BinaryOperator *multiplication) {
     llvm::IRBuilder<> builder(addition);
-    llvm::Value *remainingOperand =
-        addition->getOperand(0) == multiplication ? addition->getOperand(1) : addition->getOperand(0);
+    llvm::Value *remainingOperand = addition->getOperand(0) == multiplication
+                                        ? addition->getOperand(1)
+                                        : addition->getOperand(0);
 
     addition->replaceAllUsesWith(builder.CreateIntrinsic(
         llvm::Intrinsic::fmuladd, {multiplication->getType()},
-        {multiplication->getOperand(0), multiplication->getOperand(1), remainingOperand}));
+        {multiplication->getOperand(0), multiplication->getOperand(1),
+         remainingOperand}));
 
     addition->eraseFromParent();
     if (multiplication->use_empty()) {
@@ -50,7 +54,7 @@ public:
     }
 
     return wasModified ? llvm::PreservedAnalyses::none()
-                   : llvm::PreservedAnalyses::all();
+                       : llvm::PreservedAnalyses::all();
   }
 };
 
