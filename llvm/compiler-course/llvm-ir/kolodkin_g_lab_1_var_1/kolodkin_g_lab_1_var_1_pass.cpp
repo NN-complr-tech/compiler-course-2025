@@ -34,7 +34,7 @@ public:
     bool modified = false;
 
     for (auto &BB : F) {
-      std::unordered_map<std::pair<llvm::Value*, llvm::Value*>, llvm::Value*,
+      std::unordered_map<std::pair<llvm::Value *, llvm::Value *>, llvm::Value *,
                          PairHash, PairEqual>
           seenMultiplications;
 
@@ -75,9 +75,9 @@ public:
           if (!isUsedInDivision) {
             llvm::IRBuilder<> Builder(FAdd);
             auto *fmaInst = Builder.CreateIntrinsic(
-              llvm::Intrinsic::fmuladd, {FMul->getType()},
-              {FMul->getOperand(0), FMul->getOperand(1),
-               FAdd->getOperand(1 - idx)});
+                llvm::Intrinsic::fmuladd, {FMul->getType()},
+                {FMul->getOperand(0), FMul->getOperand(1),
+                 FAdd->getOperand(1 - idx)});
             FAdd->replaceAllUsesWith(fmaInst);
             FAdd->eraseFromParent();
 
