@@ -21,8 +21,8 @@ entry:
 ; CHECK: define dso_local noundef float @_Z3barfff(float noundef %a1, float noundef %b1, float noundef %c1) local_unnamed_addr {
 ; CHECK-NEXT: entry:
 ; CHECK-NEXT: %mul = fmul float %a1, %b1
-; CHECK-NEXT: %0 = call float @llvm.fmuladd.f32(float %a1, float %b1, float %c1)
-; CHECK-NEXT: %div = fdiv float %0, %mul
+; CHECK-NEXT: %add = fadd float %mul, %c1
+; CHECK-NEXT: %div = fdiv float %add, %mul
 ; CHECK-NEXT: %conv3 = fadd float %div, 2.000000e+00
 ; CHECK-NEXT: ret float %conv3
 ; CHECK-NEXT: }
