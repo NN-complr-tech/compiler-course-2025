@@ -12,5 +12,8 @@ tests:
  - "llvm/test/compiler-course/**"
  - "mlir/test/compiler-course/**"
 
+docs:
+ - "README.md"
+
 ci:
  - ".github/**"
