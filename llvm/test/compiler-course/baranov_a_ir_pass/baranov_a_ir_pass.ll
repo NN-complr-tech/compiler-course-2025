@@ -1,4 +1,4 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/MulAddPass_Baranov_Aleksey_FIIT1_LLVM_IR%pluginext -passes=FmuladdPass -S %s | FileCheck %s
+; RUN: opt -load-pass-plugin %llvmshlibdir/MulAddPass_Baranov_Aleksey_FIIT1_LLVM_IR%pluginext -passes=FMulAddPass -S %s | FileCheck %s
 
 ; === Case 1: Multiplication reused twice (should only replace in one place) ===
 ; CHECK-LABEL: define double @reused_mul(double %a, double %b, double %c) {
