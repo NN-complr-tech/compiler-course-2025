@@ -6,16 +6,13 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
-using namespace std;
-using namespace llvm;
-
 namespace {
 struct Add_Pass : llvm::PassInfoMixin<Add_Pass> {
   llvm::PreservedAnalyses run(llvm::Module &module,
                               llvm::ModuleAnalysisManager &) {
 
-    pair<Type *, Type *> add_types;
-    Function *add_func_ptr = nullptr;
+    std::pair<llvm::Type *, llvm::Type *> add_types;
+    llvm::Function *add_func_ptr = nullptr;
     bool none = 0;
 
     // store all overloads
@@ -25,7 +22,7 @@ struct Add_Pass : llvm::PassInfoMixin<Add_Pass> {
         continue;
       }
 
-      FunctionType *funcType = func.getFunctionType();
+      llvm::FunctionType *funcType = func.getFunctionType();
       if (funcType->getNumParams() == 2) {
         add_types = {funcType->getParamType(0), funcType->getParamType(1)};
         add_func_ptr = &func;
@@ -33,7 +30,7 @@ struct Add_Pass : llvm::PassInfoMixin<Add_Pass> {
       }
     }
     if (add_func_ptr == nullptr) {
-      return PreservedAnalyses::all();
+      return llvm::PreservedAnalyses::all();
     }
 
     // check all add operators
@@ -46,15 +43,15 @@ struct Add_Pass : llvm::PassInfoMixin<Add_Pass> {
       for (auto &op : func) {
         for (auto it = op.begin(); it != op.end();) {
           auto &inst = *it++;
-          if (isa<BinaryOperator>(inst) &&
-              inst.getOpcode() == Instruction::Add) {
-            Type *left_type = inst.getOperand(0)->getType();
-            Type *right_type = inst.getOperand(1)->getType();
-            pair<Type *, Type *> par = {left_type, right_type};
+          if (llvm::isa<llvm::BinaryOperator>(inst) &&
+              inst.getOpcode() == llvm::Instruction::Add) {
+            llvm::Type *left_type = inst.getOperand(0)->getType();
+            llvm::Type *right_type = inst.getOperand(1)->getType();
+            std::pair<llvm::Type *, llvm::Type *> par = {left_type, right_type};
 
             if (par == add_types) {
-              IRBuilder<> builder(&inst);
-              Value *call = builder.CreateCall(
+              llvm::IRBuilder<> builder(&inst);
+              llvm::Value *call = builder.CreateCall(
                   add_func_ptr, {inst.getOperand(0), inst.getOperand(1)});
               inst.replaceAllUsesWith(call);
               inst.eraseFromParent();
@@ -66,9 +63,9 @@ struct Add_Pass : llvm::PassInfoMixin<Add_Pass> {
     }
 
     if (none) {
-      return PreservedAnalyses::none();
+      return llvm::PreservedAnalyses::none();
     }
-    return PreservedAnalyses::all();
+    return llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
