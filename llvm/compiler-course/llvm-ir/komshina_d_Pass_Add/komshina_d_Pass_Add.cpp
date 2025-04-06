@@ -1,3 +1,4 @@
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
@@ -5,7 +6,6 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/ADT/SmallVector.h"
 
 namespace {
 struct PassAdd : llvm::PassInfoMixin<PassAdd> {
@@ -27,7 +27,7 @@ struct PassAdd : llvm::PassInfoMixin<PassAdd> {
     llvm::Function *addFunction = &*it;
 
     bool modified = false;
-    llvm::SmallVector<llvm::Instruction*, 8> toErase;
+    llvm::SmallVector<llvm::Instruction *, 8> toErase;
 
     for (auto &block : F) {
       for (auto &instr : block) {
@@ -66,8 +66,7 @@ struct PassAdd : llvm::PassInfoMixin<PassAdd> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "PassAdd", "0.1",
-          [](llvm::PassBuilder &PB) {
+  return {LLVM_PLUGIN_API_VERSION, "PassAdd", "0.1", [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
