@@ -2,10 +2,9 @@
 
 ; === Case 1: Multiplication reused twice (should only replace in one place) ===
 ; CHECK-LABEL: define double @reused_mul(double %a, double %b, double %c) {
+; CHECK: %mul = fmul double %a, %b
 ; CHECK: %0 = call double @llvm.fmuladd.f64(double %a, double %b, double %c)
-; CHECK: %1 = fmul double %a, %b
-; CHECK: %add2 = fadd double %0, %1
-; CHECK: ret double %add2
+; CHECK: %add2 = fadd double %0, %mul
 define double @reused_mul(double %a, double %b, double %c) {
 entry:
   %mul = fmul double %a, %b
@@ -16,7 +15,7 @@ entry:
 
 ; === Case 2: FMA pattern inside loop ===
 ; CHECK-LABEL: define double @in_loop(double %a, double %b, double %c) {
-; CHECK: call double @llvm.fmuladd.f64(
+; CHECK: call double @llvm.fmuladd.f64(double %a, double %b, double %c)
 define double @in_loop(double %a, double %b, double %c) {
 entry:
   br label %loop
@@ -33,7 +32,7 @@ exit:
 
 ; === Case 3: Operand order changed (c + a * b) ===
 ; CHECK-LABEL: define double @reverse_order(double %a, double %b, double %c) {
-; CHECK: call double @llvm.fmuladd.f64(double %x, double %y, double %z)
+; CHECK: call double @llvm.fmuladd.f64(double %a, double %b, double %c)
 define double @reverse_order(double %a, double %b, double %c) {
 entry:
   %mul = fmul double %a, %b
@@ -43,7 +42,7 @@ entry:
 
 ; === Case 4: Constant folding possibility (folded instead of fma) ===
 ; CHECK-LABEL: define double @const_fold(double %a) {
-; CHECK: %0 = call double @llvm.fmuladd.f64(double %a, double 2.0, double 3.0)
+; CHECK: %0 = call double @llvm.fmuladd.f64(double %a, double 2.000000e+00, double 3.000000e+00)
 define double @const_fold(double %a) {
 entry:
   %mul = fmul double %a, 2.0
@@ -53,7 +52,7 @@ entry:
 
 ; === Case 5: Float vs Double mixed ===
 ; CHECK-LABEL: define float @float_case(float %a, float %b, float %c) {
-; CHECK: call float @llvm.fmuladd.f32
+; CHECK: call float @llvm.fmuladd.f32(float %a, float %b, float %c)
 define float @float_case(float %a, float %b, float %c) {
 entry:
   %mul = fmul float %a, %b

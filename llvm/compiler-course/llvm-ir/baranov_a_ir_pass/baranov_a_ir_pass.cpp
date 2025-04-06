@@ -26,18 +26,24 @@ llvm::BinaryOperator *getFMulCandidate(llvm::Value *Operand) {
 
 std::vector<FmaCandidate> collectCandidates(llvm::BasicBlock &BB) {
   std::vector<FmaCandidate> Candidates;
+  std::set<llvm::Value *> UsedFMuls;
 
   for (llvm::Instruction &Inst : BB) {
     if (auto *FAddInst = llvm::dyn_cast<llvm::BinaryOperator>(&Inst)) {
       if (FAddInst->getOpcode() != llvm::Instruction::FAdd)
         continue;
+
       llvm::Value *Op0 = FAddInst->getOperand(0);
       llvm::Value *Op1 = FAddInst->getOperand(1);
 
       if (llvm::BinaryOperator *FMulInst = getFMulCandidate(Op0)) {
-        Candidates.push_back({FAddInst, FMulInst, Op1});
+        if (UsedFMuls.insert(FMulInst).second) {
+          Candidates.push_back({FAddInst, FMulInst, Op1});
+        }
       } else if (llvm::BinaryOperator *FMulInst = getFMulCandidate(Op1)) {
-        Candidates.push_back({FAddInst, FMulInst, Op0});
+        if (UsedFMuls.insert(FMulInst).second) {
+          Candidates.push_back({FAddInst, FMulInst, Op0});
+        }
       }
     }
   }
@@ -55,10 +61,9 @@ void replaceCandidate(const FmaCandidate &Candidate,
        Candidate.OtherOperand});
 
   Candidate.FAddInst->replaceAllUsesWith(FMAValue);
-
   ToErase.push_back(Candidate.FAddInst);
 
-  if (Candidate.FMulInst->use_empty()) {
+  if (Candidate.FMulInst->getNumUses() == 1) {
     ToErase.push_back(Candidate.FMulInst);
   }
 }
@@ -79,8 +84,18 @@ struct FusedMulAddPass : llvm::PassInfoMixin<FusedMulAddPass> {
     }
 
     for (llvm::Instruction *Inst : ToErase) {
-      if (Inst->use_empty()) {
+      if (llvm::isa<llvm::BinaryOperator>(Inst) &&
+          Inst->getOpcode() == llvm::Instruction::FAdd) {
         Inst->eraseFromParent();
+      }
+    }
+
+    for (llvm::Instruction *Inst : ToErase) {
+      if (llvm::isa<llvm::BinaryOperator>(Inst) &&
+          Inst->getOpcode() == llvm::Instruction::FMul) {
+        if (Inst->use_empty()) {
+          Inst->eraseFromParent();
+        }
       }
     }
 
