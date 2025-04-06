@@ -100,4 +100,3 @@ define i32 @test_udiv_zero(i32 %x) {
   %div = udiv i32 %x, 0
   ret i32 %div
 }
- 
