@@ -11,65 +11,65 @@ namespace {
 
 class ReplaceDivPass : public llvm::PassInfoMixin<ReplaceDivPass> {
 public:
-  llvm::PreservedAnalyses run(llvm::Function &Func,
+  llvm::PreservedAnalyses run(llvm::Function &F,
                               llvm::FunctionAnalysisManager &) {
-    bool modified = false;
+    bool changed = false;
 
-    for (auto &Block : Func) {
-      llvm::SmallVector<llvm::Instruction *, 8> ToErase;
+    for (auto &BB : F) {
+      llvm::SmallVector<llvm::Instruction *, 8> ToDelete;
 
-      for (auto &Inst : Block) {
-        auto *BinOp = llvm::dyn_cast<llvm::BinaryOperator>(&Inst);
-        if (!BinOp)
+      for (auto &I : BB) {
+        auto *Div = llvm::dyn_cast<llvm::BinaryOperator>(&I);
+        if (!Div)
           continue;
 
-        if (BinOp->getOpcode() != llvm::Instruction::SDiv &&
-            BinOp->getOpcode() != llvm::Instruction::UDiv)
+        if (Div->getOpcode() != llvm::Instruction::SDiv &&
+            Div->getOpcode() != llvm::Instruction::UDiv)
           continue;
 
-        auto *ConstVal =
-            llvm::dyn_cast<llvm::ConstantInt>(BinOp->getOperand(1));
-        if (!ConstVal)
+        auto *ConstInt =
+            llvm::dyn_cast<llvm::ConstantInt>(Div->getOperand(1));
+        if (!ConstInt)
           continue;
 
-        int64_t divisor = ConstVal->getValue().getSExtValue();
+        int64_t divisor = ConstInt->getValue().getSExtValue();
         if (divisor == 0)
           continue;
 
-        llvm::IRBuilder<> Builder(BinOp);
-        llvm::Value *Dividend = BinOp->getOperand(0);
+        llvm::IRBuilder<> Builder(Div);
+        llvm::Value *Dividend = Div->getOperand(0);
 
         if (divisor == 1 || divisor == -1) {
           llvm::Value *NewVal =
               (divisor == 1) ? Dividend : Builder.CreateNeg(Dividend);
-          BinOp->replaceAllUsesWith(NewVal);
-          ToErase.push_back(BinOp);
-          modified = true;
+          Div->replaceAllUsesWith(NewVal);
+          ToDelete.push_back(Div);
+          changed = true;
           continue;
         }
 
-        if ((std::abs(divisor) & (std::abs(divisor) - 1)) == 0) {
-          unsigned ShiftAmount = llvm::Log2_64(std::abs(divisor));
+        if (llvm::isPowerOf2_64(std::abs(divisor))) {
+          unsigned shiftAmount = llvm::Log2_64(std::abs(divisor));
           llvm::Value *Shifted = Builder.CreateAShr(
-              Dividend, llvm::ConstantInt::get(BinOp->getType(), ShiftAmount));
+              Dividend, llvm::ConstantInt::get(Div->getType(), shiftAmount));
 
           if (divisor < 0) {
             Shifted = Builder.CreateNeg(Shifted);
           }
 
-          BinOp->replaceAllUsesWith(Shifted);
-          ToErase.push_back(BinOp);
-          modified = true;
+          Div->replaceAllUsesWith(Shifted);
+          ToDelete.push_back(Div);
+          changed = true;
         }
       }
 
-      for (auto *Inst : ToErase) {
-        Inst->eraseFromParent();
+      for (auto *I : ToDelete) {
+        I->eraseFromParent();
       }
     }
 
-    return modified ? llvm::PreservedAnalyses::none()
-                    : llvm::PreservedAnalyses::all();
+    return changed ? llvm::PreservedAnalyses::none()
+                   : llvm::PreservedAnalyses::all();
   }
 };
 
