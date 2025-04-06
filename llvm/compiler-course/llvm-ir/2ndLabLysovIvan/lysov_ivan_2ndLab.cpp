@@ -8,23 +8,15 @@ namespace {
 struct PureFunctionPass : llvm::PassInfoMixin<PureFunctionPass> {
   llvm::PreservedAnalyses run(llvm::Function &func,
                               llvm::FunctionAnalysisManager &) {
-    bool isPure = true;
     for (auto &basicBlock : func) {
       for (auto &instruction : basicBlock) {
         if (instruction.mayReadOrWriteMemory()) {
-
-          isPure = false;
-          break;
+          return llvm::PreservedAnalyses::none();
         }
       }
-      if (!isPure)
-        break;
     }
 
-    if (isPure) {
-      func.addFnAttr("pure");
-    }
-
+    func.addFnAttr("pure");
     return llvm::PreservedAnalyses::none();
   }
 
