@@ -95,12 +95,12 @@ struct FusedMulAddPass : llvm::PassInfoMixin<FusedMulAddPass> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "FusedMulAddPass", "0.1",
+  return {LLVM_PLUGIN_API_VERSION, "FMulAddPass", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                  if (Name == "FusedMulAddPass") {
+                  if (Name == "FMulAddPass") {
                     FPM.addPass(FusedMulAddPass{});
                     return true;
                   }
