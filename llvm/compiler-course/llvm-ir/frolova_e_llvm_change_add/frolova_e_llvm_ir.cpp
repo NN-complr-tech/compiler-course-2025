@@ -1,3 +1,4 @@
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
@@ -11,14 +12,34 @@ struct ChangeADD : llvm::PassInfoMixin<ChangeADD> {
 private:
   bool changed = false;
 
-  void processBasicBlock(llvm::BasicBlock &BB, llvm::Function *addFunc) {
-    for (auto it = BB.begin(); it != BB.end();) {
-      llvm::Instruction *I = &*it++;
-      if (llvm::BinaryOperator *BI = llvm::dyn_cast<llvm::BinaryOperator>(I)) {
-        if (BI->getOpcode() == llvm::Instruction::Add) {
-          replaceAddWithCall(BI, addFunc);
-          it = BI->eraseFromParent();
-          changed = true;
+  struct ReplaceInfo {
+    unsigned opcode;
+    llvm::Function *func;
+  };
+
+  void
+  processBasicBlock(llvm::BasicBlock &BB,
+                    const llvm::SmallVector<ReplaceInfo, 4> &replacements) {
+    for (auto &instruction : llvm::make_early_inc_range(BB)) {
+      if (auto *BI = llvm::dyn_cast<llvm::BinaryOperator>(&instruction)) {
+        for (const auto &rep : replacements) {
+          if (BI->getOpcode() == rep.opcode && rep.func) {
+            llvm::FunctionType *funcType = rep.func->getFunctionType();
+            llvm::Type *operand0Type = BI->getOperand(0)->getType();
+            llvm::Type *operand1Type = BI->getOperand(1)->getType();
+            llvm::Type *resultType = BI->getType();
+
+            if (funcType->getNumParams() == 2 &&
+                funcType->getParamType(0) == operand0Type &&
+                funcType->getParamType(1) == operand1Type &&
+                funcType->getReturnType() == resultType) {
+
+              replaceAddWithCall(BI, rep.func);
+              BI->eraseFromParent();
+              changed = true;
+              break;
+            }
+          }
         }
       }
     }
@@ -40,13 +61,20 @@ public:
                               llvm::FunctionAnalysisManager &) {
     llvm::Module *M = F.getParent();
     llvm::Function *addFunc = M->getFunction("add");
+    llvm::Function *faddFunc = M->getFunction("fadd");
 
-    if (!addFunc || F.getName() == "add") {
+    if ((addFunc && F.getName() == "add") ||
+        (faddFunc && F.getName() == "fadd")) {
       return llvm::PreservedAnalyses::all();
     }
 
+    llvm::SmallVector<ReplaceInfo, 4> replacements = {
+        {llvm::Instruction::Add, addFunc},
+        {llvm::Instruction::FAdd, faddFunc},
+    };
+
     for (llvm::BasicBlock &BB : F) {
-      processBasicBlock(BB, addFunc);
+      processBasicBlock(BB, replacements);
     }
 
     return changed ? llvm::PreservedAnalyses::none()
@@ -55,7 +83,6 @@ public:
 
   static bool isRequired() { return true; }
 };
-
 } // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
