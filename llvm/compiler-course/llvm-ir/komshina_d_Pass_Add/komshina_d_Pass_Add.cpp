@@ -5,9 +5,10 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace {
-struct Pass_Add : llvm::PassInfoMixin<Pass_Add> {
+struct PassAdd : llvm::PassInfoMixin<PassAdd> {
   llvm::PreservedAnalyses run(llvm::Function &F,
                               llvm::FunctionAnalysisManager &) {
     if (F.getName() == "add") {
@@ -26,7 +27,7 @@ struct Pass_Add : llvm::PassInfoMixin<Pass_Add> {
     llvm::Function *addFunction = &*it;
 
     bool modified = false;
-    std::vector<llvm::Instruction *> toErase;
+    llvm::SmallVector<llvm::Instruction*, 8> toErase;
 
     for (auto &block : F) {
       for (auto &instr : block) {
@@ -65,13 +66,13 @@ struct Pass_Add : llvm::PassInfoMixin<Pass_Add> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "Pass_Add", "0.1",
+  return {LLVM_PLUGIN_API_VERSION, "PassAdd", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                  if (name == "Pass_Add") {
-                    FPM.addPass(Pass_Add{});
+                  if (name == "PassAdd") {
+                    FPM.addPass(PassAdd{});
                     return true;
                   }
                   return false;
