@@ -27,8 +27,7 @@ public:
             Div->getOpcode() != llvm::Instruction::UDiv)
           continue;
 
-        auto *ConstInt =
-            llvm::dyn_cast<llvm::ConstantInt>(Div->getOperand(1));
+        auto *ConstInt = llvm::dyn_cast<llvm::ConstantInt>(Div->getOperand(1));
         if (!ConstInt)
           continue;
 
