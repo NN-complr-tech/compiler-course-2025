@@ -1,8 +1,5 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
-; RUN: -passes="PassAdd" -S %s | FileCheck %s --check-prefix=CHECK
-
-; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
-; RUN: -passes="PassAdd" -S %s | FileCheck %s --check-prefix=NOADD
+; RUN: -passes="PassAdd" -S %s | FileCheck %s --check-prefixes CHECK,NOADD
 
 ; CHECK: define i32 @add(i32 %a, i32 %b)
 ; CHECK: %result = add i32 %a, %b
@@ -26,7 +23,7 @@ define i32 @foo(i32 %x, i32 %y) {
   ret i32 %sum
 }
 
-; CHECK: define i64 @bar(i64 %m, i64 %n)
+; CHECK: define i64 @bar(i64 %m, i64 %n) {
 ; CHECK-NOT: call i64 @add
 ; CHECK: %sum = add i64 %m, %n
 ; CHECK: ret i64 %sum
@@ -36,11 +33,11 @@ define i64 @bar(i64 %m, i64 %n) {
   ret i64 %sum
 }
 
-; NOADD-LABEL: define i32 @baz(i32 %a, i32 %b)
-; NOADD: %res = add i32 %a, %b
-; NOADD: ret i32 %res
+; NOADD-LABEL: define i32 @no_add_func(i32 %x, i32 %y)
+; NOADD: %sum = add i32 %x, %y
+; NOADD: ret i32 %sum
 
-define i32 @baz(i32 %a, i32 %b) {
-  %res = add i32 %a, %b
-  ret i32 %res
+define i32 @no_add_func(i32 %x, i32 %y) {
+  %sum = add i32 %x, %y
+  ret i32 %sum
 }
