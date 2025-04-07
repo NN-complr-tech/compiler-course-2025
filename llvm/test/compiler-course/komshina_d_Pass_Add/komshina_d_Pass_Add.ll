@@ -33,3 +33,10 @@ define i64 @bar(i64 %m, i64 %n) {
   ret i64 %sum
 }
 
+; CHECK-LABEL: define i32 @no_add_func(i32 %x, i32 %y)
+; CHECK: %sum = add i32 %x, %y
+; CHECK: ret i32 %sum
+define i32 @no_add_func(i32 %x, i32 %y) {
+  %sum = add i32 %x, %y
+  ret i32 %sum
+}
