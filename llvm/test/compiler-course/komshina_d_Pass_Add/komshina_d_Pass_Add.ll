@@ -1,7 +1,8 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
 ; RUN: -passes="PassAdd" -S %s | FileCheck %s --check-prefix=CHECK
+
 ; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
-; RUN: -passes="PassAdd" -S %s --function=baz | FileCheck %s --check-prefix=NOADD
+; RUN: -passes="PassAdd" -S %s | FileCheck %s --check-prefix=NOADD
 
 ; CHECK: define i32 @add(i32 %a, i32 %b)
 ; CHECK: %result = add i32 %a, %b
