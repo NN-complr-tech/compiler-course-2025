@@ -76,12 +76,8 @@ void replaceCandidate(const FmaCandidate &Candidate,
   auto *FMAValue = Builder.CreateIntrinsic(
       llvm::Intrinsic::fmuladd, FMul->getType(),
       {FMul->getOperand(0), FMul->getOperand(1), Candidate.OtherOperand});
-
-  // Заменяем все использования FAdd на FMA
   FAdd->replaceAllUsesWith(FMAValue);
   ToErase.push_back(FAdd);
-
-  // Удаляем FMul, если оно больше нигде не используется (до замены!)
   if (FMul->hasOneUse()) {
     ToErase.push_back(FMul);
   }
