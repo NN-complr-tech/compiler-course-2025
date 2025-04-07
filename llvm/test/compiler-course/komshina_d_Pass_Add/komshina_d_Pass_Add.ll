@@ -44,3 +44,10 @@ define i64 @far(i64 %x, i64 %y) {
   %sum = add i64 %x, %y
   ret i64 %sum
 }
+
+; CHECK-NOT: define i64 @add(
+; CHECK: define i64 @foo(i64 %x)
+
+define i64 @foo(i64 %x) {
+  ret i64 %x
+}
