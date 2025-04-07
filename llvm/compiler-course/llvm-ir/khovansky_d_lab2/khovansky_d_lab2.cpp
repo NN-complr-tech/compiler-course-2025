@@ -22,7 +22,6 @@ struct ReplaceAddInstructionPass
 
     llvm::Function *AddFunc = Mod->getFunction("add");
 
-    // проверка на названия типа "__add"
     if (!AddFunc || AddFunc == &Func || AddFunc->getName() != "add") {
       return llvm::PreservedAnalyses::all();
     }

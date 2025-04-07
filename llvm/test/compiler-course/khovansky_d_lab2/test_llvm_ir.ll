@@ -47,7 +47,7 @@ entry:
 ; CHECK:       entry:
 ; CHECK:       add i32 %x, 42
 ; CHECK:       ret i32
-; CHECK-NOT:   add i32 %x, %y
+; CHECK-NOT:   call i32 @add(i32 %x, 42)
 define i32 @const_operand(i32 %x) {
 entry:
   %sum = add i32 %x, 42
@@ -59,7 +59,7 @@ entry:
 ; CHECK:       entry:
 ; CHECK:       fadd double %a, %b
 ; CHECK:       ret double
-; CHECK-NOT:   add i32 %x, %y
+; CHECK-NOT:   call i32 @add(i32 %a, i32 %b)
 define double @double_add(double %a, double %b) {
 entry:
   %sum = fadd double %a, %b
