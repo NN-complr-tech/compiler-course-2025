@@ -21,3 +21,13 @@ define i64 @bar(i64 %x, i64 %y) {
   %sum = add i64 %x, %y
   ret i64 %sum
 }
+
+; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Kudryashova_Irina_FIIT3_LLVM_IR%pluginext \
+; RUN: -passes="AddReplacePass" -S %s | FileCheck %s
+
+; CHECK-LABEL: @far
+; CHECK: add i64 %x, %y
+define i64 @far(i64 %x, i64 %y) {
+  %sum = add i64 %x, %y
+  ret i64 %sum
+}
