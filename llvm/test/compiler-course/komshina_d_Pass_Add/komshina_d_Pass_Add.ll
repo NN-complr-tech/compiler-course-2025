@@ -32,3 +32,12 @@ define i64 @bar(i64 %m, i64 %n) {
   %sum = add i64 %m, %n
   ret i64 %sum
 }
+
+; CHECK-LABEL: define i32 @baz(i32 %p, i32 %q)
+; CHECK: %sum = add i32 %p, %q
+; CHECK: ret i32 %sum
+
+define i32 @baz(i32 %p, i32 %q) {
+  %sum = add i32 %p, %q
+  ret i32 %sum
+}
