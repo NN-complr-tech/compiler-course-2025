@@ -9,6 +9,10 @@
 ; CHECK: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
 ; CHECK: ret i32 %[[RESULT]]
 
+; CHECK-LABEL: define i64 @bar
+; CHECK: %sum = add i64 %a, %b
+; CHECK: ret i64 %sum
+
 define i32 @add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
     ret i32 %result
@@ -17,4 +21,9 @@ define i32 @add(i32 %a, i32 %b) {
 define i32 @foo(i32 %x, i32 %y) {
     %result = add i32 %x, %y
     ret i32 %result
+}
+
+define i64 @bar(i64 %a, i64 %b) {
+    %sum = add i64 %a, %b
+    ret i64 %sum
 }
