@@ -4,7 +4,7 @@
 @x_atomic = dso_local local_unnamed_addr global { i32 } zeroinitializer, align 4
 
 ; CHECK: @_Z3addii
-; CHECK: #0
+; CHECK-SAME: #0
 define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) local_unnamed_addr{
 entry:
   %add = add nsw i32 %b, %a
@@ -44,7 +44,7 @@ entry:
 }
 
 ; CHECK: @_Z3quxif
-; CHECK: #0
+; CHECK-SAME: #0
 define dso_local noundef float @_Z3quxif(i32 noundef %a, float noundef %c) local_unnamed_addr {
 entry:
   %conv = sitofp i32 %a to float
