@@ -36,18 +36,18 @@ define i64 @bar(i64 %m, i64 %n) {
 ; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
 ; RUN: -passes="PassAdd" -S %s | FileCheck %s
 
-; CHECK-LABEL: define i64 @far(i64 %x, i64 %y)
+; CHECK-LABEL: define i64 @goo(i64 %x, i64 %y)
 ; CHECK: %sum = add i64 %x, %y
 ; CHECK: ret i64 %sum
 
-define i64 @far(i64 %x, i64 %y) {
+define i64 @goo(i64 %x, i64 %y) {
   %sum = add i64 %x, %y
   ret i64 %sum
 }
 
 ; CHECK-NOT: define i64 @add(
-; CHECK: define i64 @foo(i64 %x)
+; CHECK: define i64 @foo_alt(i64 %x)
 
-define i64 @foo(i64 %x) {
+define i64 @foo_alt(i64 %x) {
   ret i64 %x
 }
