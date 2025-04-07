@@ -1,12 +1,10 @@
-; RUN: split-file %s %t
+; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
+; RUN: -passes="PassAdd" -S %s | FileCheck %s
 
-; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext -passes="PassAdd" -S %t/a.ll | FileCheck %t/a.ll
-; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext -passes="PassAdd" -S %t/b.ll | FileCheck %t/b.ll
-
-;--- a.ll
 ; CHECK: define i32 @add(i32 %a, i32 %b)
 ; CHECK: %result = add i32 %a, %b
 ; CHECK: ret i32 %result
+
 ; CHECK-NOT: add i32
 
 define i32 @add(i32 %a, i32 %b) {
@@ -17,6 +15,7 @@ define i32 @add(i32 %a, i32 %b) {
 ; CHECK-LABEL: define i32 @foo(i32 %x, i32 %y)
 ; CHECK-NEXT: call i32 @add(i32 %x, i32 %y)
 ; CHECK-NEXT: ret i32 %sum
+
 ; CHECK-NOT: add i32
 
 define i32 @foo(i32 %x, i32 %y) {
@@ -24,7 +23,6 @@ define i32 @foo(i32 %x, i32 %y) {
   ret i32 %sum
 }
 
-;--- b.ll
 ; CHECK: define i64 @bar(i64 %m, i64 %n) {
 ; CHECK-NOT: call i64 @add
 ; CHECK: %sum = add i64 %m, %n
@@ -34,6 +32,9 @@ define i64 @bar(i64 %m, i64 %n) {
   %sum = add i64 %m, %n
   ret i64 %sum
 }
+
+; RUN: opt -load-pass-plugin %llvmshlibdir/PassAdd_Komshina_Daria_FIIT1_LLVM_IR%pluginext \
+; RUN: -passes="PassAdd" -S %s | FileCheck %s
 
 ; CHECK-LABEL: define i64 @goo(i64 %x, i64 %y)
 ; CHECK: %sum = add i64 %x, %y
