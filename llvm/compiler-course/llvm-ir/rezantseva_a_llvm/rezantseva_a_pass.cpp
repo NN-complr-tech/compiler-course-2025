@@ -8,24 +8,23 @@
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
-using namespace llvm;
-
 namespace {
 
-struct DivToShiftPass : PassInfoMixin<DivToShiftPass> {
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
+struct DivToShiftPass : llvm::PassInfoMixin<DivToShiftPass> {
+  llvm::PreservedAnalyses run(llvm::Function &F,
+                              llvm::FunctionAnalysisManager &) {
     bool Changed = false;
-    SmallVector<Instruction *, 8> ToErase;
+    llvm::SmallVector<llvm::Instruction *, 8> ToErase;
 
     for (auto &BB : F) {
       for (auto &I : BB) {
-        auto *Div = dyn_cast<BinaryOperator>(&I);
-        if (!Div || (Div->getOpcode() != Instruction::SDiv &&
-                     Div->getOpcode() != Instruction::UDiv)) {
+        auto *Div = llvm::dyn_cast<llvm::BinaryOperator>(&I);
+        if (!Div || (Div->getOpcode() != llvm::Instruction::SDiv &&
+                     Div->getOpcode() != llvm::Instruction::UDiv)) {
           continue;
         }
 
-        auto *CI = dyn_cast<ConstantInt>(Div->getOperand(1));
+        auto *CI = llvm::dyn_cast<llvm::ConstantInt>(Div->getOperand(1));
         if (!CI) {
           continue;
         }
@@ -35,11 +34,11 @@ struct DivToShiftPass : PassInfoMixin<DivToShiftPass> {
           continue;
         }
 
-        IRBuilder<> Builder(Div);
-        Value *Dividend = Div->getOperand(0);
+        llvm::IRBuilder<> Builder(Div);
+        llvm::Value *Dividend = Div->getOperand(0);
 
         if (Divisor == 1 || Divisor == -1) {
-          Value *Replacement =
+          llvm::Value *Replacement =
               (Divisor == 1) ? Dividend : Builder.CreateNeg(Dividend);
           Div->replaceAllUsesWith(Replacement);
           ToErase.push_back(Div);
@@ -47,11 +46,11 @@ struct DivToShiftPass : PassInfoMixin<DivToShiftPass> {
           continue;
         }
 
-        if (isPowerOf2_64(std::abs(Divisor))) {
-          unsigned ShiftAmount = Log2_64(std::abs(Divisor));
-          Value *Shifted;
+        if (llvm::isPowerOf2_64(std::abs(Divisor))) {
+          unsigned ShiftAmount = llvm::Log2_64(std::abs(Divisor));
+          llvm::Value *Shifted;
 
-          if (Div->getOpcode() == Instruction::SDiv) {
+          if (Div->getOpcode() == llvm::Instruction::SDiv) {
             Shifted = Builder.CreateAShr(Dividend, ShiftAmount);
             if (Divisor < 0) {
               Shifted = Builder.CreateNeg(Shifted);
@@ -71,7 +70,8 @@ struct DivToShiftPass : PassInfoMixin<DivToShiftPass> {
       I->eraseFromParent();
     }
 
-    return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    return Changed ? llvm::PreservedAnalyses::none()
+                   : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
@@ -82,10 +82,10 @@ struct DivToShiftPass : PassInfoMixin<DivToShiftPass> {
 extern "C" LLVM_ATTRIBUTE_WEAK::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "DivToShiftPass", "0.1",
-          [](PassBuilder &PB) {
+          [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager &FPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
+                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
                   if (Name == "div-to-shift") {
                     FPM.addPass(DivToShiftPass());
                     return true;

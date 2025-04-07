@@ -100,3 +100,67 @@ define i32 @test_udiv_zero(i32 %x) {
   %div = udiv i32 %x, 0
   ret i32 %div
 }
+
+define i64 @test_sdiv_i64_pow2_32(i64 %x) {
+; CHECK-LABEL: @test_sdiv_i64_pow2_32
+; CHECK-NEXT: %1 = ashr i64 %x, 32
+; CHECK-NEXT: ret i64 %1
+  %div = sdiv i64 %x, 4294967296  ; 2^32
+  ret i64 %div
+}
+
+define i64 @test_sdiv_i64_non_pow2(i64 %x) {
+; CHECK-LABEL: @test_sdiv_i64_non_pow2
+; CHECK-NEXT: %div = sdiv i64 %x, 7
+; CHECK-NOT: ashr
+  %div = sdiv i64 %x, 7
+  ret i64 %div
+}
+
+define i64 @test_sdiv_i64_by_1(i64 %x) {
+; CHECK-LABEL: @test_sdiv_i64_by_1
+; CHECK-NEXT: ret i64 %x
+  %div = sdiv i64 %x, 1
+  ret i64 %div
+}
+
+define i16 @test_sdiv_i16_negative_pow2(i16 %x) {
+; CHECK-LABEL: @test_sdiv_i16_negative_pow2
+; CHECK-NEXT: %1 = ashr i16 %x, 3
+; CHECK-NEXT: %2 = sub i16 0, %1
+; CHECK-NEXT: ret i16 %2
+  %div = sdiv i16 %x, -8
+  ret i16 %div
+}
+
+define i16 @test_sdiv_i16_pow2_4(i16 %x) {
+; CHECK-LABEL: @test_sdiv_i16_pow2_4
+; CHECK-NEXT: %1 = ashr i16 %x, 4
+; CHECK-NEXT: ret i16 %1
+  %div = sdiv i16 %x, 16
+  ret i16 %div
+}
+
+define i16 @test_udiv_i16_pow2_8(i16 %x) {
+; CHECK-LABEL: @test_udiv_i16_pow2_8
+; CHECK-NEXT: %1 = lshr i16 %x, 8
+; CHECK-NEXT: ret i16 %1
+  %div = udiv i16 %x, 256  ; 2^8
+  ret i16 %div
+}
+
+define i8 @test_sdiv_i8_pow2_2(i8 %x) {
+; CHECK-LABEL: @test_sdiv_i8_pow2_2
+; CHECK-NEXT: %1 = ashr i8 %x, 2
+; CHECK-NEXT: ret i8 %1
+  %div = sdiv i8 %x, 4
+  ret i8 %div
+}
+
+define i8 @test_udiv_i8_pow2_3(i8 %x) {
+; CHECK-LABEL: @test_udiv_i8_pow2_3
+; CHECK-NEXT: %1 = lshr i8 %x, 3
+; CHECK-NEXT: ret i8 %1
+  %div = udiv i8 %x, 8
+  ret i8 %div
+}
