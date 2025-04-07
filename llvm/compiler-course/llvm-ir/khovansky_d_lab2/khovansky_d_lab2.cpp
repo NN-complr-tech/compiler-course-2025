@@ -26,7 +26,7 @@ struct ReplaceAddInstructionPass
       return llvm::PreservedAnalyses::all();
     }
 
-    // проверка на сигнатуру - не vararg и два аргумента
+    // проверка на сигнатуру: не vararg и два аргумента
     if (AddFunc->arg_size() != 2 || AddFunc->isVarArg()) {
       return llvm::PreservedAnalyses::all();
     }
