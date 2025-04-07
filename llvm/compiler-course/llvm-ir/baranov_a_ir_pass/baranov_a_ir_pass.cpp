@@ -1,3 +1,4 @@
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
@@ -6,7 +7,6 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
-#include <vector>
 
 namespace {
 
@@ -24,9 +24,13 @@ llvm::BinaryOperator *getFMulCandidate(llvm::Value *Operand) {
   return nullptr;
 }
 
-std::vector<FmaCandidate> collectCandidates(llvm::BasicBlock &BB) {
-  std::vector<FmaCandidate> Candidates;
-  std::set<llvm::Value *> UsedFMuls;
+llvm::SmallVector<FmaCandidate> collectCandidates(llvm::BasicBlock &BB) {
+  llvm::SmallVector<FmaCandidate> Candidates;
+  llvm::SmallSet<llvm::Value *, 8> UsedFMuls;
+
+  auto isSafeOperand = [](llvm::Value *V) {
+    return !llvm::isa<llvm::CastInst>(V);
+  };
 
   for (llvm::Instruction &Inst : BB) {
     if (auto *FAddInst = llvm::dyn_cast<llvm::BinaryOperator>(&Inst)) {
@@ -37,12 +41,24 @@ std::vector<FmaCandidate> collectCandidates(llvm::BasicBlock &BB) {
       llvm::Value *Op1 = FAddInst->getOperand(1);
 
       if (llvm::BinaryOperator *FMulInst = getFMulCandidate(Op0)) {
-        if (UsedFMuls.insert(FMulInst).second) {
-          Candidates.push_back({FAddInst, FMulInst, Op1});
+        llvm::Value *Other = Op1;
+        if (FMulInst->getType() == FMulInst->getOperand(0)->getType() &&
+            FMulInst->getType() == FMulInst->getOperand(1)->getType() &&
+            FMulInst->getType() == Other->getType() &&
+            isSafeOperand(FMulInst->getOperand(0)) &&
+            isSafeOperand(FMulInst->getOperand(1)) && isSafeOperand(Other) &&
+            UsedFMuls.insert(FMulInst).second) {
+          Candidates.push_back({FAddInst, FMulInst, Other});
         }
       } else if (llvm::BinaryOperator *FMulInst = getFMulCandidate(Op1)) {
-        if (UsedFMuls.insert(FMulInst).second) {
-          Candidates.push_back({FAddInst, FMulInst, Op0});
+        llvm::Value *Other = Op0;
+        if (FMulInst->getType() == FMulInst->getOperand(0)->getType() &&
+            FMulInst->getType() == FMulInst->getOperand(1)->getType() &&
+            FMulInst->getType() == Other->getType() &&
+            isSafeOperand(FMulInst->getOperand(0)) &&
+            isSafeOperand(FMulInst->getOperand(1)) && isSafeOperand(Other) &&
+            UsedFMuls.insert(FMulInst).second) {
+          Candidates.push_back({FAddInst, FMulInst, Other});
         }
       }
     }
@@ -52,19 +68,22 @@ std::vector<FmaCandidate> collectCandidates(llvm::BasicBlock &BB) {
 }
 
 void replaceCandidate(const FmaCandidate &Candidate,
-                      std::vector<llvm::Instruction *> &ToErase) {
+                      llvm::SmallVector<llvm::Instruction *> &ToErase) {
   llvm::IRBuilder<> Builder(Candidate.FAddInst);
 
-  llvm::Value *FMAValue = Builder.CreateIntrinsic(
-      llvm::Intrinsic::fmuladd, Candidate.FMulInst->getType(),
-      {Candidate.FMulInst->getOperand(0), Candidate.FMulInst->getOperand(1),
-       Candidate.OtherOperand});
+  auto *FMul = Candidate.FMulInst;
+  auto *FAdd = Candidate.FAddInst;
+  auto *FMAValue = Builder.CreateIntrinsic(
+      llvm::Intrinsic::fmuladd, FMul->getType(),
+      {FMul->getOperand(0), FMul->getOperand(1), Candidate.OtherOperand});
 
-  Candidate.FAddInst->replaceAllUsesWith(FMAValue);
-  ToErase.push_back(Candidate.FAddInst);
+  // Заменяем все использования FAdd на FMA
+  FAdd->replaceAllUsesWith(FMAValue);
+  ToErase.push_back(FAdd);
 
-  if (Candidate.FMulInst->getNumUses() == 1) {
-    ToErase.push_back(Candidate.FMulInst);
+  // Удаляем FMul, если оно больше нигде не используется (до замены!)
+  if (FMul->hasOneUse()) {
+    ToErase.push_back(FMul);
   }
 }
 
@@ -72,10 +91,10 @@ struct FusedMulAddPass : llvm::PassInfoMixin<FusedMulAddPass> {
   llvm::PreservedAnalyses run(llvm::Function &Func,
                               llvm::FunctionAnalysisManager &) {
     bool Changed = false;
-    std::vector<llvm::Instruction *> ToErase;
+    llvm::SmallVector<llvm::Instruction *> ToErase;
 
     for (llvm::BasicBlock &BB : Func) {
-      std::vector<FmaCandidate> Candidates = collectCandidates(BB);
+      llvm::SmallVector<FmaCandidate> Candidates = collectCandidates(BB);
 
       for (const FmaCandidate &Candidate : Candidates) {
         replaceCandidate(Candidate, ToErase);
