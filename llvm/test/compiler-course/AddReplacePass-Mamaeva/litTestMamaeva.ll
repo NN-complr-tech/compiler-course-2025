@@ -6,12 +6,12 @@
 ; CHECK-NEXT: ret i32 %result
 
 ; CHECK-LABEL: define i32 @foo(
-; CHECK: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
-; CHECK: ret i32 %[[RESULT]]
+; CHECK-NEXT: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
+; CHECK-NEXT: ret i32 %[[RESULT]]
 
 ; CHECK-LABEL: define i64 @bar
-; CHECK: %sum = add i64 %a, %b
-; CHECK: ret i64 %sum
+; CHECK-NEXT: %sum = add i64 %a, %b
+; CHECK-NEXT: ret i64 %sum
 
 define i32 @add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
