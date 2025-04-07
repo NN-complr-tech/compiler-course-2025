@@ -27,7 +27,7 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
         continue;
 
       for (llvm::BasicBlock &BB : F) {
-        std::vector<llvm::BinaryOperator *> AddInstructions;
+        llvm::SmallVector<llvm::BinaryOperator *> AddInstructions;
 
         // Собираем все инструкции add для замены
         for (llvm::Instruction &I : BB) {
