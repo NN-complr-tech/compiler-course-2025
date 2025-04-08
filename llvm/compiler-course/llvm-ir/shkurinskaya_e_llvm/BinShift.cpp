@@ -3,6 +3,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/PatternMatch.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
@@ -47,31 +48,53 @@ private:
 
     auto IsSigned = Div->getOpcode() == llvm::Instruction::SDiv;
 
-    if (auto *ConstInt = llvm::dyn_cast<llvm::ConstantInt>(DivisorOp)) {
-      int64_t DivisorValue =
-          IsSigned ? ConstInt->getSExtValue() : ConstInt->getZExtValue();
+    int64_t DivisorValue = getConstantValue(DivisorOp);
 
+    if (DivisorValue == 1 || DivisorValue == -1) {
       if (DivisorValue == 1) {
         Div->replaceAllUsesWith(Dividend);
-        Div->eraseFromParent();
-        return true;
-      }
-
-      if (IsSigned && DivisorValue == -1) {
+      } else {
         auto *NegVal = Builder.CreateNeg(Dividend, "negation_tmp");
         Div->replaceAllUsesWith(NegVal);
-        Div->eraseFromParent();
-        return true;
       }
+      Div->eraseFromParent();
+      return true;
+    }
 
-      if (isPowerOfTwo(DivisorValue)) {
-        replaceDivisionWithShift(Div, Dividend, DivisorValue, IsSigned,
-                                 Builder);
-        return true;
+    int64_t AbsDivisorValue = std::abs(DivisorValue);
+
+    if (isPowerOfTwo(AbsDivisorValue)) {
+      if (DivisorValue < 0) {
+        Dividend = Builder.CreateNeg(Dividend, "negation_tmp");
+      }
+      replaceDivisionWithShift(Div, Dividend, AbsDivisorValue, IsSigned,
+                               Builder);
+      return true;
+    }
+
+    return false; // Non-constant divisors pass through unchanged.
+  }
+
+  int64_t getConstantValue(llvm::Value *Val) {
+    if (auto *ConstInt = llvm::dyn_cast<llvm::ConstantInt>(Val)) {
+      return ConstInt->getSExtValue();
+    }
+
+    if (auto *Instr = llvm::dyn_cast<llvm::Instruction>(Val)) {
+      if (Instr->getOpcode() == llvm::Instruction::Mul) {
+        auto *Op1 = Instr->getOperand(0);
+        auto *Op2 = Instr->getOperand(1);
+
+        int64_t Op1Val = getConstantValue(Op1);
+        int64_t Op2Val = getConstantValue(Op2);
+
+        if (Op1Val != 0 && Op2Val != 0) {
+          return Op1Val * Op2Val;
+        }
       }
     }
 
-    return false;
+    return 0; // Return 0 if not a constant value.
   }
 
   bool isPowerOfTwo(int64_t Value) {
