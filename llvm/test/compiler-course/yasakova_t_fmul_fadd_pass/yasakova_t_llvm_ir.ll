@@ -77,3 +77,33 @@ entry:
   %add = fadd double %mul, %2
   ret double %add
 }
+
+; a + b (float)
+; CHECK-LABEL: define dso_local noundef float @simple_sum_float(float noundef %0, float noundef %1) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %add = fadd float %0, %1
+; CHECK-NEXT: ret float %add
+; CHECK-NEXT: }
+; CHECK-NOT: call float @llvm.fmuladd
+
+define dso_local noundef float @simple_sum_float(float noundef %0, float noundef %1) {
+entry:
+  %add = fadd float %0, %1
+  ret float %add
+}
+
+; (a + b) * c (float - no optimization expected)
+; CHECK-LABEL: define dso_local noundef float @no_optimization_float(float noundef %0, float noundef %1, float noundef %2) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %sum = fadd float %0, %1
+; CHECK-NEXT: %mul = fmul float %sum, %2
+; CHECK-NEXT: ret float %mul
+; CHECK-NEXT: }
+; CHECK-NOT: call float @llvm.fmuladd
+
+define dso_local noundef float @no_optimization_float(float noundef %0, float noundef %1, float noundef %2) {
+entry:
+  %sum = fadd float %0, %1
+  %mul = fmul float %sum, %2
+  ret float %mul
+}
