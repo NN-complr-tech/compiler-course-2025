@@ -119,7 +119,6 @@ entry:
 ; CHECK-NEXT: %add = fadd float %mul, %c
 ; CHECK-NEXT: %add2 = fadd float %mul, %add
 ; CHECK-NEXT: ret float %add2
-
 define float @fmul_used_multiple_times(float %a, float %b, float %c) {
 entry:
   %mul = fmul float %a, %b

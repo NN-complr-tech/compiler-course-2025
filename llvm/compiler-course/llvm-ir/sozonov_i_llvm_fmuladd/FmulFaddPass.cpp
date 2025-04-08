@@ -40,18 +40,18 @@ struct FmulFaddPass : llvm::PassInfoMixin<FmulFaddPass> {
         }
 
         if (MulInst) {
+          if (!MulInst->hasOneUse())
+            continue;
+
           llvm::IRBuilder<> builder(&I);
           llvm::Function *FmaFunc = llvm::Intrinsic::getDeclaration(
               func.getParent(), llvm::Intrinsic::fmuladd, I.getType());
-        
+
           llvm::Value *Fma = builder.CreateCall(FmaFunc, {A, B, C});
           I.replaceAllUsesWith(Fma);
           instructionsToRemove.push_back(&I);
-        
-          if (MulInst->hasOneUse()) {
-            instructionsToRemove.push_back(MulInst);
-          }
-        
+          instructionsToRemove.push_back(MulInst);
+
           isModified = true;
         }
       }
