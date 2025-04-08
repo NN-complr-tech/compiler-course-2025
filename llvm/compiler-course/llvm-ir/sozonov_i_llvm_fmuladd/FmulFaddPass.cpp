@@ -25,22 +25,16 @@ struct FmulFaddPass : llvm::PassInfoMixin<FmulFaddPass> {
         llvm::Instruction *MulInst = nullptr;
         llvm::Value *A = nullptr, *B = nullptr, *C = nullptr;
 
-        if (auto *Mul = llvm::dyn_cast<llvm::Instruction>(Op1)) {
-          if (Mul->getOpcode() == llvm::Instruction::FMul) {
-            A = Mul->getOperand(0);
-            B = Mul->getOperand(1);
-            C = Op2;
-            MulInst = Mul;
-          }
-        }
+        llvm::Value *Operands[2] = {Op1, Op2};
 
-        if (!MulInst) {
-          if (auto *Mul = llvm::dyn_cast<llvm::Instruction>(Op2)) {
+        for (int i = 0; i < 2; ++i) {
+          if (auto *Mul = llvm::dyn_cast<llvm::Instruction>(Operands[i])) {
             if (Mul->getOpcode() == llvm::Instruction::FMul) {
               A = Mul->getOperand(0);
               B = Mul->getOperand(1);
-              C = Op1;
+              C = Operands[1 - i];
               MulInst = Mul;
+              break;
             }
           }
         }
@@ -49,11 +43,15 @@ struct FmulFaddPass : llvm::PassInfoMixin<FmulFaddPass> {
           llvm::IRBuilder<> builder(&I);
           llvm::Function *FmaFunc = llvm::Intrinsic::getDeclaration(
               func.getParent(), llvm::Intrinsic::fmuladd, I.getType());
-
+        
           llvm::Value *Fma = builder.CreateCall(FmaFunc, {A, B, C});
           I.replaceAllUsesWith(Fma);
           instructionsToRemove.push_back(&I);
-          instructionsToRemove.push_back(MulInst);
+        
+          if (MulInst->hasOneUse()) {
+            instructionsToRemove.push_back(MulInst);
+          }
+        
           isModified = true;
         }
       }

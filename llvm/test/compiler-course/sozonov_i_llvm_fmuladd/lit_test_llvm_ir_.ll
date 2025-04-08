@@ -24,7 +24,7 @@ entry:
   ret float %add
 }
 
-; Test 3: (c + b) * a - addition first (no matching pattern)
+; Test 3: a * (c + b) - addition first (no matching pattern)
 ; CHECK-LABEL: @no_match_fadd_then_fmul
 ; CHECK-NEXT: entry:
 ; CHECK-NEXT: %add = fadd float %c, %b
@@ -112,7 +112,23 @@ entry:
   ret float %add
 }
 
-; Test 10: already fused with llvm.fmuladd
+; Test 10: (x = a * b; y = x + c; return x + y) - use of intermediate result
+; CHECK-LABEL: @fmul_used_multiple_times
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %mul = fmul float %a, %b
+; CHECK-NEXT: %add = fadd float %mul, %c
+; CHECK-NEXT: %add2 = fadd float %mul, %add
+; CHECK-NEXT: ret float %add2
+
+define float @fmul_used_multiple_times(float %a, float %b, float %c) {
+entry:
+  %mul = fmul float %a, %b
+  %add = fadd float %mul, %c
+  %add2 = fadd float %mul, %add
+  ret float %add2
+}
+
+; Test 11: already fused with llvm.fmuladd
 ; CHECK-LABEL: @already_fused_fmuladd
 ; CHECK-NEXT: entry:
 ; CHECK-NEXT: %fma = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
