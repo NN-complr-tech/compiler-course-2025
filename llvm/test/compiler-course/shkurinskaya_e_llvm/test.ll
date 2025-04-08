@@ -1,4 +1,5 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/BinShiftPass_Shkurinskaya_Elena_FIIT2_LLVM_IR%pluginext -passes=bin-shift -S %s | FileCheck %s
+; RUN: opt -load-pass-plugin %llvmshlibdir/BinShiftPass_Shkurinskaya_Elena_FIIT2_LLVM_IR%pluginext -passes=bin-shift -S %s | FileCheck %s
 
 define i32 @test_sdiv_power_of_two(i32 %x) {
 ; CHECK-LABEL: @test_sdiv_power_of_two
@@ -109,4 +110,38 @@ define i128 @test_udiv_i128(i128 %x) {
 ; CHECK-NEXT: lshr i128 %x, 4
   %div = udiv i128 %x, 16
   ret i128 %div
+}
+
+define i32 @test_sdiv_negative_power_of_two(i32 %x) {
+; CHECK-LABEL: @test_sdiv_negative_power_of_two
+; CHECK-NEXT: sub i32 0, %x
+; CHECK-NEXT: ashr i32 %negation_tmp, 4
+  %div = sdiv i32 %x, -16
+  ret i32 %div
+}
+
+define i32 @test_non_constant_divisor(i32 %x, i32 %y) {
+; CHECK-LABEL: @test_non_constant_divisor
+; CHECK-NEXT: sdiv i32 %x, %y
+  %div = sdiv i32 %x, %y
+  ret i32 %div
+}
+
+define i32 @test_var_power_of_two(i32 %x) {
+; CHECK-LABEL: @test_var_power_of_two
+; CHECK-DAG: %y = mul i32 1, 8
+; CHECK-DAG: %unsigned_shift = lshr i32 %x, 3
+  %y = mul i32 1, 8
+  %div = udiv i32 %x, %y
+  ret i32 %div
+}
+
+define i32 @test_var_negative_power_of_two(i32 %x) {
+; CHECK-LABEL: @test_var_negative_power_of_two
+; CHECK-DAG: %y = mul i32 -1, 4
+; CHECK-DAG: %negation_tmp = sub i32 0, %x
+; CHECK-DAG: %signed_shift = ashr i32 %negation_tmp, 2
+  %y = mul i32 -1, 4
+  %div = sdiv i32 %x, %y
+  ret i32 %div
 }
