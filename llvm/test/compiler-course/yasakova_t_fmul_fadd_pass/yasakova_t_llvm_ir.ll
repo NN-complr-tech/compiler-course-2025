@@ -1,11 +1,12 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/FmuladdPass_Chistov_Alexey_FIIT1_LLVM_IR%pluginext -passes=FmuladdPass -S %s | FileCheck %s
+; RUN: opt -load-pass-plugin %llvmshlibdir/FmulFaddPass_Yasakova_Tatiana_FIIT1_LLVM_IR%pluginext -passes=FmulFaddPass -S %s | FileCheck %s
 
-; a+b(test checks that no transformation is applied for a simple addition operation)
+; a+b
 ; CHECK-LABEL: define dso_local noundef double @simple_sum(double noundef %0, double noundef %1) {
 ; CHECK-NEXT: entry:
 ; CHECK-NEXT: %add = fadd double %0, %1
 ; CHECK-NEXT: ret double %add
 ; CHECK-NEXT: }
+; CHECK-NOT: call double @llvm.fmuladd
 
 define dso_local noundef double @simple_sum(double noundef %0, double noundef %1) {
 entry:
@@ -13,7 +14,7 @@ entry:
   ret double %add
 }
 
-; (a + b) * c (test checks that no transformation is applied when addition occurs before multiplication)
+; (a + b) * c
 ; CHECK-LABEL: define dso_local noundef double @no_optimization(double noundef %0, double noundef %1, double noundef %2) {
 ; CHECK-NEXT: entry:
 ; CHECK-NEXT: %sum = fadd double %0, %1
