@@ -1,6 +1,8 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Kudryashova_Irina_FIIT3_LLVM_IR%pluginext \
-; RUN: -passes="AddReplacePass" -S %s | FileCheck %s
+; RUN: split-file %s %t
+; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Kudryashova_Irina_FIIT3_LLVM_IR%pluginext -passes="AddReplacePass" -S %t/a.ll | FileCheck %t/a.ll
+; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Kudryashova_Irina_FIIT3_LLVM_IR%pluginext -passes="AddReplacePass" -S %t/b.ll | FileCheck %t/b.ll
 
+;--- a.ll
 ; CHECK-LABEL: @add
 ; CHECK: add i32 %a, %b
 define i32 @add(i32 %a, i32 %b) {
@@ -22,9 +24,7 @@ define i64 @bar(i64 %x, i64 %y) {
   ret i64 %sum
 }
 
-; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Kudryashova_Irina_FIIT3_LLVM_IR%pluginext \
-; RUN: -passes="AddReplacePass" -S %s | FileCheck %s
-
+;--- b.ll
 ; CHECK-LABEL: @far
 ; CHECK: add i64 %x, %y
 define i64 @far(i64 %x, i64 %y) {
