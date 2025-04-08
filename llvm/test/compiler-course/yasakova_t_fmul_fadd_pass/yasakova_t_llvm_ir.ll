@@ -92,7 +92,7 @@ entry:
   ret float %add
 }
 
-; (a + b) * c (float - no optimization expected)
+; (a + b) * c
 ; CHECK-LABEL: define dso_local noundef float @no_optimization_float(float noundef %0, float noundef %1, float noundef %2) {
 ; CHECK-NEXT: entry:
 ; CHECK-NEXT: %sum = fadd float %0, %1
