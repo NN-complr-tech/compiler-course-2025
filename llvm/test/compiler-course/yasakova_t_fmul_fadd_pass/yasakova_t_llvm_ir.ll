@@ -62,3 +62,17 @@ entry:
   %sum = fadd double %add1, %add2
   ret double %sum
 }
+
+; a * b + c
+; CHECK-LABEL: define dso_local noundef double @example(double noundef %0, double noundef %1, double noundef %2) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %3 = call double @llvm.fmuladd.f64(double %0, double %1, double %2)
+; CHECK-NEXT: ret double %3
+; CHECK-NEXT: }
+
+define dso_local noundef double @example(double noundef %0, double noundef %1, double noundef %2) {
+entry:
+  %mul = fmul double %0, %1
+  %add = fadd double %mul, %2
+  ret double %add
+}
