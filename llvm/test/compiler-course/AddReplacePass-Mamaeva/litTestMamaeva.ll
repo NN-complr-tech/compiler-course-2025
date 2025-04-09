@@ -1,9 +1,10 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Mamaeva_Olga_FIIT3_LLVM_IR%pluginext \
 ; RUN: -passes="add-replace" -S %s | FileCheck %s
 
-; Тест 1: Модуль БЕЗ функции @add — инструкции add должны остаться без изменений
+; Тест 1: Модуль БЕЗ функции @add - инструкции add должны остаться без изменений
 ; CHECK-LABEL: define i32 @test_no_add_function
 ; CHECK: %res = add i32 %x, %y
+; CHECK-NOT: call i32 @add
 ; CHECK: ret i32 %res
 
 define i32 @test_no_add_function(i32 %x, i32 %y) {
@@ -11,7 +12,7 @@ define i32 @test_no_add_function(i32 %x, i32 %y) {
     ret i32 %res
 }
 
-; Тест 2: Модуль С функцией @add — проверка замены
+; Тест 2: Модуль С функцией @add - проверка замены
 ; CHECK-LABEL: define i32 @add
 ; CHECK-NEXT: %result = add i32 %a, %b
 ; CHECK-NEXT: ret i32 %result
@@ -33,6 +34,7 @@ define i32 @foo(i32 %x, i32 %y) {
 ; Тест 3: Несовпадающие типы (i64)
 ; CHECK-LABEL: define i64 @bar
 ; CHECK: %sum = add i64 %a, %b
+; CHECK-NOT: call i32 @add
 ; CHECK: ret i64 %sum
 
 define i64 @bar(i64 %a, i64 %b) {
