@@ -13,16 +13,23 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &) {
     bool Changed = false;
 
+    // Находим функцию add в модуле
     Function *TargetFunc = M.getFunction("add");
-    if (!TargetFunc)
-      return PreservedAnalyses::all();
+    if (!TargetFunc) {
+      return PreservedAnalyses::all(); // Нет функции - никаких изменений
+    }
 
+    // Проверяем сигнатуру функции (должна быть i32)
     if (TargetFunc->arg_size() != 2 ||
         !TargetFunc->getReturnType()->isIntegerTy(32) ||
         !TargetFunc->getArg(0)->getType()->isIntegerTy(32) ||
         !TargetFunc->getArg(1)->getType()->isIntegerTy(32)) {
       return PreservedAnalyses::all();
     }
+
+    // Получаем ссылку на функцию add
+    FunctionCallee AddFunc =
+        M.getOrInsertFunction("add", TargetFunc->getFunctionType());
 
     for (Function &F : M) {
       if (&F == TargetFunc)
@@ -45,7 +52,7 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
         for (auto *AddInst : AddInstructions) {
           IRBuilder<> Builder(AddInst);
           Value *Args[] = {AddInst->getOperand(0), AddInst->getOperand(1)};
-          CallInst *Call = Builder.CreateCall(TargetFunc, Args);
+          CallInst *Call = Builder.CreateCall(AddFunc, Args);
           AddInst->replaceAllUsesWith(Call);
           AddInst->eraseFromParent();
           Changed = true;
