@@ -11,24 +11,19 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
   llvm::PreservedAnalyses run(llvm::Module &M, llvm::ModuleAnalysisManager &) {
     bool Changed = false;
 
-    // Ранняя проверка на отсутствие функции add
-    if (M.getFunction("add") == nullptr) {
-      return llvm::PreservedAnalyses::all();
-    }
-
     // Находим функцию add в модуле
     llvm::Function *TargetFunc = M.getFunction("add");
-    if (!TargetFunc || TargetFunc->arg_size() != 2 ||
-        !TargetFunc->getReturnType()->isIntegerTy() ||
-        !TargetFunc->getArg(0)->getType()->isIntegerTy() ||
-        !TargetFunc->getArg(1)->getType()->isIntegerTy()) {
-      return llvm::PreservedAnalyses::all();
+    if (!TargetFunc) {
+      return llvm::PreservedAnalyses::all(); // Нет функции - никаких изменений
     }
 
-    // Получаем типы аргументов
-    llvm::Type *ArgTy1 = TargetFunc->getArg(0)->getType();
-    llvm::Type *ArgTy2 = TargetFunc->getArg(1)->getType();
-    llvm::Type *ReturnTy = TargetFunc->getReturnType();
+    // Проверяем сигнатуру функции
+    if (TargetFunc->arg_size() != 2 ||
+        !TargetFunc->getReturnType()->isIntegerTy(32) ||
+        !TargetFunc->getArg(0)->getType()->isIntegerTy(32) ||
+        !TargetFunc->getArg(1)->getType()->isIntegerTy(32)) {
+      return llvm::PreservedAnalyses::all();
+    }
 
     for (llvm::Function &F : M) {
       if (&F == TargetFunc)
@@ -40,9 +35,9 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
         for (llvm::Instruction &I : BB) {
           if (auto *BO = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
             if (BO->getOpcode() == llvm::Instruction::Add &&
-                BO->getType() == ReturnTy &&
-                BO->getOperand(0)->getType() == ArgTy1 &&
-                BO->getOperand(1)->getType() == ArgTy2) {
+                BO->getType()->isIntegerTy(32) &&
+                BO->getOperand(0)->getType()->isIntegerTy(32) &&
+                BO->getOperand(1)->getType()->isIntegerTy(32)) {
               AddInstructions.push_back(BO);
             }
           }
@@ -52,11 +47,10 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
           llvm::IRBuilder<> Builder(AddInst);
           llvm::Value *Args[] = {AddInst->getOperand(0),
                                  AddInst->getOperand(1)};
-          if (llvm::CallInst *Call = Builder.CreateCall(TargetFunc, Args)) {
-            AddInst->replaceAllUsesWith(Call);
-            AddInst->eraseFromParent();
-            Changed = true;
-          }
+          llvm::CallInst *Call = Builder.CreateCall(TargetFunc, Args);
+          AddInst->replaceAllUsesWith(Call);
+          AddInst->eraseFromParent();
+          Changed = true;
         }
       }
     }
@@ -68,19 +62,3 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
   static bool isRequired() { return true; }
 };
 } // namespace
-
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "AddReplacePass", "0.1",
-          [](llvm::PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
-                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                  if (Name == "add-replace") {
-                    MPM.addPass(AddReplacePass{});
-                    return true;
-                  }
-                  return false;
-                });
-          }};
-}
