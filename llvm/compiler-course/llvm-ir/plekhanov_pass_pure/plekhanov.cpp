@@ -21,18 +21,16 @@ struct PureFunctionPass : PassInfoMixin<PureFunctionPass> {
 };
 } // namespace
 extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo llvmGetPassPluginInfo() {
-  return {
-    LLVM_PLUGIN_API_VERSION, "PureFunctionPass", "0.1",
-    [](PassBuilder &PB) {
-      PB.registerPipelineParsingCallback(
-        [](StringRef Name, FunctionPassManager &FPM,
-           ArrayRef<PassBuilder::PipelineElement>) {
-          if (Name == "pure-func-pass") {
-            FPM.addPass(PureFunctionPass{});
-            return true;
-          }
-          return false;
-        });
-    }
-  };
+  return {LLVM_PLUGIN_API_VERSION, "PureFunctionPass", "0.1",
+          [](PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, FunctionPassManager &FPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "pure-func-pass") {
+                    FPM.addPass(PureFunctionPass{});
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }
