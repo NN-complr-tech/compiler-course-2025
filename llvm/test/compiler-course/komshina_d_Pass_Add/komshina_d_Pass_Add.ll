@@ -25,14 +25,14 @@ define i32 @foo(i32 %x, i32 %y) {
 }
 
 ;--- b.ll
-; CHECK-LABEL: define i64 @bar(i64 %m, i64 %n)
-; CHECK-NEXT: %sum = add i64 %m, %n
-; CHECK-NEXT: ret i64 %sum
-; CHECK-NOT: call i64 @add
+; CHECK-LABEL: define i32 @bar(i32 %m, i32 %n)
+; CHECK-NEXT: %sum = add i32 %m, %n
+; CHECK-NEXT: ret i32 %sum
+; CHECK-NOT: call i32 @add
 
-define i64 @bar(i64 %m, i64 %n) {
-  %sum = add i64 %m, %n
-  ret i64 %sum
+define i32 @bar(i32 %m, i32 %n) {
+  %sum = add i32 %m, %n
+  ret i32 %sum
 }
 
 ; CHECK-LABEL: define i64 @goo(i64 %x, i64 %y)
@@ -45,7 +45,7 @@ define i64 @goo(i64 %x, i64 %y) {
 }
 
 ; CHECK-NOT: define i64 @add(
-; CHECK: define i64 @foo_alt(i64 %x)
+; CHECK-LABEL: define i64 @foo_alt(i64 %x)
 
 define i64 @foo_alt(i64 %x) {
   ret i64 %x
