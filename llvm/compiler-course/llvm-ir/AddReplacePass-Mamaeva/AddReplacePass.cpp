@@ -16,7 +16,7 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
     // Находим функцию add в модуле
     Function *AddFunc = Mod.getFunction("add");
     if (!AddFunc) {
-      return PreservedAnalyses::all(); // Нет функции - никаких изменений
+      return PreservedAnalyses::all(); // Если функции нет, ничего не меняем
     }
 
     // Проверяем сигнатуру функции (должна быть i32(i32, i32))
@@ -27,31 +27,32 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
       return PreservedAnalyses::all();
     }
 
+    // Создаем FunctionCallee для вызова
+    FunctionCallee AddFuncCallee =
+        Mod.getOrInsertFunction("add", AddFunc->getFunctionType());
+
     for (Function &F : Mod) {
       if (&F == AddFunc)
-        continue;
+        continue; // Пропускаем саму функцию add
 
       for (BasicBlock &BB : F) {
         SmallVector<BinaryOperator *> ToReplace;
 
+        // Собираем все подходящие операции сложения
         for (Instruction &I : BB) {
           if (auto *BinOp = dyn_cast<BinaryOperator>(&I)) {
             if (BinOp->getOpcode() == Instruction::Add &&
-                BinOp->getType()->isIntegerTy(32) &&
-                BinOp->getOperand(0)->getType()->isIntegerTy(32) &&
-                BinOp->getOperand(1)->getType()->isIntegerTy(32)) {
-              // Не заменяем сложения внутри самой функции add
-              if (I.getParent()->getParent() != AddFunc) {
-                ToReplace.push_back(BinOp);
-              }
+                BinOp->getType()->isIntegerTy(32)) {
+              ToReplace.push_back(BinOp);
             }
           }
         }
 
+        // Заменяем найденные операции
         for (auto *BinOp : ToReplace) {
           IRBuilder<> Builder(BinOp);
           Value *Args[] = {BinOp->getOperand(0), BinOp->getOperand(1)};
-          CallInst *Call = Builder.CreateCall(AddFunc, Args);
+          CallInst *Call = Builder.CreateCall(AddFuncCallee, Args);
           BinOp->replaceAllUsesWith(Call);
           BinOp->eraseFromParent();
           Changed = true;
