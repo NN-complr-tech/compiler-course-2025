@@ -2,8 +2,8 @@
 ; RUN: -passes="add-replace" -S %s | FileCheck %s
 
 ; CHECK-LABEL: define i32 @test_no_add_function
-; CHECK: %res = add i32 %x, %y
-; CHECK: ret i32 %res
+; CHECK-NEXT: %res = add i32 %x, %y
+; CHECK-NEXT: ret i32 %res
 
 define i32 @test_no_add_function(i32 %x, i32 %y) {
     %res = add i32 %x, %y
