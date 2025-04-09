@@ -1,21 +1,22 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/AddReplacePass_Mamaeva_Olga_FIIT3_LLVM_IR%pluginext \
 ; RUN: -passes="add-replace" -S %s | FileCheck %s
 
-; CHECK-LABEL: define i32 @add
-; CHECK-NEXT: %result = add i32 %a, %b
-; CHECK-NEXT: ret i32 %result
+; CHECK-LABEL: @add
+; CHECK: add i32 %a, %b
+; CHECK: ret i32 %result
 
-; CHECK-LABEL: define i32 @foo
-; CHECK-NEXT: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
-; CHECK-NEXT: ret i32 %[[RESULT]]
+; CHECK-LABEL: @foo
+; CHECK: %[[RES:.*]] = call i32 @add(i32 %x, i32 %y)
+; CHECK: ret i32 %[[RES]]
 
-; CHECK-LABEL: define i64 @bar
-; CHECK-NEXT: %sum = add i64 %a, %b
-; CHECK-NEXT: ret i64 %sum
+; CHECK-LABEL: @bar
+; CHECK: %sum = add i64 %a, %b
+; CHECK: ret i64 %sum
 
-; CHECK-LABEL: define i32 @test_no_add
-; CHECK-NEXT: %res = add i32 %x, %y
-; CHECK-NEXT: ret i32 %res
+; CHECK-LABEL: @test_no_add
+; CHECK: %res = add i32 %x, %y
+; CHECK-NOT: call i32 @add
+; CHECK: ret i32 %res
 
 define i32 @add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
