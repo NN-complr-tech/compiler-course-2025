@@ -10,7 +10,7 @@ namespace {
 struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
   llvm::PreservedAnalyses run(llvm::Module &M, llvm::ModuleAnalysisManager &) {
     bool Changed = false;
-    
+
     // Ранняя проверка на отсутствие функции add
     if (M.getFunction("add") == nullptr) {
       return llvm::PreservedAnalyses::all();
@@ -31,7 +31,8 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
     llvm::Type *ReturnTy = TargetFunc->getReturnType();
 
     for (llvm::Function &F : M) {
-      if (&F == TargetFunc) continue;
+      if (&F == TargetFunc)
+        continue;
 
       for (llvm::BasicBlock &BB : F) {
         llvm::SmallVector<llvm::BinaryOperator *> AddInstructions;
@@ -49,7 +50,8 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
 
         for (auto *AddInst : AddInstructions) {
           llvm::IRBuilder<> Builder(AddInst);
-          llvm::Value *Args[] = {AddInst->getOperand(0), AddInst->getOperand(1)};
+          llvm::Value *Args[] = {AddInst->getOperand(0),
+                                 AddInst->getOperand(1)};
           if (llvm::CallInst *Call = Builder.CreateCall(TargetFunc, Args)) {
             AddInst->replaceAllUsesWith(Call);
             AddInst->eraseFromParent();
@@ -60,7 +62,7 @@ struct AddReplacePass : llvm::PassInfoMixin<AddReplacePass> {
     }
 
     return Changed ? llvm::PreservedAnalyses::none()
-                  : llvm::PreservedAnalyses::all();
+                   : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
