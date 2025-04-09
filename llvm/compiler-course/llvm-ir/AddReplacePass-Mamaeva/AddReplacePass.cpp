@@ -10,51 +10,52 @@ using namespace llvm;
 
 namespace {
 struct AddReplacePass : PassInfoMixin<AddReplacePass> {
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &) {
+  PreservedAnalyses run(Module &Mod, ModuleAnalysisManager &) {
     bool Changed = false;
 
     // Находим функцию add в модуле
-    Function *TargetFunc = M.getFunction("add");
-    if (!TargetFunc) {
+    Function *AddFunc = Mod.getFunction("add");
+    if (!AddFunc) {
       return PreservedAnalyses::all(); // Нет функции - никаких изменений
     }
 
-    // Проверяем сигнатуру функции (должна быть i32)
-    if (TargetFunc->arg_size() != 2 ||
-        !TargetFunc->getReturnType()->isIntegerTy(32) ||
-        !TargetFunc->getArg(0)->getType()->isIntegerTy(32) ||
-        !TargetFunc->getArg(1)->getType()->isIntegerTy(32)) {
+    // Проверяем сигнатуру функции (должна быть i32(i32, i32))
+    if (AddFunc->arg_size() != 2 ||
+        !AddFunc->getReturnType()->isIntegerTy(32) ||
+        !AddFunc->getArg(0)->getType()->isIntegerTy(32) ||
+        !AddFunc->getArg(1)->getType()->isIntegerTy(32)) {
       return PreservedAnalyses::all();
     }
 
-    // Получаем ссылку на функцию add
-    FunctionCallee AddFunc =
-        M.getOrInsertFunction("add", TargetFunc->getFunctionType());
+    // Получаем ссылку на функцию add с правильным типом
+    FunctionCallee AddFuncCallee =
+        Mod.getOrInsertFunction("add", AddFunc->getFunctionType());
 
-    for (Function &F : M) {
-      if (&F == TargetFunc)
+    for (Function &F : Mod) {
+      if (&F == AddFunc)
         continue;
 
       for (BasicBlock &BB : F) {
-        SmallVector<BinaryOperator *> AddInstructions;
+        SmallVector<BinaryOperator *> ToReplace;
 
         for (Instruction &I : BB) {
-          if (auto *BO = dyn_cast<BinaryOperator>(&I)) {
-            if (BO->getOpcode() == Instruction::Add &&
-                BO->getType()->isIntegerTy(32) &&
-                BO->getOperand(0)->getType()->isIntegerTy(32) &&
-                BO->getOperand(1)->getType()->isIntegerTy(32)) {
-              AddInstructions.push_back(BO);
+          if (auto *BinOp = dyn_cast<BinaryOperator>(&I)) {
+            if (BinOp->getOpcode() == Instruction::Add &&
+                BinOp->getType()->isIntegerTy(32) &&
+                BinOp->getOperand(0)->getType()->isIntegerTy(32) &&
+                BinOp->getOperand(1)->getType()->isIntegerTy(32)) {
+              ToReplace.push_back(BinOp);
             }
           }
         }
 
-        for (auto *AddInst : AddInstructions) {
-          IRBuilder<> Builder(AddInst);
-          Value *Args[] = {AddInst->getOperand(0), AddInst->getOperand(1)};
-          CallInst *Call = Builder.CreateCall(AddFunc, Args);
-          AddInst->replaceAllUsesWith(Call);
-          AddInst->eraseFromParent();
+        for (auto *BinOp : ToReplace) {
+          IRBuilder<> Builder(BinOp);
+          Value *Args[] = {BinOp->getOperand(0), BinOp->getOperand(1)};
+          CallInst *Call = Builder.CreateCall(AddFuncCallee, Args);
+          Call->setDebugLoc(BinOp->getDebugLoc());
+          BinOp->replaceAllUsesWith(Call);
+          BinOp->eraseFromParent();
           Changed = true;
         }
       }
@@ -66,16 +67,16 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
 } // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "AddReplacePass", "v0.1",
-          [](PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, ModulePassManager &MPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "add-replace") {
-                    MPM.addPass(AddReplacePass());
-                    return true;
-                  }
-                  return false;
-                });
-          }};
+  return {
+      LLVM_PLUGIN_API_VERSION, "AddReplacePass", "v0.1", [](PassBuilder &PB) {
+        PB.registerPipelineParsingCallback(
+            [](StringRef Name, ModulePassManager &MPM,
+               ArrayRef<PassBuilder::PipelineElement>) {
+              if (Name == "add-replace") { // Изменено для соответствия тесту
+                MPM.addPass(AddReplacePass());
+                return true;
+              }
+              return false;
+            });
+      }};
 }
