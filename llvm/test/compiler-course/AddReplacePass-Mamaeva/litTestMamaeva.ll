@@ -3,14 +3,8 @@
 
 ; Тест 1: Модуль БЕЗ функции @add - инструкции add должны остаться без изменений
 ; CHECK-LABEL: define i32 @test_no_add_function
-; CHECK: %res = add i32 %x, %y
-; CHECK-NOT: call i32 @add
-; CHECK: ret i32 %res
-
-define i32 @test_no_add_function(i32 %x, i32 %y) {
-    %res = add i32 %x, %y
-    ret i32 %res
-}
+; CHECK-NEXT: %res = add i32 %x, %y
+; CHECK-NEXT: ret i32 %res
 
 ; Тест 2: Модуль С функцией @add - проверка замены
 ; CHECK-LABEL: define i32 @add
@@ -18,8 +12,21 @@ define i32 @test_no_add_function(i32 %x, i32 %y) {
 ; CHECK-NEXT: ret i32 %result
 
 ; CHECK-LABEL: define i32 @foo
-; CHECK: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
-; CHECK: ret i32 %[[RESULT]]
+; CHECK-NEXT: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
+; CHECK-NEXT: ret i32 %[[RESULT]]
+
+; Тест 3: Несовпадающие типы (i64)
+; CHECK-LABEL: define i64 @bar
+; CHECK-NEXT: %sum = add i64 %a, %b
+; CHECK-NEXT: ret i64 %sum
+
+; Тест 4: Проверка что нет ложных вызовов @add
+; CHECK-NOT: call i32 @add(i32
+
+define i32 @test_no_add_function(i32 %x, i32 %y) {
+    %res = add i32 %x, %y
+    ret i32 %res
+}
 
 define i32 @add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
@@ -30,12 +37,6 @@ define i32 @foo(i32 %x, i32 %y) {
     %result = add i32 %x, %y
     ret i32 %result
 }
-
-; Тест 3: Несовпадающие типы (i64)
-; CHECK-LABEL: define i64 @bar
-; CHECK: %sum = add i64 %a, %b
-; CHECK-NOT: call i32 @add
-; CHECK: ret i64 %sum
 
 define i64 @bar(i64 %a, i64 %b) {
     %sum = add i64 %a, %b
