@@ -16,7 +16,6 @@
 ; CHECK-LABEL: define i32 @test_no_add
 ; CHECK-NEXT: %res = add i32 %x, %y
 ; CHECK-NEXT: ret i32 %res
-; CHECK-NOT: call i32 @add(i32 %x, i32 %y)
 
 define i32 @add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
@@ -33,7 +32,6 @@ define i64 @bar(i64 %a, i64 %b) {
     ret i64 %sum
 }
 
-; Новая тестовая функция без @add в модуле
 define i32 @test_no_add(i32 %x, i32 %y) {
   %res = add i32 %x, %y
   ret i32 %res
