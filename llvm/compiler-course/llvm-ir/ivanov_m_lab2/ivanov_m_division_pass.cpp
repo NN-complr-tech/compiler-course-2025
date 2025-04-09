@@ -24,7 +24,7 @@ struct BitShiftPass : llvm::PassInfoMixin<BitShiftPass> {
           if (!(DivInst->getOpcode() == llvm::Instruction::SDiv ||
                 DivInst->getOpcode() == llvm::Instruction::UDiv))
             continue;
-          
+
           // check if right operator is constant
           auto *ConstInt =
               llvm::dyn_cast<llvm::ConstantInt>(DivInst->getOperand(1));
