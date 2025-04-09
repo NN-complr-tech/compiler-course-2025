@@ -41,24 +41,22 @@ llvm::SmallVector<FmaCandidate> collectCandidates(llvm::BasicBlock &BB) {
       llvm::Value *Op1 = FAddInst->getOperand(1);
 
       if (llvm::BinaryOperator *FMulInst = getFMulCandidate(Op0)) {
-        llvm::Value *Other = Op1;
         if (FMulInst->getType() == FMulInst->getOperand(0)->getType() &&
             FMulInst->getType() == FMulInst->getOperand(1)->getType() &&
-            FMulInst->getType() == Other->getType() &&
+            FMulInst->getType() == Op1->getType() &&
             isSafeOperand(FMulInst->getOperand(0)) &&
-            isSafeOperand(FMulInst->getOperand(1)) && isSafeOperand(Other) &&
+            isSafeOperand(FMulInst->getOperand(1)) && isSafeOperand(Op1) &&
             UsedFMuls.insert(FMulInst).second) {
-          Candidates.push_back({FAddInst, FMulInst, Other});
+          Candidates.push_back({FAddInst, FMulInst, Op1});
         }
       } else if (llvm::BinaryOperator *FMulInst = getFMulCandidate(Op1)) {
-        llvm::Value *Other = Op0;
         if (FMulInst->getType() == FMulInst->getOperand(0)->getType() &&
             FMulInst->getType() == FMulInst->getOperand(1)->getType() &&
-            FMulInst->getType() == Other->getType() &&
+            FMulInst->getType() == Op0->getType() &&
             isSafeOperand(FMulInst->getOperand(0)) &&
-            isSafeOperand(FMulInst->getOperand(1)) && isSafeOperand(Other) &&
+            isSafeOperand(FMulInst->getOperand(1)) && isSafeOperand(Op0) &&
             UsedFMuls.insert(FMulInst).second) {
-          Candidates.push_back({FAddInst, FMulInst, Other});
+          Candidates.push_back({FAddInst, FMulInst, Op0});
         }
       }
     }
