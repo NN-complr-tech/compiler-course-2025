@@ -107,3 +107,17 @@ entry:
   %mul = fmul float %sum, %2
   ret float %mul
 }
+
+; a * b + c (float)
+; CHECK-LABEL: define dso_local noundef float @example_float(float noundef %0, float noundef %1, float noundef %2) {
+; CHECK-NEXT: entry:
+; CHECK-NEXT: %3 = call float @llvm.fmuladd.f32(float %0, float %1, float %2)
+; CHECK-NEXT: ret float %3
+; CHECK-NEXT: }
+
+define dso_local noundef float @example_float(float noundef %0, float noundef %1, float noundef %2) {
+entry:
+  %mul = fmul float %0, %1
+  %add = fadd float %mul, %2
+  ret float %add
+}
