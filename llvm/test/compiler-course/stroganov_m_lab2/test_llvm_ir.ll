@@ -122,3 +122,4 @@ define dso_local noundef float @_test9_float(float noundef %0, float noundef %1,
   %add2 = fadd float %add1, %3
   ret float %add2
 }
+
