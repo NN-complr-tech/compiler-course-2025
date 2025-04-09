@@ -27,10 +27,6 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
       return PreservedAnalyses::all();
     }
 
-    // Получаем ссылку на функцию add с правильным типом
-    FunctionCallee AddFuncCallee =
-        Mod.getOrInsertFunction("add", AddFunc->getFunctionType());
-
     for (Function &F : Mod) {
       if (&F == AddFunc)
         continue;
@@ -44,7 +40,10 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
                 BinOp->getType()->isIntegerTy(32) &&
                 BinOp->getOperand(0)->getType()->isIntegerTy(32) &&
                 BinOp->getOperand(1)->getType()->isIntegerTy(32)) {
-              ToReplace.push_back(BinOp);
+              // Не заменяем сложения внутри самой функции add
+              if (I.getParent()->getParent() != AddFunc) {
+                ToReplace.push_back(BinOp);
+              }
             }
           }
         }
@@ -52,8 +51,7 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
         for (auto *BinOp : ToReplace) {
           IRBuilder<> Builder(BinOp);
           Value *Args[] = {BinOp->getOperand(0), BinOp->getOperand(1)};
-          CallInst *Call = Builder.CreateCall(AddFuncCallee, Args);
-          Call->setDebugLoc(BinOp->getDebugLoc());
+          CallInst *Call = Builder.CreateCall(AddFunc, Args);
           BinOp->replaceAllUsesWith(Call);
           BinOp->eraseFromParent();
           Changed = true;
@@ -67,16 +65,16 @@ struct AddReplacePass : PassInfoMixin<AddReplacePass> {
 } // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo llvmGetPassPluginInfo() {
-  return {
-      LLVM_PLUGIN_API_VERSION, "AddReplacePass", "v0.1", [](PassBuilder &PB) {
-        PB.registerPipelineParsingCallback(
-            [](StringRef Name, ModulePassManager &MPM,
-               ArrayRef<PassBuilder::PipelineElement>) {
-              if (Name == "add-replace") { // Изменено для соответствия тесту
-                MPM.addPass(AddReplacePass());
-                return true;
-              }
-              return false;
-            });
-      }};
+  return {LLVM_PLUGIN_API_VERSION, "AddReplacePass", "v0.1",
+          [](PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, ModulePassManager &MPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "add-replace") {
+                    MPM.addPass(AddReplacePass());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }
