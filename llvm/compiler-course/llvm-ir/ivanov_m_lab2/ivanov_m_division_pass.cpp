@@ -1,12 +1,12 @@
-#include <cmath>
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+#include <cmath>
 
 namespace {
 struct BitShiftPass : llvm::PassInfoMixin<BitShiftPass> {
@@ -15,22 +15,22 @@ struct BitShiftPass : llvm::PassInfoMixin<BitShiftPass> {
     bool isModified = false;
 
     for (llvm::BasicBlock &BB : func) {
-      for (auto It = BB.begin(), End = BB.end(); It != End; ) {
+      for (auto It = BB.begin(), End = BB.end(); It != End;) {
         llvm::Instruction *Inst = &*It++;
-        
         auto *DivInst = llvm::dyn_cast<llvm::BinaryOperator>(Inst);
 
         if (DivInst) {
           // check if it's not division operator
           if (!(DivInst->getOpcode() == llvm::Instruction::SDiv ||
-          DivInst->getOpcode() == llvm::Instruction::UDiv))
+                DivInst->getOpcode() == llvm::Instruction::UDiv))
             continue;
           
           // check if right operator is constant
-          auto *ConstInt = llvm::dyn_cast<llvm::ConstantInt>(DivInst->getOperand(1));
+          auto *ConstInt =
+              llvm::dyn_cast<llvm::ConstantInt>(DivInst->getOperand(1));
           if (ConstInt) {
             llvm::IRBuilder<> Builder(DivInst);
-  
+
             // receiving signed value of right operator
             int64_t Divisor = ConstInt->getSExtValue();
             bool isNegDivisor = Divisor < 0;
@@ -42,9 +42,11 @@ struct BitShiftPass : llvm::PassInfoMixin<BitShiftPass> {
               continue;
 
             // when right operator is '1' or '-1'
-            if (DivInst->getOpcode() == llvm::Instruction::SDiv && AbsDivisor == 1) {
-              if(Divisor == -1){
-                llvm::Value *Neg = Builder.CreateNeg(DivInst->getOperand(0), "neg");
+            if (DivInst->getOpcode() == llvm::Instruction::SDiv &&
+                AbsDivisor == 1) {
+              if (Divisor == -1) {
+                llvm::Value *Neg =
+                    Builder.CreateNeg(DivInst->getOperand(0), "neg");
                 DivInst->replaceAllUsesWith(Neg);
               } else {
                 DivInst->replaceAllUsesWith(DivInst->getOperand(0));
@@ -53,23 +55,25 @@ struct BitShiftPass : llvm::PassInfoMixin<BitShiftPass> {
               isModified = true;
               continue;
             }
-            
+
             // shift counting
             unsigned ShiftAmount = llvm::Log2_64(AbsDivisor);
-            
+
             llvm::Value *NewInst = nullptr;
 
             if (DivInst->getOpcode() == llvm::Instruction::SDiv) {
               NewInst = Builder.CreateAShr(
                   DivInst->getOperand(0),
-                  llvm::ConstantInt::get(DivInst->getOperand(0)->getType(), ShiftAmount),
+                  llvm::ConstantInt::get(DivInst->getOperand(0)->getType(),
+                                         ShiftAmount),
                   "ashr");
               if (isNegDivisor)
                 NewInst = Builder.CreateNeg(NewInst, "neg");
             } else {
               NewInst = Builder.CreateLShr(
                   DivInst->getOperand(0),
-                  llvm::ConstantInt::get(DivInst->getOperand(0)->getType(), ShiftAmount),
+                  llvm::ConstantInt::get(DivInst->getOperand(0)->getType(),
+                                         ShiftAmount),
                   "lshr");
             }
 
@@ -81,7 +85,8 @@ struct BitShiftPass : llvm::PassInfoMixin<BitShiftPass> {
       }
     }
 
-    return isModified ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
+    return isModified ? llvm::PreservedAnalyses::none()
+                      : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
