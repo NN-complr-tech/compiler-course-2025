@@ -5,13 +5,18 @@
 ; CHECK-NEXT: %result = add i32 %a, %b
 ; CHECK-NEXT: ret i32 %result
 
-; CHECK-LABEL: define i32 @foo(
+; CHECK-LABEL: define i32 @foo
 ; CHECK-NEXT: %[[RESULT:[0-9]+]] = call i32 @add(i32 %x, i32 %y)
 ; CHECK-NEXT: ret i32 %[[RESULT]]
 
 ; CHECK-LABEL: define i64 @bar
 ; CHECK-NEXT: %sum = add i64 %a, %b
 ; CHECK-NEXT: ret i64 %sum
+
+; CHECK-LABEL: define i32 @test_no_add
+; CHECK-NEXT: %res = add i32 %x, %y
+; CHECK-NEXT: ret i32 %res
+; CHECK-NOT: call i32 @add(i32 %x, i32 %y)
 
 define i32 @add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
@@ -26,4 +31,10 @@ define i32 @foo(i32 %x, i32 %y) {
 define i64 @bar(i64 %a, i64 %b) {
     %sum = add i64 %a, %b
     ret i64 %sum
+}
+
+; Новая тестовая функция без @add в модуле
+define i32 @test_no_add(i32 %x, i32 %y) {
+  %res = add i32 %x, %y
+  ret i32 %res
 }
