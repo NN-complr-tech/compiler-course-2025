@@ -38,8 +38,8 @@ class ImplicitConvVisitor final
   }
 
 public:
-  explicit ImplicitConvVisitor(clang::ASTContext *astcontext) :
-      context(astcontext) {}
+  explicit ImplicitConvVisitor(clang::ASTContext *astcontext)
+      : context(astcontext) {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *func) {
     current_function = func->getNameInfo().getName().getAsString();
