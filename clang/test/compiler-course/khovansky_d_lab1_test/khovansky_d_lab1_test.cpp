@@ -3,33 +3,33 @@
 // Проверка глобального скоупа
 // CHECK: In global scope:
 // CHECK-NEXT: int -> double: 1
-double global_var = 42;
+double global_par = 42;
 
 // Проверка задач варианта
-// CHECK: Function: sum
+// CHECK: Function: sum1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
 
-// CHECK: Function: mul
+// CHECK: Function: mul1
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
 
-double sum(int a, float b) {
+double sum1(int a, float b) {
     return a + b;
 }
 
-int mul(float a, float b) {
-    return a + sum(a, b);
+int mul1(float a, float b) {
+    return a + sum1(a, b);
 }
 
 // Проверка обычной функции с несколькими преобразованиями
-// CHECK: Function: process
+// CHECK: Function: standart_func
 // CHECK-NEXT: float -> double: 2
 // CHECK-NEXT: int -> float: 1
 // CHECK-NEXT: int -> bool: 1
 
-void process(float f) {
+void standart_func(float f) {
   double d = f;
   float x = 3;
   bool flag = 10;
@@ -37,33 +37,33 @@ void process(float f) {
 }
 
 // Проверка конструктора с неявным преобразованием
-class Y {
+class U {
 public:
-  Y(int val) {}
+  U(int val) {}
 };
 
-// CHECK: Function: construct_y
-// CHECK-NEXT: int -> Y: 1
+// CHECK: Function: construct_u
+// CHECK-NEXT: int -> U: 1
 // CHECK-NEXT: double -> int: 1
 
-void construct_y() {
-  Y y = 5.6;
+void construct_u() {
+  U u = 5.6;
 }
 
 // Проверка return с преобразованием
-// CHECK: Function: make_bool
+// CHECK: Function: make_bool1
 // CHECK-NEXT: int -> bool: 1
 
-bool make_bool() {
+bool make_bool1() {
   return 100;
 }
 
 // Проверка указателей
-// CHECK: Function: pointer_test
+// CHECK: Function: pointer_test1
 // CHECK-NEXT: nullptr_t -> char *: 1
 // CHECK-NEXT: char * -> void *: 1
 
-void pointer_test() {
+void pointer_test1() {
   char* p = nullptr;
   void* vp = p;
 }

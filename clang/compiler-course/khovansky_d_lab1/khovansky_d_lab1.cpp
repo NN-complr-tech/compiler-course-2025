@@ -12,7 +12,7 @@ namespace {
 class ImplicitConvVisitor final
     : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
 
-  void handleTypeConversion(const clang::QualType &fromType,
+  void HandleTypeConversion(const clang::QualType &fromType,
                             const clang::QualType &toType) {
     std::string fromTypeStr = fromType.getAsString();
     std::string toTypeStr = toType.getAsString();
@@ -52,7 +52,7 @@ public:
     if (expr->getNumArgs() == 1) {
       clang::QualType fromType = expr->getArg(0)->getType();
       clang::QualType toType = expr->getType();
-      handleTypeConversion(fromType, toType);
+      HandleTypeConversion(fromType, toType);
     }
     return true;
   }
@@ -70,7 +70,7 @@ public:
 
     clang::QualType fromType = cast->getSubExpr()->getType();
     clang::QualType toType = cast->getType();
-    handleTypeConversion(fromType, toType);
+    HandleTypeConversion(fromType, toType);
     return true;
   }
 
@@ -80,7 +80,7 @@ public:
     clang::QualType fromType = varDecl->getType();
     clang::QualType toType = varDecl->getType();
 
-    handleTypeConversion(fromType, toType);
+    HandleTypeConversion(fromType, toType);
     return true;
   }
 
