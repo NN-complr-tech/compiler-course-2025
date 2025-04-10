@@ -3,54 +3,68 @@
 // Проверка глобального скоупа
 // CHECK: In global scope:
 // CHECK-NEXT: int -> double: 1
-static double GlobalPar = 42;
+double global_par = 42;
 
 // Проверка задач варианта
-// CHECK: Function: Sum
+// CHECK: Function: sum
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
 
-// CHECK: Function: Mul
+// CHECK: Function: mul
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
 
-static double Sum(int A, float B) {
-    return A + B;
+double sum(int a, float b) {
+    return a + b;
 }
 
-static int Mul(float A, float B) {
-    return A + Sum(A, B);
+int mul(float a, float b) {
+    return a + sum(a, b);
 }
 
 // Проверка обычной функции с несколькими преобразованиями
-// CHECK: Function: StandartFunc
+// CHECK: Function: standart_func
 // CHECK-NEXT: float -> double: 2
 // CHECK-NEXT: int -> float: 1
 // CHECK-NEXT: int -> bool: 1
 
-static void StandartFunc(float F) {
-    double D = F;
-    float X = 3;
-    bool Flag = 10;
-    double K = F;
+void standart_func(float f) {
+  double d = f;
+  float x = 3;
+  bool flag = 10;
+  double k = f;
+}
+
+// Проверка конструктора с неявным преобразованием
+class U {
+public:
+  U(int val) {}
+};
+
+// CHECK: Function: construct_u
+// CHECK-NEXT: int -> U: 1
+// CHECK-NEXT: double -> int: 1
+
+void construct_u() {
+  U u = 5.6;
 }
 
 // Проверка return с преобразованием
-// CHECK: Function: MakeBool
+// CHECK: Function: make_bool
 // CHECK-NEXT: int -> bool: 1
 
-static bool MakeBool() {
-    return 100;
+bool make_bool() {
+  return 100;
 }
 
 // Проверка указателей
-// CHECK: Function: PointerTest
+// CHECK: Function: pointer_test
 // CHECK-NEXT: nullptr_t -> char *: 1
 // CHECK-NEXT: char * -> void *: 1
 
-static void PointerTest() {
-    char* P = nullptr;
-    void* Vp = P;
+void pointer_test() {
+  char* p = nullptr;
+  void* vp = p;
 }
 

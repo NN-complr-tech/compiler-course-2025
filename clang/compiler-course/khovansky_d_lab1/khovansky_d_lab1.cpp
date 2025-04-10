@@ -12,47 +12,47 @@ namespace {
 class ImplicitConvVisitor final
     : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
 
-  void HandleTypeConversion(const clang::QualType &fromType,
-                            const clang::QualType &toType) {
-    std::string fromTypeStr = fromType.getAsString();
-    std::string toTypeStr = toType.getAsString();
+  void HandleTypeConversion(const clang::QualType &from_type,
+                            const clang::QualType &to_type) {
+    std::string from_type_str = from_type.getAsString();
+    std::string to_type_str = to_type.getAsString();
 
     // ради читаемости
-    fromTypeStr = (fromTypeStr == "_Bool") ? "bool" : fromTypeStr;
-    toTypeStr = (toTypeStr == "_Bool") ? "bool" : toTypeStr;
+    from_type_str = (from_type_str == "_Bool") ? "bool" : from_type_str;
+    to_type_str = (to_type_str == "_Bool") ? "bool" : to_type_str;
 
-    if (fromTypeStr == toTypeStr)
+    if (from_type_str == to_type_str)
       return;
 
-    std::string conversion = fromTypeStr + " -> " + toTypeStr;
-    auto &convList = conversions[currentFunction];
+    std::string conversion = from_type_str + " -> " + to_type_str;
+    auto &conv_list = conversions[current_function];
 
-    for (auto &entry : convList) {
+    for (auto &entry : conv_list) {
       if (entry.first == conversion) {
         entry.second++;
         return;
       }
     }
 
-    convList.push_back({conversion, 1});
+    conv_list.push_back({conversion, 1});
   }
 
 public:
-  explicit ImplicitConvVisitor(clang::ASTContext *context) : Context(context) {}
+  explicit ImplicitConvVisitor(clang::ASTContext *astcontext) : context(astcontext) {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *func) {
-    currentFunction = func->getNameInfo().getName().getAsString();
-    if (conversions.find(currentFunction) == conversions.end()) {
-      functionOrder.push_back(currentFunction);
+    current_function = func->getNameInfo().getName().getAsString();
+    if (conversions.find(current_function) == conversions.end()) {
+      function_order.push_back(current_function);
     }
     return true;
   }
 
   bool VisitCXXConstructExpr(clang::CXXConstructExpr *expr) {
     if (expr->getNumArgs() == 1) {
-      clang::QualType fromType = expr->getArg(0)->getType();
-      clang::QualType toType = expr->getType();
-      HandleTypeConversion(fromType, toType);
+      clang::QualType from_type = expr->getArg(0)->getType();
+      clang::QualType to_type = expr->getType();
+      HandleTypeConversion(from_type, to_type);
     }
     return true;
   }
@@ -68,20 +68,20 @@ public:
       break;
     }
 
-    clang::QualType fromType = cast->getSubExpr()->getType();
-    clang::QualType toType = cast->getType();
-    HandleTypeConversion(fromType, toType);
+    clang::QualType from_type = cast->getSubExpr()->getType();
+    clang::QualType to_type = cast->getType();
+    HandleTypeConversion(from_type, to_type);
     return true;
   }
 
   bool VisitVarDecl(clang::VarDecl *varDecl) {
-    if (!currentFunction.empty())
+    if (!current_function.empty())
       return true;
 
-    clang::QualType fromType = varDecl->getType();
-    clang::QualType toType = varDecl->getType();
+    clang::QualType from_type = varDecl->getType();
+    clang::QualType to_type = varDecl->getType();
 
-    HandleTypeConversion(fromType, toType);
+    HandleTypeConversion(from_type, to_type);
     return true;
   }
 
@@ -93,9 +93,9 @@ public:
       os << "  " << c1 << ": " << c2 << "\n";
     }
 
-    for (const auto &funcName : functionOrder) {
-      os << "Function: " << funcName << "\n";
-      for (const auto &[c1, c2] : conversions[funcName]) {
+    for (const auto &func_name : function_order) {
+      os << "Function: " << func_name << "\n";
+      for (const auto &[c1, c2] : conversions[func_name]) {
         os << "  " << c1 << ": " << c2 << "\n";
       }
       os << "\n";
@@ -103,9 +103,9 @@ public:
   }
 
 private:
-  clang::ASTContext *Context;
-  std::string currentFunction = "global_scope";
-  std::vector<std::string> functionOrder;
+  clang::ASTContext *context;
+  std::string current_function = "global_scope";
+  std::vector<std::string> function_order;
   std::map<std::string, std::vector<std::pair<std::string, int>>> conversions;
 };
 
