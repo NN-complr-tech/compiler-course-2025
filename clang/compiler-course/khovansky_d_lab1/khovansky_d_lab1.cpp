@@ -59,13 +59,13 @@ public:
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *cast) {
     switch (cast->getCastKind()) {
-      case clang::CK_NoOp:
-      case clang::CK_LValueToRValue:
-      case clang::CK_FunctionToPointerDecay:
-      case clang::CK_ArrayToPointerDecay:
-        return true;
-      default:
-        break;
+    case clang::CK_NoOp:
+    case clang::CK_LValueToRValue:
+    case clang::CK_FunctionToPointerDecay:
+    case clang::CK_ArrayToPointerDecay:
+      return true;
+    default:
+      break;
     }    
 
     clang::QualType fromType = cast->getSubExpr()->getType();
@@ -75,7 +75,8 @@ public:
   }
 
   bool VisitVarDecl(clang::VarDecl *varDecl) {
-    if (!currentFunction.empty()) return true;
+    if (!currentFunction.empty())
+      return true;
 
     clang::QualType fromType = varDecl->getType();
     clang::QualType toType = varDecl->getType();
@@ -84,7 +85,7 @@ public:
     return true;
   }
 
-  void printResults() {
+  void PrintResults() {
     auto &os = llvm::outs();
 
     os << "In global scope:\n";
@@ -114,7 +115,7 @@ public:
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     Visitor.TraverseDecl(context.getTranslationUnitDecl());
-    Visitor.printResults();
+    Visitor.PrintResults();
   }
 
 private:
@@ -137,5 +138,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<ConversionAction>
-    X("ImplicitConvPlugin",
-      "Output the number of implicit conversions in the entire file, including global scope");
+    X("ImplicitConvPlugin", "Output the number of implicit conversions in the "
+                            "entire file, including global scope");

@@ -6,21 +6,21 @@
 double global_par = 42;
 
 // Проверка задач варианта
-// CHECK: Function: sum1
+// CHECK: Function: sum
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
 
-// CHECK: Function: mul1
+// CHECK: Function: mul
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
 
-double sum1(int a, float b) {
+double sum(int a, float b) {
     return a + b;
 }
 
-int mul1(float a, float b) {
-    return a + sum1(a, b);
+int mul(float a, float b) {
+    return a + sum(a, b);
 }
 
 // Проверка обычной функции с несколькими преобразованиями
@@ -51,19 +51,19 @@ void construct_u() {
 }
 
 // Проверка return с преобразованием
-// CHECK: Function: make_bool1
+// CHECK: Function: make_bool
 // CHECK-NEXT: int -> bool: 1
 
-bool make_bool1() {
+bool make_bool() {
   return 100;
 }
 
 // Проверка указателей
-// CHECK: Function: pointer_test1
+// CHECK: Function: pointer_test
 // CHECK-NEXT: nullptr_t -> char *: 1
 // CHECK-NEXT: char * -> void *: 1
 
-void pointer_test1() {
+void pointer_test() {
   char* p = nullptr;
   void* vp = p;
 }
