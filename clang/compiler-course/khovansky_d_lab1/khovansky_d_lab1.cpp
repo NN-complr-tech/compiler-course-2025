@@ -12,54 +12,53 @@ namespace {
 class ImplicitConvVisitor final
     : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
 
-  void HandleTypeConversion(const clang::QualType &from_type, // NOLINT
-                            const clang::QualType &to_type) { // NOLINT
-    std::string from_type_str = from_type.getAsString();
-    std::string to_type_str = to_type.getAsString();
+  void HandleTypeConversion(const clang::QualType &FromType,
+                            const clang::QualType &ToType) {
+    std::string FromTypeStr = FromType.getAsString();
+    std::string ToTypeStr = ToType.getAsString();
 
     // ради читаемости
-    from_type_str = (from_type_str == "_Bool") ? "bool" : from_type_str;
-    to_type_str = (to_type_str == "_Bool") ? "bool" : to_type_str;
+    FromTypeStr = (FromTypeStr == "_Bool") ? "bool" : FromTypeStr;
+    ToTypeStr = (ToTypeStr == "_Bool") ? "bool" : ToTypeStr;
 
-    if (from_type_str == to_type_str)
+    if (FromTypeStr == ToTypeStr)
       return;
 
-    std::string conversion = from_type_str + " -> " + to_type_str;
-    auto &conv_list = conversions[current_function];
+    std::string Conversion = FromTypeStr + " -> " + ToTypeStr;
+    auto &ConvList = Conversions[CurrentFunction];
 
-    for (auto &entry : conv_list) {
-      if (entry.first == conversion) {
+    for (auto &entry : ConvList) {
+      if (entry.first == Conversion) {
         entry.second++;
         return;
       }
     }
 
-    conv_list.push_back({conversion, 1});
+    ConvList.push_back({Conversion, 1});
   }
 
 public:
-  explicit ImplicitConvVisitor(clang::ASTContext *astcontext)
-      : context(astcontext) {}
+  explicit ImplicitConvVisitor(clang::ASTContext *Context) : Context(Context) {}
 
-  bool VisitFunctionDecl(clang::FunctionDecl *func) { // NOLINT
-    current_function = func->getNameInfo().getName().getAsString();
-    if (conversions.find(current_function) == conversions.end()) {
-      function_order.push_back(current_function);
+  bool VisitFunctionDecl(clang::FunctionDecl *Func) {
+    CurrentFunction = Func->getNameInfo().getName().getAsString();
+    if (Conversions.find(CurrentFunction) == Conversions.end()) {
+      FunctionOrder.push_back(CurrentFunction);
     }
     return true;
   }
 
-  bool VisitCXXConstructExpr(clang::CXXConstructExpr *expr) { // NOLINT
-    if (expr->getNumArgs() == 1) {
-      clang::QualType from_type = expr->getArg(0)->getType();
-      clang::QualType to_type = expr->getType();
-      HandleTypeConversion(from_type, to_type);
+  bool VisitCXXConstructExpr(clang::CXXConstructExpr *Expr) {
+    if (Expr->getNumArgs() == 1) {
+      clang::QualType FromType = Expr->getArg(0)->getType();
+      clang::QualType ToType = Expr->getType();
+      HandleTypeConversion(FromType, ToType);
     }
     return true;
   }
 
-  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *cast) { // NOLINT
-    switch (cast->getCastKind()) {
+  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Cast) {
+    switch (Cast->getCastKind()) {
     case clang::CK_NoOp:
     case clang::CK_LValueToRValue:
     case clang::CK_FunctionToPointerDecay:
@@ -69,54 +68,54 @@ public:
       break;
     }
 
-    clang::QualType from_type = cast->getSubExpr()->getType();
-    clang::QualType to_type = cast->getType();
-    HandleTypeConversion(from_type, to_type);
+    clang::QualType FromType = Cast->getSubExpr()->getType();
+    clang::QualType ToType = Cast->getType();
+    HandleTypeConversion(FromType, ToType);
     return true;
   }
 
-  bool VisitVarDecl(clang::VarDecl *varDecl) { // NOLINT
-    if (!current_function.empty())
+  bool VisitVarDecl(clang::VarDecl *VarDecl) {
+    if (!CurrentFunction.empty())
       return true;
 
-    clang::QualType from_type = varDecl->getType();
-    clang::QualType to_type = varDecl->getType();
+    clang::QualType FromType = VarDecl->getType();
+    clang::QualType ToType = VarDecl->getType();
 
-    HandleTypeConversion(from_type, to_type);
+    HandleTypeConversion(FromType, ToType);
     return true;
   }
 
-  void PrintResults() { // NOLINT
-    auto &os = llvm::outs();
+  void printResults() {
+    auto &Os = llvm::outs();
 
-    os << "In global scope:\n";
-    for (const auto &[c1, c2] : conversions["global_scope"]) {
-      os << "  " << c1 << ": " << c2 << "\n";
+    Os << "In global scope:\n";
+    for (const auto &[c1, c2] : Conversions["global_scope"]) {
+      Os << "  " << c1 << ": " << c2 << "\n";
     }
 
-    for (const auto &func_name : function_order) {
-      os << "Function: " << func_name << "\n";
-      for (const auto &[c1, c2] : conversions[func_name]) {
-        os << "  " << c1 << ": " << c2 << "\n";
+    for (const auto &funcName : FunctionOrder) {
+      Os << "Function: " << funcName << "\n";
+      for (const auto &[c1, c2] : Conversions[funcName]) {
+        Os << "  " << c1 << ": " << c2 << "\n";
       }
-      os << "\n";
+      Os << "\n";
     }
   }
 
 private:
-  clang::ASTContext *context;
-  std::string current_function = "global_scope";
-  std::vector<std::string> function_order;
-  std::map<std::string, std::vector<std::pair<std::string, int>>> conversions;
+  clang::ASTContext *Context;
+  std::string CurrentFunction = "global_scope";
+  std::vector<std::string> FunctionOrder;
+  std::map<std::string, std::vector<std::pair<std::string, int>>> Conversions;
 };
 
 class ConversionConsumer final : public clang::ASTConsumer {
 public:
-  explicit ConversionConsumer(clang::ASTContext *context) : Visitor(context) {}
+  explicit ConversionConsumer(clang::ASTContext *Context) : Visitor(Context) {}
 
-  void HandleTranslationUnit(clang::ASTContext &context) override {
-    Visitor.TraverseDecl(context.getTranslationUnitDecl());
-    Visitor.PrintResults();
+  void HandleTranslationUnit(clang::ASTContext &Context) override {
+    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    Visitor.printResults();
   }
 
 private:
@@ -126,12 +125,12 @@ private:
 class ConversionAction final : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ConversionConsumer>(&ci.getASTContext());
+  CreateASTConsumer(clang::CompilerInstance &Ci, llvm::StringRef) override {
+    return std::make_unique<ConversionConsumer>(&Ci.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &Ci,
+                 const std::vector<std::string> &Args) override {
     return true;
   }
 };
@@ -139,5 +138,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<ConversionAction>
-    X("ImplicitConvPlugin", "Output the number of implicit conversions in the "
+    X("ImplicitConvPlugin", "Output the number of implicit Conversions in the "
                             "entire file, including global scope");
