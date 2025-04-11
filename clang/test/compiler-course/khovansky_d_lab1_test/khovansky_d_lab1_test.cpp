@@ -1,5 +1,6 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/ImplicitConvPlugin_Khovansky_Dmitry_FIIT2_ClangAST%pluginext -plugin ImplicitConvPlugin -fsyntax-only %s 2>&1 | FileCheck %s
 
+// NOLINTBEGIN
 // Проверка глобального скоупа
 // CHECK: In global scope:
 // CHECK-NEXT: int -> double: 1
@@ -67,4 +68,5 @@ void pointer_test() {
   char* p = nullptr;
   void* vp = p;
 }
+// NOLINTEND
 
