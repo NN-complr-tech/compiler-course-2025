@@ -12,8 +12,8 @@ namespace {
 class ImplicitConvVisitor final
     : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
 
-  void HandleTypeConversion(const clang::QualType &from_type,
-                            const clang::QualType &to_type) {
+  void HandleTypeConversion(const clang::QualType &from_type, // NOLINT
+                            const clang::QualType &to_type) { // NOLINT
     std::string from_type_str = from_type.getAsString();
     std::string to_type_str = to_type.getAsString();
 
@@ -41,7 +41,7 @@ public:
   explicit ImplicitConvVisitor(clang::ASTContext *astcontext)
       : context(astcontext) {}
 
-  bool VisitFunctionDecl(clang::FunctionDecl *func) {
+  bool VisitFunctionDecl(clang::FunctionDecl *func) { // NOLINT
     current_function = func->getNameInfo().getName().getAsString();
     if (conversions.find(current_function) == conversions.end()) {
       function_order.push_back(current_function);
@@ -49,7 +49,7 @@ public:
     return true;
   }
 
-  bool VisitCXXConstructExpr(clang::CXXConstructExpr *expr) {
+  bool VisitCXXConstructExpr(clang::CXXConstructExpr *expr) { // NOLINT
     if (expr->getNumArgs() == 1) {
       clang::QualType from_type = expr->getArg(0)->getType();
       clang::QualType to_type = expr->getType();
@@ -58,7 +58,7 @@ public:
     return true;
   }
 
-  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *cast) {
+  bool VisitImplicitCastExpr(clang::ImplicitCastExpr *cast) { // NOLINT
     switch (cast->getCastKind()) {
     case clang::CK_NoOp:
     case clang::CK_LValueToRValue:
@@ -75,7 +75,7 @@ public:
     return true;
   }
 
-  bool VisitVarDecl(clang::VarDecl *varDecl) {
+  bool VisitVarDecl(clang::VarDecl *varDecl) { // NOLINT
     if (!current_function.empty())
       return true;
 
@@ -86,7 +86,7 @@ public:
     return true;
   }
 
-  void PrintResults() {
+  void PrintResults() { // NOLINT
     auto &os = llvm::outs();
 
     os << "In global scope:\n";
@@ -141,4 +141,3 @@ public:
 static clang::FrontendPluginRegistry::Add<ConversionAction>
     X("ImplicitConvPlugin", "Output the number of implicit conversions in the "
                             "entire file, including global scope");
-
