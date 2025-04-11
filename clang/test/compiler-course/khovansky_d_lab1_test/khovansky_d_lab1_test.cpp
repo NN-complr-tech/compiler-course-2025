@@ -68,6 +68,3 @@ void pointer_test() {
   void* vp = p;
 }
 
-// NOLINTBEGIN
-// NOLINTEND
-
