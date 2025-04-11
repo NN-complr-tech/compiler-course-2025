@@ -23,8 +23,6 @@ int mul(float a, float b) {
     return a + sum(a, b);
 }
 
-// NOLINTBEGIN
-
 // Проверка обычной функции с несколькими преобразованиями
 // CHECK: Function: standart_func
 // CHECK-NEXT: float -> double: 2
@@ -55,6 +53,8 @@ void construct_u() {
 // Проверка return с преобразованием
 // CHECK: Function: make_bool
 // CHECK-NEXT: int -> bool: 1
+
+// NOLINTBEGIN
 
 bool make_bool() {
   return 100;
