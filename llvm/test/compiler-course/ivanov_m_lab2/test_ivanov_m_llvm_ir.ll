@@ -67,7 +67,7 @@ define i32 @test_mixed_division_neg(i32 %value) {
 ; CHECK-LABEL: @test_mixed_division_neg
 ; CHECK-NEXT: lshr i32 %value, 2
 ; CHECK-NEXT: ashr i32 %value, 7
-; CHECK-NEXT: sub i32 0,
+; CHECK-NEXT: sub i32 0, %ashr
   %div1 = udiv i32 %value, 4
   %div2 = sdiv i32 %value, -128
   %result = sub i32 %div1, %div2
