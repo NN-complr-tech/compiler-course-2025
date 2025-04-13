@@ -67,5 +67,37 @@ void pointer_test() {
   char* p = nullptr;
   void* vp = p;
 }
+
+// Проверка неявного преобразования через пользовательский конструктор
+class X {
+public:
+  X(int x) {}
+};
+
+// CHECK: Function: create_x
+// CHECK-NEXT: int -> X: 1
+
+void create_x() {
+  X obj = 10;
+}
+
+// Несколько преобразований
+// CHECK: Function: create_x_chain
+// CHECK-NEXT: int -> X: 1
+// CHECK-NEXT: double -> int: 1
+
+void create_x_chain() {
+  X obj = 5.5;
+}
+
+// Неявный вызов конструктора в параметрах функции
+void takes_x(X x) {}
+
+// CHECK: Function: call_takes_x
+// CHECK-NEXT: int -> X: 1
+
+void call_takes_x() {
+  takes_x(7);
+}
 //
 
