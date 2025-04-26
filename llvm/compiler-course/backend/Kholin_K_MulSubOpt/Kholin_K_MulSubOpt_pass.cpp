@@ -215,16 +215,4 @@ private:
 char MulSubOpt::ID = 0;
 } // end anonymous namespace
 
-namespace llvm {
-void initializeMulSubOptPass(PassRegistry &);
-}
-
-static RegisterPass<MulSubOpt> X("mul-sub-opt", "MulSubOpt MIR", false, false);
-
-INITIALIZE_PASS(MulSubOpt, "mul-sub-opt",
-                "Fused Multiply-Subtract Optimization", false, false)
-
-extern "C" LLVM_EXTERNAL_VISIBILITY void
-LLVMInitializeMulSubOptPass(llvm::PassRegistry &Registry) {
-  initializeMulSubOptPass(Registry);
-}
+static llvm::RegisterPass<MulSubOpt> X("mul-sub-opt", "MulSubOpt MIR", false, false);
