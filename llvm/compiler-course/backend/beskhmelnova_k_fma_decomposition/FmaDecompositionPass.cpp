@@ -19,8 +19,6 @@ public:
 
   bool runOnMachineFunction(llvm::MachineFunction &MF) override {
     const llvm::X86Subtarget &ST = MF.getSubtarget<llvm::X86Subtarget>();
-    if (!ST.hasAVX())
-      return false;
 
     const llvm::X86InstrInfo *TII = ST.getInstrInfo();
     llvm::MachineRegisterInfo &MRI = MF.getRegInfo();
@@ -31,9 +29,14 @@ public:
       for (auto &MI : MBB) {
         unsigned Opc = MI.getOpcode();
         if (Opc == llvm::X86::VFMADD132SSr || Opc == llvm::X86::VFMADD213SSr ||
-            Opc == llvm::X86::VFMADD231SSr) {
-          if (MI.getNumOperands() != 5)
+            Opc == llvm::X86::VFMADD231SSr ||
+            Opc == llvm::X86::VFMADD132SSr_Int ||
+            Opc == llvm::X86::VFMADD213SSr_Int ||
+            Opc == llvm::X86::VFMADD231SSr_Int) {
+
+          if (MI.getNumExplicitOperands() < 4)
             continue;
+
           if (!MI.getOperand(0).isReg() || !MI.getOperand(1).isReg() ||
               !MI.getOperand(2).isReg() || !MI.getOperand(3).isReg())
             continue;
@@ -46,15 +49,14 @@ public:
           const llvm::TargetRegisterClass *RC =
               MRI.getTargetRegisterInfo()->getRegClass(
                   llvm::X86::FR32RegClassID);
-          if (!RC->contains(Dest) || !RC->contains(Src1) ||
-              !RC->contains(Src2) || !RC->contains(Src3))
-            continue;
 
           llvm::Register Tmp = MRI.createVirtualRegister(RC);
+
           llvm::BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(llvm::X86::MULSSrr),
                         Tmp)
               .addReg(Src1)
               .addReg(Src2);
+
           llvm::BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(llvm::X86::ADDSSrr),
                         Dest)
               .addReg(Src3)

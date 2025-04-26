@@ -24,6 +24,21 @@
 #    return _mm_cvtss_f32(add);
 #}
 
+# CHECK-LABEL: name: _Z14test_fma_basicfff
+# CHECK: [[TMP:%[0-9]+]]:fr32 = MULSSrr %1, %0
+# CHECK-NEXT: %3:fr32 = ADDSSrr %2, [[TMP]]
+# CHECK-NOT: VFMADD{{.*}}SSr
+
+# CHECK-LABEL: name: _Z17test_fma_same_regff
+# CHECK: [[TMP:%[0-9]+]]:fr32 = MULSSrr %0, %0
+# CHECK-NEXT: %2:fr32 = ADDSSrr %1, [[TMP]]
+# CHECK-NOT: VFMADD{{.*}}SSr
+
+# CHECK-LABEL: name: _Z11test_no_fmafff
+# CHECK: %3:fr32 = nofpexcept VMULSSrr %0, %1, {{.*}}
+# CHECK-NEXT: %4:fr32 = nofpexcept VADDSSrr killed %3, %2, {{.*}}
+# CHECK-NOT: VFMADD{{.*}}SSr
+
 --- |
   ; ModuleID = 'llvm/test/compiler-course/beskhmelnova_k_fma_decomposition/fma_test.ll'
   source_filename = "llvm/test/compiler-course/beskhmelnova_k_fma_decomposition/fma_test.cpp"
@@ -68,7 +83,7 @@
 
 ...
 ---
-# CHECK-LABEL: name:            _Z14test_fma_basicfff
+
 name:            _Z14test_fma_basicfff
 alignment:       16
 exposesReturnsTwice: false
@@ -118,10 +133,6 @@ machineFunctionInfo: {}
 body:             |
   bb.0 (%ir-block.3):
     liveins: $xmm0, $xmm1, $xmm2
-
-    # CHECK: MULSSrr
-    # CHECK-NEXT: ADDSSrr
-    # CHECK-NOT: VFMADD{{.*}}SSr
   
     %2:fr32 = COPY $xmm2
     %1:fr32 = COPY $xmm1
@@ -132,7 +143,7 @@ body:             |
 
 ...
 ---
-# CHECK-LABEL: name:            _Z17test_fma_same_regff
+
 name:            _Z17test_fma_same_regff
 alignment:       16
 exposesReturnsTwice: false
@@ -180,10 +191,6 @@ machineFunctionInfo: {}
 body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
-  
-    # CHECK: MULSSrr
-    # CHECK-NEXT: ADDSSrr
-    # CHECK-NOT: VFMADD{{.*}}SSr
 
     %1:fr32 = COPY $xmm1
     %0:fr32 = COPY $xmm0
@@ -193,7 +200,7 @@ body:             |
 
 ...
 ---
-# CHECK-LABEL: name:            _Z11test_no_fmafff
+
 name:            _Z11test_no_fmafff
 alignment:       16
 exposesReturnsTwice: false
@@ -244,10 +251,6 @@ machineFunctionInfo: {}
 body:             |
   bb.0 (%ir-block.3):
     liveins: $xmm0, $xmm1, $xmm2
-
-    # CHECK: MULSSrr
-    # CHECK-NEXT: ADDSSrr
-    # CHECK-NOT: VFMADD{{.*}}SSr
   
     %2:fr32 = COPY $xmm2
     %1:fr32 = COPY $xmm1
