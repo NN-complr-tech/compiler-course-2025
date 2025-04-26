@@ -80,24 +80,22 @@ public:
         Register CounterReg = MRI.createVirtualRegister(GPR64RC);
 
         BuildMI(MBB, InsertPt, DL, TII->get(X86::MOV64rm), CounterReg)
-            .addReg(X86::RIP, RegState::Implicit) 
-            .addImm(1)                            
-            .addReg(0, RegState::Implicit)        
-            .addGlobalAddress(CounterGV, 0)       
-            .addReg(0, RegState::Implicit);       
+            .addReg(X86::RIP, RegState::Implicit)
+            .addImm(1)
+            .addReg(0, RegState::Implicit)
+            .addGlobalAddress(CounterGV, 0)
+            .addReg(0, RegState::Implicit);
 
-        
         BuildMI(MBB, InsertPt, DL, TII->get(X86::ADD64ri32), CounterReg)
             .addReg(CounterReg)
             .addImm(1);
 
-       
         BuildMI(MBB, InsertPt, DL, TII->get(X86::MOV64mr))
             .addReg(X86::RIP, RegState::Implicit)
-            .addImm(1)                            
-            .addReg(0, RegState::Implicit)        
-            .addGlobalAddress(CounterGV, 0)       
-            .addReg(CounterReg);                  
+            .addImm(1)
+            .addReg(0, RegState::Implicit)
+            .addGlobalAddress(CounterGV, 0)
+            .addReg(CounterReg);
 
         Changed = true;
       }
