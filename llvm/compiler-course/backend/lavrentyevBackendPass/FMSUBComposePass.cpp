@@ -85,9 +85,7 @@ public:
         MachineMemOperand *MMO_nc = const_cast<MachineMemOperand *>(MMO);
         Register A = MulMI.getOperand(2).getReg();
 
-        MIB.addReg(A)
-            .addMemOperand(MMO_nc)
-            .addReg(C);
+        MIB.addReg(A).addMemOperand(MMO_nc).addReg(C);
 
         ToErase.push_back(&MulMI);
         ToErase.push_back(SubMI);
