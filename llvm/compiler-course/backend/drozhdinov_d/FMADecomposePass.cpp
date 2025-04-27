@@ -20,8 +20,6 @@ public:
   	for (auto &MBB : MF) {
   		for (auto &MI : MBB) {
   			unsigned opcode = MI.getOpcode();
-  			// unsigned multype = 0;
-  			// unsigned addtype = 0;
   			// std::string InstrName = std::string(llvm::X86::getName(opcode));
   			llvm::StringRef Name = TII->getName(opcode);
   			if (Name.starts_with("VFMADD")) {
@@ -45,6 +43,11 @@ public:
   	*/
   	
   	for (auto *MI : WorkList) {
+  		// unsigned opcode = MI->getOpcode();
+  		// llvm::StringRef InstrName = llvm::X86::getName(opcode);
+  		unsigned multype = 0;
+  		unsigned addtype = 0;
+  		  		
   		llvm::MachineBasicBlock &MBB = *MI->getParent();
   		// llvm::DebugLoc DL = MI->getDebugLoc();
 			llvm::MachineOperand &DST = MI->getOperand(0);
@@ -52,20 +55,20 @@ public:
   		llvm::MachineOperand &SRC2 = MI->getOperand(2);
   		llvm::MachineOperand &SRC3 = MI->getOperand(3);
   		
-  		llvm::StringRef Name = TII->getName(MI->getOpcode());
+  		llvm::StringRef InstrName = TII->getName(MI->getOpcode());
   		llvm::MachineOperand *Mul1 = nullptr;
   		llvm::MachineOperand *Mul2 = nullptr;
   		llvm::MachineOperand *Add = nullptr;
   		
-  		if (Name.contains("132")) {
+  		if (InstrName.contains("132")) {
   			Mul1 = &SRC1;
   			Mul2 = &SRC2;
   			Add = &SRC3;
-  		} else if (Name.contains("213")) {
+  		} else if (InstrName.contains("213")) {
   			Mul1 = &SRC2;
   			Mul2 = &SRC1;
   			Add = &SRC3;
-  		} else if (Name.contains("231")) {
+  		} else if (InstrName.contains("231")) {
   			Mul1 = &SRC2;
   			Mul2 = &SRC3;
   			Add = &SRC1;
@@ -74,10 +77,26 @@ public:
   		}
   		
   		// add SS/SD/PS/PD
+  		if (InstrName.contains("PS")) {
+  			multype = llvm::X86::VMULPSrr;
+  			addtype = llvm::X86::VADDPSrr;
+  		} else if (InstrName.contains("PD")) {
+  			multype = llvm::X86::VMULPDrr;
+  			addtype = llvm::X86::VADDPDrr;
+  		} else if (InstrName.contains("SS")) {
+  			multype = llvm::X86::VMULSSrr;
+  			addtype = llvm::X86::VADDSSrr;
+  		} else if (InstrName.contains("SD")) {
+  			multype = llvm::X86::VMULSDrr;
+  			addtype = llvm::X86::VADDSDrr;
+  		} else {
+  			continue;
+  		}
   		
-  		llvm::Register TmpMul = MF.getRegInfo().createVirtualRegister(&llvm::X86::VR128RegClass);
-  		llvm::BuildMI(MBB, MI, MI->getDebugLoc(), TII->get(llvm::X86::VMULPSrr), TmpMul).addReg(Mul1->getReg()).addReg(Mul2->getReg());
-			llvm::BuildMI(MBB, MI, MI->getDebugLoc(), TII->get(llvm::X86::VADDPSrr), DST.getReg()).addReg(Add->getReg()).addReg(TmpMul);
+  		llvm::MachineRegisterInfo &MRI = MF.getRegInfo();
+  		llvm::Register TmpMul = MRI.createVirtualRegister(MRI.getRegClass(SRC1.getReg()));
+  		llvm::BuildMI(MBB, MI, MI->getDebugLoc(), TII->get(multype), TmpMul).addReg(Mul1->getReg()).addReg(Mul2->getReg());
+			llvm::BuildMI(MBB, MI, MI->getDebugLoc(), TII->get(addtype), DST.getReg()).addReg(Add->getReg()).addReg(TmpMul);
 			MI->eraseFromParent();
 			status = true;
   	}
