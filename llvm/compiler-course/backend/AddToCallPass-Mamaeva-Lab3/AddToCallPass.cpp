@@ -24,7 +24,8 @@ public:
 
     // Ищем функцию add в модуле
     llvm::Function *AddFunc = MF.getFunction().getParent()->getFunction("add");
-    if (!AddFunc) return false;
+    if (!AddFunc)
+      return false;
 
     // Проверяем сигнатуру функции add (i32, i32) -> i32
     if (AddFunc->getFunctionType()->getNumParams() != 2 ||
@@ -35,7 +36,7 @@ public:
     }
 
     for (auto &MBB : MF) {
-      llvm::SmallVector<llvm::MachineInstr*, 8> ToErase;
+      llvm::SmallVector<llvm::MachineInstr *, 8> ToErase;
 
       for (auto &MI : MBB) {
         // Пропускаем инструкции, которые не являются ADD
@@ -50,10 +51,10 @@ public:
 
         // Создаем вызов функции add вместо инструкции ADD
         llvm::BuildMI(MBB, MI, DL, TII->get(llvm::X86::CALL32r))
-          .addGlobalAddress(AddFunc)
-          .addReg(Src1, llvm::RegState::Implicit)
-          .addReg(Src2, llvm::RegState::Implicit)
-          .addReg(Dst, llvm::RegState::Implicit | llvm::RegState::Define);
+            .addGlobalAddress(AddFunc)
+            .addReg(Src1, llvm::RegState::Implicit)
+            .addReg(Src2, llvm::RegState::Implicit)
+            .addReg(Dst, llvm::RegState::Implicit | llvm::RegState::Define);
 
         ToErase.push_back(&MI);
         Changed = true;
@@ -73,5 +74,5 @@ char AddToCallPass::ID = 0;
 } // end anonymous namespace
 
 static llvm::RegisterPass<AddToCallPass>
-    X("add-to-call",
-      "Replaces ADD instructions with calls to add function", false, false);
+    X("add-to-call", "Replaces ADD instructions with calls to add function",
+      false, false);
