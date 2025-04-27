@@ -6,7 +6,6 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
-#include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/Passes/PassBuilder.h"
 #include <functional>
 
@@ -22,7 +21,7 @@ private:
       std::function<void(llvm::MachineBasicBlock &, llvm::MachineInstr &,
                          llvm::SmallVectorImpl<llvm::MachineInstr *> &)>;
 
-private:
+private: // auxiliary functions
   void applyOptimizations(llvm::MachineFunction &MF,
                           OptimizationPredicate shouldTransform,
                           OptimizationTransform performTransform) {
@@ -91,65 +90,7 @@ private:
     ToRemove.push_back(&MI);
   }
 
-  bool isZeroRegister(llvm::Register Reg) const {
-    if (auto *DefInstr = MRI->getUniqueVRegDef(Reg)) {
-      switch (DefInstr->getOpcode()) {
-      case llvm::X86::PXORrr:
-      case llvm::X86::XORPSrr:
-      case llvm::X86::XORPDrr:
-        auto &Op1 = DefInstr->getOperand(1);
-        auto &Op2 = DefInstr->getOperand(2);
-        return Op1.isReg() && Op2.isReg() && Op1.getReg() == Op2.getReg();
-      }
-    }
-    return false;
-  }
-
-  bool
-  handleZeroOperands(llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
-                     unsigned Opc, llvm::Register DestReg,
-                     llvm::Register SrcReg1, llvm::Register SrcReg2,
-                     llvm::SmallVectorImpl<llvm::MachineInstr *> &ToRemove) {
-    const bool Src1IsZero = isZeroRegister(SrcReg1);
-    const bool Src2IsZero = isZeroRegister(SrcReg2);
-
-    if (!Src1IsZero && !Src2IsZero)
-      return false;
-
-    switch (Opc) {
-    case llvm::X86::PANDrr: {
-      llvm::Register ZeroReg = Src1IsZero ? SrcReg1 : SrcReg2;
-      llvm::BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(llvm::X86::VPXORrr),
-                    DestReg)
-          .addReg(ZeroReg)
-          .addReg(ZeroReg);
-      break;
-    }
-    case llvm::X86::PORrr: {
-      llvm::Register NonZeroReg = Src1IsZero ? SrcReg2 : SrcReg1;
-      llvm::BuildMI(MBB, MI, MI.getDebugLoc(),
-                    TII->get(llvm::TargetOpcode::COPY), DestReg)
-          .addReg(NonZeroReg);
-      break;
-    }
-    case llvm::X86::PXORrr: {
-      if (!Src1IsZero)
-        return false;
-
-      llvm::BuildMI(MBB, MI, MI.getDebugLoc(),
-                    TII->get(llvm::TargetOpcode::COPY), DestReg)
-          .addReg(SrcReg2);
-      break;
-    }
-    default:
-      return false;
-    }
-
-    ToRemove.push_back(&MI);
-    return true;
-  }
-
-private:
+private: // optimizing passes
   void optimizeLogicOperations(llvm::MachineFunction &MF) {
     auto shouldTransform = [&](llvm::MachineInstr &MI) {
       return isLogicOpcode(MI.getOpcode());
@@ -158,16 +99,6 @@ private:
     auto transformInstr =
         [&](llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
             llvm::SmallVectorImpl<llvm::MachineInstr *> &ToRemove) {
-          const unsigned Opc = MI.getOpcode();
-          const llvm::Register DestReg = MI.getOperand(0).getReg();
-          const llvm::Register SrcReg1 = MI.getOperand(1).getReg();
-          const llvm::Register SrcReg2 = MI.getOperand(2).getReg();
-
-          if (handleZeroOperands(MBB, MI, Opc, DestReg, SrcReg1, SrcReg2,
-                                 ToRemove)) {
-            return;
-          }
-
           replaceWithAVX(MBB, MI, ToRemove);
         };
 
