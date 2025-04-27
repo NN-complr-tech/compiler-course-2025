@@ -6,6 +6,7 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Passes/PassBuilder.h"
 
 #define DEBUG_TYPE "add-to-call"
@@ -22,8 +23,13 @@ public:
     const llvm::X86InstrInfo *TII = ST.getInstrInfo();
     bool Changed = false;
 
+    // Получаем LLVM-функцию из MachineFunction
+    llvm::Function &F = MF.getFunction();
+    // Получаем модуль, которому принадлежит функция
+    llvm::Module *M = F.getParent();
+
     // Ищем функцию add в модуле
-    llvm::Function *AddFunc = MF.getFunction().getParent()->getFunction("add");
+    llvm::Function *AddFunc = M->getFunction("add");
     if (!AddFunc)
       return false;
 
