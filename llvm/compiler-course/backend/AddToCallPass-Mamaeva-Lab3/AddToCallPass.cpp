@@ -7,8 +7,8 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
-#include "llvm/IR/Function.h" 
-#include "llvm/IR/Module.h" 
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Passes/PassBuilder.h"
 
 #define DEBUG_TYPE "add-to-call"
@@ -27,7 +27,7 @@ public:
 
     // Получаем LLVM-функцию и модуль
     llvm::Function &F = MF.getFunction();
-    llvm::Module *M = F.getParent(); 
+    llvm::Module *M = F.getParent();
     // Ищем функцию add в модуле
     llvm::Function *AddFunc = M->getFunction("add");
     if (!AddFunc)
