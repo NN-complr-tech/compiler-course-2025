@@ -6,6 +6,7 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -20,6 +21,7 @@ namespace {
 class AddToCallPass : public MachineFunctionPass {
 public:
   static char ID;
+
   AddToCallPass() : MachineFunctionPass(ID) {
     initializeAddToCallPassPass(*PassRegistry::getPassRegistry());
   }
@@ -27,7 +29,7 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override {
     const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
     const X86InstrInfo *TII = ST.getInstrInfo();
-    MachineRegisterInfo &MRI = MF.getRegInfo();
+    TRI = ST.getRegisterInfo();
     bool Changed = false;
 
     // Get the LLVM function and module
@@ -47,12 +49,6 @@ public:
         !AddFunc->getFunctionType()->getParamType(0)->isIntegerTy(32) ||
         !AddFunc->getFunctionType()->getParamType(1)->isIntegerTy(32)) {
       LLVM_DEBUG(dbgs() << "Add function has wrong signature\n");
-      return false;
-    }
-
-    // Verify calling convention matches
-    if (AddFunc->getCallingConv() != F.getCallingConv()) {
-      LLVM_DEBUG(dbgs() << "Calling convention mismatch\n");
       return false;
     }
 
@@ -99,15 +95,25 @@ public:
   }
 
 private:
-  const TargetRegisterInfo *TRI = nullptr;
+  const TargetRegisterInfo *TRI;
 };
 
 char AddToCallPass::ID = 0;
 
 } // end anonymous namespace
 
-INITIALIZE_PASS(AddToCallPass, "add-to-call",
-                "Replace ADD instructions with calls to add function", false,
-                false)
-
-FunctionPass *llvm::createAddToCallPass() { return new AddToCallPass(); }
+extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
+llvmGetPassPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "AddToCallPass", "v0.1",
+          [](PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, MachineFunctionPassManager &MFPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "add-to-call") {
+                    MFPM.addPass(AddToCallPass());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
+}
