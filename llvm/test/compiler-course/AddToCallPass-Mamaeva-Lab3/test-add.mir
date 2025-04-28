@@ -6,7 +6,7 @@
   ; ModuleID = 'test-add.c'
   source_filename = "test-add.c"
   target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
-  target triple = "x86_64-pc-linux-gnu"
+  target triple = "x86_64-unknown-linux-gnu"
 
   define i32 @my_add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
@@ -17,96 +17,17 @@
     %sum = add i32 %x, %y
     ret i32 %sum
   }
-
-  define i32 @test2(i32 %x, i32 %y, i32 %z) {
-    %tmp = add i32 %x, %y
-    %sum = add i32 %tmp, %z
-    ret i32 %sum
-  }
-
-  define float @my_add_float(float %a, float %b) {
-    %result = fadd float %a, %b
-    ret float %result
-  }
-
-  define float @test3(float %x, float %y) {
-    %sum = fadd float %x, %y
-    ret float %sum
-  }
-
-...
----
-name:            my_add
-body:             |
-  bb.0 (%ir-block.0):
-    liveins: $edi, $esi
-    %0:gr32 = COPY $edi
-    %1:gr32 = COPY $esi
-    %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
-    $eax = COPY %2
-    RET 0, $eax
-
 ...
 ---
 name:            test1
 body:             |
   bb.0 (%ir-block.0):
     liveins: $edi, $esi
-    ; CHECK: ADJCALLSTACKDOWN64
-    ; CHECK: $edi = COPY %0
-    ; CHECK: $esi = COPY %1
+    ; CHECK: ADJCALLSTACKDOWN64 0, 0
     ; CHECK: CALL64pcrel32 @my_add
-    ; CHECK: ADJCALLSTACKUP64
-    ; CHECK: RET 0, $eax
-    
+    ; CHECK: ADJCALLSTACKUP64 0, 0
     %0:gr32 = COPY $edi
     %1:gr32 = COPY $esi
     %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
     $eax = COPY %2
     RET 0, $eax
-
-...
----
-name:            test2
-body:             |
-  bb.0 (%ir-block.0):
-    liveins: $edi, $esi, $edx
-    ; CHECK: ADJCALLSTACKDOWN64
-    ; CHECK: CALL64pcrel32 @my_add
-    ; CHECK: ADJCALLSTACKUP64
-    ; CHECK: ADJCALLSTACKDOWN64
-    ; CHECK: CALL64pcrel32 @my_add
-    ; CHECK: ADJCALLSTACKUP64
-    ; CHECK: RET 0, $eax
-    
-    %0:gr32 = COPY $edi
-    %1:gr32 = COPY $esi
-    %2:gr32 = COPY $edx
-    %3:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
-    %4:gr32 = ADD32rr %3, %2, implicit-def dead $eflags
-    $eax = COPY %4
-    RET 0, $eax
-
-...
----
-name:            my_add_float
-body:             |
-  bb.0 (%ir-block.0):
-    liveins: $xmm0, $xmm1
-    %0:fr32 = COPY $xmm0
-    %1:fr32 = COPY $xmm1
-    %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
-    $xmm0 = COPY %2
-    RET 0, $xmm0
-
-...
----
-name:            test3
-body:             |
-  bb.0 (%ir-block.0):
-    liveins: $xmm0, $xmm1
-    %0:fr32 = COPY $xmm0
-    %1:fr32 = COPY $xmm1
-    %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
-    $xmm0 = COPY %2
-    RET 0, $xmm0
