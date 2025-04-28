@@ -8,6 +8,8 @@
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/IR/Module.h"  
+#include "llvm/IR/Function.h"
 
 #define DEBUG_TYPE "add-to-call"
 
