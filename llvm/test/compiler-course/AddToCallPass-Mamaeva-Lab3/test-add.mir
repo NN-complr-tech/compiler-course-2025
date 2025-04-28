@@ -2,217 +2,111 @@
 # RUN:     --load=%llvmshlibdir/AddToCallPass_Mamaeva_Olga_FIIT3_BACKEND%shlibext \
 # RUN:     -run-pass=add-to-call %s -o - | FileCheck %s
 
-# test-add.mir
-#
-# int my_add(int a, int b) {
-#     return a + b;
-# }
-# 
-# int test1(int x, int y) {
-#     return x + y;
-# }
-# 
-# int test2(int x, int y, int z) {
-#     return x + y + z;
-# }
-# 
-# float my_add_float(float a, float b) {
-#     return a + b;
-# }
-# 
-# float test3(float x, float y) {
-#     return x + y;
-# }
-
 --- |
-  ; ModuleID = 'test-add.mir'
-  source_filename = "test-add.mir"
+  ; ModuleID = 'test-add.c'
+  source_filename = "test-add.c"
   target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
   target triple = "x86_64-pc-linux-gnu"
 
-  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef i32 @my_add(i32 noundef %a, i32 noundef %b) local_unnamed_addr #0 {
+  define i32 @my_add(i32 %a, i32 %b) {
     %result = add i32 %a, %b
     ret i32 %result
   }
 
-  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef i32 @test1(i32 noundef %x, i32 noundef %y) local_unnamed_addr #0 {
+  define i32 @test1(i32 %x, i32 %y) {
     %sum = add i32 %x, %y
     ret i32 %sum
   }
 
-  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef i32 @test2(i32 noundef %x, i32 noundef %y, i32 noundef %z) local_unnamed_addr #0 {
+  define i32 @test2(i32 %x, i32 %y, i32 %z) {
     %tmp = add i32 %x, %y
     %sum = add i32 %tmp, %z
     ret i32 %sum
   }
 
-  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @my_add_float(float noundef %a, float noundef %b) local_unnamed_addr #0 {
+  define float @my_add_float(float %a, float %b) {
     %result = fadd float %a, %b
     ret float %result
   }
 
-  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @test3(float noundef %x, float noundef %y) local_unnamed_addr #0 {
+  define float @test3(float %x, float %y) {
     %sum = fadd float %x, %y
     ret float %sum
   }
 
-  attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+...
+---
+name:            my_add
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $edi, $esi
+    %0:gr32 = COPY $edi
+    %1:gr32 = COPY $esi
+    %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
+    $eax = COPY %2
+    RET 0, $eax
 
-  !llvm.module.flags = !{!0, !1, !2, !3}
-  !llvm.ident = !{!4}
+...
+---
+name:            test1
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $edi, $esi
+    ; CHECK: ADJCALLSTACKDOWN64
+    ; CHECK: $edi = COPY %0
+    ; CHECK: $esi = COPY %1
+    ; CHECK: CALL64pcrel32 @my_add
+    ; CHECK: ADJCALLSTACKUP64
+    ; CHECK: RET 0, $eax
+    
+    %0:gr32 = COPY $edi
+    %1:gr32 = COPY $esi
+    %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
+    $eax = COPY %2
+    RET 0, $eax
 
-  !0 = !{i32 1, !"wchar_size", i32 4}
-  !1 = !{i32 8, !"PIC Level", i32 2}
-  !2 = !{i32 7, !"PIE Level", i32 2}
-  !3 = !{i32 7, !"uwtable", i32 2}
-  !4 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
+...
+---
+name:            test2
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $edi, $esi, $edx
+    ; CHECK: ADJCALLSTACKDOWN64
+    ; CHECK: CALL64pcrel32 @my_add
+    ; CHECK: ADJCALLSTACKUP64
+    ; CHECK: ADJCALLSTACKDOWN64
+    ; CHECK: CALL64pcrel32 @my_add
+    ; CHECK: ADJCALLSTACKUP64
+    ; CHECK: RET 0, $eax
+    
+    %0:gr32 = COPY $edi
+    %1:gr32 = COPY $esi
+    %2:gr32 = COPY $edx
+    %3:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
+    %4:gr32 = ADD32rr %3, %2, implicit-def dead $eflags
+    $eax = COPY %4
+    RET 0, $eax
 
+...
+---
+name:            my_add_float
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
+    $xmm0 = COPY %2
+    RET 0, $xmm0
 
-  ...
-  ---
-  # CHECK-LABEL: name:            my_add
-  name:            my_add
-  alignment:       16
-  tracksRegLiveness: true
-  registers:
-    - { id: 0, class: gr32, preferred-register: '' }
-    - { id: 1, class: gr32, preferred-register: '' }
-    - { id: 2, class: gr32, preferred-register: '' }
-  body:             |
-    bb.0 (%ir-block.0):
-      liveins: $edi, $esi
-      ; CHECK:      %0:gr32 = COPY $edi
-      ; CHECK-NEXT: %1:gr32 = COPY $esi
-      ; CHECK-NEXT: %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
-      ; CHECK-NEXT: $eax = COPY %2
-      ; CHECK-NEXT: RET 0, $eax
-    
-      %0:gr32 = COPY $edi
-      %1:gr32 = COPY $esi
-      %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
-      $eax = COPY %2
-      RET 0, $eax
-  ...
-  ---
-  # CHECK-LABEL: name:            test1
-  name:            test1
-  alignment:       16
-  tracksRegLiveness: true
-  registers:
-    - { id: 0, class: gr32, preferred-register: '' }
-    - { id: 1, class: gr32, preferred-register: '' }
-    - { id: 2, class: gr32, preferred-register: '' }
-  body:             |
-    bb.0 (%ir-block.0):
-      liveins: $edi, $esi
-      ; CHECK:      %0:gr32 = COPY $edi
-      ; CHECK-NEXT: %1:gr32 = COPY $esi
-      ; CHECK-NEXT: ADJCALLSTACKDOWN64 0, 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
-      ; CHECK-NEXT: $edi = COPY %0
-      ; CHECK-NEXT: $esi = COPY %1
-      ; CHECK-NEXT: CALL64pcrel32 @my_add, csr_64, implicit $rsp, implicit $ssp, implicit $edi, implicit $esi, implicit-def $rsp, implicit-def $ssp, implicit-def $eax
-      ; CHECK-NEXT: ADJCALLSTACKUP64 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
-      ; CHECK-NEXT: %2:gr32 = COPY $eax
-      ; CHECK-NEXT: $eax = COPY %2
-      ; CHECK-NEXT: RET 0, $eax
-    
-      %0:gr32 = COPY $edi
-      %1:gr32 = COPY $esi
-      %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
-      $eax = COPY %2
-      RET 0, $eax
-  ...
-  ---
-  # CHECK-LABEL: name:            test2
-  name:            test2
-  alignment:       16
-  tracksRegLiveness: true
-  registers:
-    - { id: 0, class: gr32, preferred-register: '' }
-    - { id: 1, class: gr32, preferred-register: '' }
-    - { id: 2, class: gr32, preferred-register: '' }
-    - { id: 3, class: gr32, preferred-register: '' }
-    - { id: 4, class: gr32, preferred-register: '' }
-  body:             |
-    bb.0 (%ir-block.0):
-      liveins: $edi, $esi, $edx
-      ; CHECK:      %0:gr32 = COPY $edi
-      ; CHECK-NEXT: %1:gr32 = COPY $esi
-      ; CHECK-NEXT: %2:gr32 = COPY $edx
-      ; CHECK-NEXT: ADJCALLSTACKDOWN64 0, 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
-      ; CHECK-NEXT: $edi = COPY %0
-      ; CHECK-NEXT: $esi = COPY %1
-      ; CHECK-NEXT: CALL64pcrel32 @my_add, csr_64, implicit $rsp, implicit $ssp, implicit $edi, implicit $esi, implicit-def $rsp, implicit-def $ssp, implicit-def $eax
-      ; CHECK-NEXT: ADJCALLSTACKUP64 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
-      ; CHECK-NEXT: %3:gr32 = COPY $eax
-      ; CHECK-NEXT: ADJCALLSTACKDOWN64 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
-      ; CHECK-NEXT: $edi = COPY %3
-      ; CHECK-NEXT: $esi = COPY %2
-      ; CHECK-NEXT: CALL64pcrel32 @my_add, csr_64, implicit $rsp, implicit $ssp, implicit $edi, implicit $esi, implicit-def $rsp, implicit-def $ssp, implicit-def $eax
-      ; CHECK-NEXT: ADJCALLSTACKUP64 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
-      ; CHECK-NEXT: %4:gr32 = COPY $eax
-      ; CHECK-NEXT: $eax = COPY %4
-      ; CHECK-NEXT: RET 0, $eax
-    
-      %0:gr32 = COPY $edi
-      %1:gr32 = COPY $esi
-      %2:gr32 = COPY $edx
-      %3:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
-      %4:gr32 = ADD32rr %3, %2, implicit-def dead $eflags
-      $eax = COPY %4
-      RET 0, $eax
-  ...
-  ---
-  # CHECK-LABEL: name:            my_add_float
-  name:            my_add_float
-  alignment:       16
-  tracksRegLiveness: true
-  registers:
-    - { id: 0, class: fr32, preferred-register: '' }
-
-    - { id: 1, class: fr32, preferred-register: '' }
-    - { id: 2, class: fr32, preferred-register: '' }
-  body:             |
-    bb.0 (%ir-block.0):
-      liveins: $xmm0, $xmm1
-      ; CHECK:      %0:fr32 = COPY $xmm0
-      ; CHECK-NEXT: %1:fr32 = COPY $xmm1
-      ; CHECK-NEXT: %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
-      ; CHECK-NEXT: $xmm0 = COPY %2
-      ; CHECK-NEXT: RET 0, $xmm0
-    
-      %0:fr32 = COPY $xmm0
-      %1:fr32 = COPY $xmm1
-      %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
-      $xmm0 = COPY %2
-      RET 0, $xmm0
-  ...
-  ---
-  # CHECK-LABEL: name:            test3
-  name:            test3
-  alignment:       16
-  tracksRegLiveness: true
-  registers:
-    - { id: 0, class: fr32, preferred-register: '' }
-    - { id: 1, class: fr32, preferred-register: '' }
-    - { id: 2, class: fr32, preferred-register: '' }
-  body:             |
-    bb.0 (%ir-block.0):
-      liveins: $xmm0, $xmm1
-      ; CHECK:      %0:fr32 = COPY $xmm0
-      ; CHECK-NEXT: %1:fr32 = COPY $xmm1
-      ; CHECK-NEXT: %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
-      ; CHECK-NEXT: $xmm0 = COPY %2
-      ; CHECK-NEXT: RET 0, $xmm0
-    
-      %0:fr32 = COPY $xmm0
-      %1:fr32 = COPY $xmm1
-      %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
-      $xmm0 = COPY %2
-      RET 0, $xmm0
-  ...
+...
+---
+name:            test3
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = ADDSSrr %0, %1, implicit $mxcsr
+    $xmm0 = COPY %2
+    RET 0, $xmm0
