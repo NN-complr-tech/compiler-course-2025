@@ -6,9 +6,12 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
+
+#define DEBUG_TYPE "mul-sub-opt"
 
 namespace {
 class MulSubOpt : public MachineFunctionPass {
@@ -19,15 +22,16 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override {
     const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
     const X86InstrInfo *TII = ST.getInstrInfo();
-    const TargetRegisterInfo *TRI = ST.getRegisterInfo();
     MachineRegisterInfo &MRI = MF.getRegInfo();
 
-    errs() << "\n***************************************************\n"
-           << "* Running MulSubOpt on function: " << MF.getName() << "\n"
-           << "***************************************************\n";
+    LLVM_DEBUG({
+      dbgs() << "\n***************************************************\n"
+             << "* Running MulSubOpt on function: " << MF.getName() << "\n"
+             << "***************************************************\n";
+    });
 
     if (!ST.hasFMA()) {
-      errs() << "FMA not support, skipping pass\n";
+      LLVM_DEBUG(dbgs() << "FMA not supported, skipping pass\n");
       return false;
     }
 
@@ -35,97 +39,160 @@ public:
     SmallVector<MachineInstr *, 16> ToRemove;
 
     for (auto &MBB : MF) {
-      errs() << "\nProcessing BB: " << MBB.getName() << "\n";
+      LLVM_DEBUG(dbgs() << "\nProcessing BB: " << MBB.getName() << "\n");
 
       for (auto &MI : MBB) {
-        errs() << "\nInspecting instruction: ";
-        MI.print(errs());
-        errs() << "  Opcode: " << MI.getOpcode() << "\n";
+        LLVM_DEBUG({
+          dbgs() << "\nInspecting instruction: ";
+          MI.print(dbgs());
+          dbgs() << "  Opcode: " << MI.getOpcode() << "\n";
+        });
 
-        if (!isSubtractionOpcode(MI.getOpcode())) {
-          errs() << "  Not SUB instruction, skipping\n";
-          continue;
-        }
+        // Handle classic SUB pattern
+        if (isSubtractionOpcode(MI.getOpcode())) {
+          if (MI.getNumOperands() < 3 || !MI.getOperand(0).isReg()) {
+            LLVM_DEBUG(dbgs() << "  Doesn't have 3 operands or doesn't define reg, skipping\n");
+            continue;
+          }
 
-        if (MI.getNumOperands() < 3 || !MI.getOperand(0).isReg()) {
-          errs() << "  Doesnt have 3 operands or doesnt define reg, skipping\n";
-          continue;
-        }
+          LLVM_DEBUG(dbgs() << "  Found SUB instruction!\n");
 
-        errs() << "  Found SUB instruction!\n";
+          Register SubReg = MI.getOperand(0).getReg();
+          Register Op2Reg = MI.getOperand(2).getReg();
 
-        Register SubReg = MI.getOperand(0).getReg();
-        Register Op2Reg = MI.getOperand(2).getReg();
-
-        MachineInstr *MulMI = nullptr;
-
-        if (Op2Reg.isVirtual()) {
-          MulMI = MRI.getUniqueVRegDef(Op2Reg);
+          MachineInstr *MulMI = MRI.getUniqueVRegDef(Op2Reg);
           while (MulMI && MulMI->isCopy()) {
             Register SrcReg = MulMI->getOperand(1).getReg();
-            if (!SrcReg.isVirtual())
-              break;
+            if (!SrcReg.isVirtual()) break;
             MulMI = MRI.getUniqueVRegDef(SrcReg);
           }
-        } else {
-          for (auto I = MachineBasicBlock::iterator(&MI), E = MBB.begin();
-               I != E; --I) {
-            if (I->definesRegister(Op2Reg, TRI)) {
-              MulMI = &*I;
-              break;
+
+          if (!MulMI || !isMultiplicationOpcode(MulMI->getOpcode())) {
+            LLVM_DEBUG(dbgs() << "  MUL instruction not found or invalid\n");
+            continue;
+          }
+
+          LLVM_DEBUG({
+            dbgs() << "  Found MUL instruction:\n";
+            MulMI->print(dbgs());
+          });
+
+          unsigned FMAOpcode = getFMAOpcode(MI.getOpcode());
+          if (!FMAOpcode) {
+            LLVM_DEBUG(dbgs() << "  No FMA opcode for SUB opcode: " << MI.getOpcode() << "\n");
+            continue;
+          }
+
+          LLVM_DEBUG(dbgs() << "  Creating FMA instruction with opcode: " << FMAOpcode << "\n");
+          MachineInstrBuilder MIB =
+              BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(FMAOpcode), SubReg);
+
+          MIB.add(MulMI->getOperand(1));
+          MIB.add(MulMI->getOperand(2));
+          MIB.add(MI.getOperand(1));
+
+          LLVM_DEBUG({
+            dbgs() << "  Created new FMA instruction:\n";
+            MIB->print(dbgs());
+          });
+
+          ToRemove.push_back(MulMI);
+          ToRemove.push_back(&MI);
+          Changed = true;
+        }
+        // Handle negated pattern: MULSS + XOR + ADDSS
+        else if (MI.getOpcode() == X86::ADDSSrr || MI.getOpcode() == X86::ADDSDrr) {
+          LLVM_DEBUG(dbgs() << "  Checking for MUL + XOR + ADD pattern\n");
+
+          if (MI.getNumOperands() < 3 || !MI.getOperand(0).isReg()) {
+            LLVM_DEBUG(dbgs() << "  Doesn't have 3 operands or doesn't define reg, skipping\n");
+            continue;
+          }
+
+          for (unsigned OpIdx = 1; OpIdx <= 2; ++OpIdx) {
+            Register OpReg = MI.getOperand(OpIdx).getReg();
+            LLVM_DEBUG(dbgs() << "  Checking operand " << OpIdx << " (reg: " << OpReg << ")\n");
+
+            MachineInstr *Mov2MI = MRI.getUniqueVRegDef(OpReg);
+            if (!Mov2MI || Mov2MI->getOpcode() != X86::MOVDI2SSrr) {
+              LLVM_DEBUG(dbgs() << "  No MOVDI2SS found for operand " << OpIdx << "\n");
+              continue;
             }
+
+            MachineInstr *XorMI = MRI.getUniqueVRegDef(Mov2MI->getOperand(1).getReg());
+            if (!XorMI || XorMI->getOpcode() != X86::XOR32ri) {
+              LLVM_DEBUG(dbgs() << "  No XOR32ri found for operand " << OpIdx << "\n");
+              continue;
+            }
+
+            if (XorMI->getOperand(2).getImm() != 0x80000000) {
+              LLVM_DEBUG(dbgs() << "  XOR has wrong immediate value: " 
+                               << XorMI->getOperand(2).getImm() << "\n");
+              continue;
+            }
+
+            MachineInstr *Mov1MI = MRI.getUniqueVRegDef(XorMI->getOperand(1).getReg());
+            if (!Mov1MI || Mov1MI->getOpcode() != X86::MOVSS2DIrr) {
+              LLVM_DEBUG(dbgs() << "  No MOVSS2DIrr found for operand " << OpIdx << "\n");
+              continue;
+            }
+
+            MachineInstr *MulMI = MRI.getUniqueVRegDef(Mov1MI->getOperand(1).getReg());
+            if (!MulMI || !isMultiplicationOpcode(MulMI->getOpcode())) {
+              LLVM_DEBUG(dbgs() << "  MUL instruction not found or invalid\n");
+              continue;
+            }
+
+            LLVM_DEBUG(dbgs() << "  Found complete MUL + XOR + ADD pattern!\n");
+    
+            Register OtherOpReg = MI.getOperand(3 - OpIdx).getReg();
+            Register DstReg = MI.getOperand(0).getReg();
+
+            unsigned FMAOpcode = getNegatedFMAOpcode(MI.getOpcode());
+            if (!FMAOpcode) {
+              LLVM_DEBUG(dbgs() << "  No FMA opcode for ADD opcode: " << MI.getOpcode() << "\n");
+              continue;
+            }
+
+            LLVM_DEBUG(dbgs() << "  Creating FMA instruction with opcode: " << FMAOpcode << "\n");
+            MachineInstrBuilder MIB =
+                BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(FMAOpcode), DstReg);
+
+            MIB.add(MulMI->getOperand(1));
+            MIB.add(MulMI->getOperand(2));
+            MIB.addReg(OtherOpReg);
+
+            LLVM_DEBUG({
+              dbgs() << "  Created new FMA instruction:\n";
+              MIB->print(dbgs());
+            });
+
+            ToRemove.push_back(MulMI);
+            ToRemove.push_back(Mov1MI);
+            ToRemove.push_back(XorMI);
+            ToRemove.push_back(Mov2MI);
+            ToRemove.push_back(&MI);
+            Changed = true;
+            break;
           }
         }
-
-        if (!MulMI || !isMultiplicationOpcode(MulMI->getOpcode())) {
-          errs() << "  MUL instruction not found or invalid\n";
-          continue;
-        }
-
-        errs() << "  Found MUL instruction:\n";
-        MulMI->print(errs());
-
-        unsigned FMAOpcode = getFMAOpcode(MI.getOpcode());
-        if (!FMAOpcode) {
-          errs() << "  No FMA opcode for SUB opcode: " << MI.getOpcode()
-                 << "\n";
-          continue;
-        }
-
-        errs() << "  Creating FMA instruction with opcode: " << FMAOpcode
-               << "\n";
-        MachineInstrBuilder MIB =
-            BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(FMAOpcode), SubReg);
-
-        MIB.add(MulMI->getOperand(1));
-        MIB.add(MulMI->getOperand(2));
-        MIB.add(MI.getOperand(1));
-
-        for (const MachineOperand &MO : MI.implicit_operands()) {
-          MIB.add(MO);
-        }
-
-        errs() << "  Created new FMA instruction:\n";
-        MIB->print(errs());
-
-        ToRemove.push_back(MulMI);
-        ToRemove.push_back(&MI);
-        Changed = true;
       }
     }
 
     for (auto *MI : ToRemove) {
       if (MI->getParent()) {
-        errs() << "Removing instruction: ";
-        MI->print(errs());
+        LLVM_DEBUG({
+          dbgs() << "Removing instruction: ";
+          MI->print(dbgs());
+        });
         MI->eraseFromParent();
       }
     }
 
     if (Changed) {
-      errs() << "\nFunction was modified by MulSubOpt\n";
+      LLVM_DEBUG(dbgs() << "\nFunction was modified by MulSubOpt\n");
     } else {
-      errs() << "\nNo changes made to function by MulSubOpt\n";
+      LLVM_DEBUG(dbgs() << "\nNo changes made to function by MulSubOpt\n");
     }
 
     return Changed;
@@ -138,26 +205,21 @@ public:
 private:
   unsigned getFMAOpcode(unsigned Opcode) const {
     switch (Opcode) {
-    case X86::SUBSSrr:
-    case X86::VSUBSSrr:
-    case X86::SUBSSrr_Int:
-    case X86::VSUBSSrr_Int:
+    case X86::SUBSSrr: case X86::VSUBSSrr: case X86::SUBSSrr_Int: case X86::VSUBSSrr_Int:
       return X86::VFNMADD213SSr;
-    case X86::SUBSDrr:
-    case X86::VSUBSDrr:
-    case X86::SUBSDrr_Int:
-    case X86::VSUBSDrr_Int:
+    case X86::SUBSDrr: case X86::VSUBSDrr: case X86::SUBSDrr_Int: case X86::VSUBSDrr_Int:
       return X86::VFNMADD213SDr;
-    case X86::SUBSSrm:
-    case X86::VSUBSSrm:
-    case X86::SUBSSrm_Int:
-    case X86::VSUBSSrm_Int:
-      return X86::VFNMADD213SSm;
-    case X86::SUBSDrm:
-    case X86::VSUBSDrm:
-    case X86::SUBSDrm_Int:
-    case X86::VSUBSDrm_Int:
-      return X86::VFNMADD213SDm;
+    default:
+      return 0;
+    }
+  }
+
+  unsigned getNegatedFMAOpcode(unsigned Opcode) const {
+    switch (Opcode) {
+    case X86::ADDSSrr: case X86::VADDSSrr:
+      return X86::VFNMADD213SSr;
+    case X86::ADDSDrr: case X86::VADDSDrr:
+      return X86::VFNMADD213SDr;
     default:
       return 0;
     }
@@ -165,22 +227,10 @@ private:
 
   bool isSubtractionOpcode(unsigned Opcode) const {
     switch (Opcode) {
-    case X86::SUBSSrr:
-    case X86::SUBSDrr:
-    case X86::VSUBSSrr:
-    case X86::VSUBSDrr:
-    case X86::SUBSSrm:
-    case X86::SUBSDrm:
-    case X86::VSUBSSrm:
-    case X86::VSUBSDrm:
-    case X86::SUBSSrr_Int:
-    case X86::SUBSDrr_Int:
-    case X86::VSUBSSrr_Int:
-    case X86::VSUBSDrr_Int:
-    case X86::SUBSSrm_Int:
-    case X86::SUBSDrm_Int:
-    case X86::VSUBSSrm_Int:
-    case X86::VSUBSDrm_Int:
+    case X86::SUBSSrr: case X86::SUBSDrr:
+    case X86::VSUBSSrr: case X86::VSUBSDrr:
+    case X86::SUBSSrr_Int: case X86::SUBSDrr_Int:
+    case X86::VSUBSSrr_Int: case X86::VSUBSDrr_Int:
       return true;
     default:
       return false;
@@ -189,22 +239,10 @@ private:
 
   bool isMultiplicationOpcode(unsigned Opcode) const {
     switch (Opcode) {
-    case X86::MULSSrr:
-    case X86::MULSDrr:
-    case X86::VMULSSrr:
-    case X86::VMULSDrr:
-    case X86::MULSSrm:
-    case X86::MULSDrm:
-    case X86::VMULSSrm:
-    case X86::VMULSDrm:
-    case X86::MULSSrr_Int:
-    case X86::MULSDrr_Int:
-    case X86::VMULSSrr_Int:
-    case X86::VMULSDrr_Int:
-    case X86::MULSSrm_Int:
-    case X86::MULSDrm_Int:
-    case X86::VMULSSrm_Int:
-    case X86::VMULSDrm_Int:
+    case X86::MULSSrr: case X86::MULSDrr:
+    case X86::VMULSSrr: case X86::VMULSDrr:
+    case X86::MULSSrr_Int: case X86::MULSDrr_Int:
+    case X86::VMULSSrr_Int: case X86::VMULSDrr_Int:
       return true;
     default:
       return false;
@@ -215,5 +253,4 @@ private:
 char MulSubOpt::ID = 0;
 } // end anonymous namespace
 
-static llvm::RegisterPass<MulSubOpt> X("mul-sub-opt", "MulSubOpt MIR", false,
-                                       false);
+static llvm::RegisterPass<MulSubOpt> X("mul-sub-opt", "MulSubOpt MIR", false, false);
