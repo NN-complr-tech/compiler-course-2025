@@ -14,7 +14,8 @@ class ImplicitConversionAnalyzer final
       public clang::ASTConsumer {
 public:
   ImplicitConversionAnalyzer(llvm::raw_ostream &outputStream)
-      : OS(outputStream) {}
+      : OS(outputStream) {
+      }
 
   bool VisitFunctionDecl(clang::FunctionDecl *funcDecl) {
     currentFunctionName = funcDecl->getNameAsString();
@@ -82,15 +83,41 @@ private:
 };
 
 class ImplicitConversionAction final : public clang::PluginASTAction {
+private:
+  bool showHelp;
 public:
+  ImplicitConversionAction() : showHelp(false) {}
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef) override {
+    if (showHelp) {
+      return nullptr; // Не создаем ASTConsumer, если запрошена справка
+    }
     return std::make_unique<ImplicitConversionAnalyzer>(llvm::outs());
   }
 
   bool ParseArgs(const clang::CompilerInstance &CI,
                  const std::vector<std::string> &Args) override {
-    return true;
+
+    if (Args.empty()) {
+      return true; // No arguments provided, continue execution
+    }
+
+    if (Args[0] == "--help") {
+      llvm::outs() << "ConversionsPlugin_Markin_Ivan_FIIT2_ClangAST: Counts implicit conversions and constructor calls.\n";
+      llvm::outs() << "Usage: clang -cc1 -load <plugin_path> -plugin ConversionsPlugin_Markin_Ivan_FIIT2_ClangAST <source_file>\n";
+      llvm::outs() << "\n";
+      llvm::outs() << "This plugin counts the number of implicit conversions and constructor calls for each function in the code.\n";
+      llvm::outs() << "\n";
+      llvm::outs() << "Example:\n";
+      llvm::outs() << "  clang++ -cc1 -load ./ConversionsPlugin_Markin_Ivan_FIIT2_ClangAST.so -plugin ConversionsPlugin_Markin_Ivan_FIIT2_ClangAST test.cpp\n";
+      showHelp = true;
+      return true;
+    } else {
+      llvm::errs()
+          << "ConversionsPlugin_Markin_Ivan_FIIT2_ClangAST: Unknown argument: "
+          << Args[0] << "\n";
+      return false;
+    }
   }
 };
 
