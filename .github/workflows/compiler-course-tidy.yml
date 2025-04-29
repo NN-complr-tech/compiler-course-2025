@@ -23,10 +23,13 @@ jobs:
         submodules: recursive
     - name: Update submodules
       run: git submodule update --init --recursive
-    - name: ccache
+
+    - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-          key: ${{ github.job }}
+        key: ${{ runner.os }}
+        create-symlink: true
+        max-size: 1.5G
     - uses: aobolensk/clang-tidy-review@v0.20.1-patch-clang-tidy-19
       id: review
       with:
