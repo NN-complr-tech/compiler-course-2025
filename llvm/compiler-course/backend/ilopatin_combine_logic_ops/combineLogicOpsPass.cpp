@@ -31,19 +31,6 @@ public:
       llvm::SmallVector<llvm::MachineInstr *, 4> ToErase;
       for (auto &MI : MBB) {
         unsigned Opc = MI.getOpcode();
-        // XOR x,x -> zero via VPXORrr
-        if (Opc == llvm::X86::PXORrr) {
-          auto &o1 = MI.getOperand(1), &o2 = MI.getOperand(2);
-          if (o1.isReg() && o2.isReg() && o1.getReg() == o2.getReg()) {
-            unsigned VPX = llvm::X86::VPXORrr;
-            llvm::Register D = MI.getOperand(0).getReg();
-            llvm::BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(VPX), D)
-                .addReg(D)
-                .addReg(D);
-            ToErase.push_back(&MI);
-            Changed = true;
-          }
-        }
         // OR x,x or AND x,x -> copy
         if (Opc == llvm::X86::PORrr || Opc == llvm::X86::PANDrr) {
           auto &o1 = MI.getOperand(1), &o2 = MI.getOperand(2);

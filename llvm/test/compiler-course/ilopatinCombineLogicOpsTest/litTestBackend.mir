@@ -693,7 +693,7 @@ body:             |
 
     ; CHECK: %0:vr128 = COPY $xmm0
     ; CHECK-NEXT: %6:vr128 = COPY %0
-    ; CHECK-NEXT: %5:vr128 = VPXORrr %5, %5
+    ; CHECK-NEXT: %5:vr128 = VPXORrr %6, %6
     ; CHECK-NEXT: %3:vr128 = COPY %5
     ; CHECK-NEXT: $xmm0 = COPY %3
     ; CHECK-NEXT: RET64 implicit $xmm0
@@ -937,8 +937,7 @@ body:             |
 
     ; CHECK: %0:vr128 = COPY $xmm0
     ; CHECK-NEXT: %8:vr128 = COPY %0
-    ; CHECK-NEXT: %7:vr128 = VPXORrr %7, %7
-    ; CHECK-NEXT: %6:vr128 = VPANDrr %8, %7
+    ; CHECK-NEXT: %6:vr128 = VPXORrr %6, %6
     ; CHECK-NEXT: %3:vr128 = COPY %6
     ; CHECK-NEXT: $xmm0 = COPY %3
     ; CHECK-NEXT: RET64 implicit $xmm0
