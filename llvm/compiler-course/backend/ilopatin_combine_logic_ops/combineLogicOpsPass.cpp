@@ -25,51 +25,8 @@ public:
     const llvm::X86InstrInfo *TII = ST.getInstrInfo();
     llvm::MachineRegisterInfo &MRI = MF.getRegInfo();
     bool Changed = false;
-    // pass 1: combine chains of two logical ops
-    for (auto &MBB : MF) {
-      llvm::SmallVector<llvm::MachineInstr *, 8> ToErase;
-      for (auto &MI2 : MBB) {
-        unsigned Opc2 = MI2.getOpcode();
-        if (Opc2 == llvm::X86::PORrr || Opc2 == llvm::X86::PANDrr ||
-            Opc2 == llvm::X86::PXORrr) {
-          llvm::Register Mid = MI2.getOperand(1).getReg();
-          auto *MI1 = MRI.getUniqueVRegDef(Mid);
-          if (!MI1)
-            continue;
-          unsigned Opc1 = MI1->getOpcode();
-          if (!(Opc1 == llvm::X86::PORrr || Opc1 == llvm::X86::PANDrr ||
-                Opc1 == llvm::X86::PXORrr))
-            continue;
-          if (!MRI.hasOneUse(Mid))
-            continue;
-          auto getVP = [&](unsigned O) {
-            if (O == llvm::X86::PORrr)
-              return llvm::X86::VPORrr;
-            if (O == llvm::X86::PANDrr)
-              return llvm::X86::VPANDrr;
-            return llvm::X86::VPXORrr;
-          };
-          unsigned VP1 = getVP(Opc1), VP2 = getVP(Opc2);
-          llvm::Register A = MI1->getOperand(1).getReg();
-          llvm::Register B = MI1->getOperand(2).getReg();
-          llvm::Register C = MI2.getOperand(2).getReg();
-          llvm::Register Dst = MI2.getOperand(0).getReg();
-          llvm::BuildMI(MBB, *MI1, MI1->getDebugLoc(), TII->get(VP1), Mid)
-              .addReg(A)
-              .addReg(B);
-          llvm::BuildMI(MBB, MI2, MI2.getDebugLoc(), TII->get(VP2), Dst)
-              .addReg(Mid)
-              .addReg(C);
-          ToErase.push_back(MI1);
-          ToErase.push_back(&MI2);
-          Changed = true;
-        }
-      }
-      for (auto *Old : ToErase)
-        Old->eraseFromParent();
-    }
 
-    // pass 2: simplifying logical idioms
+    // pass 1: simplifying logical idioms
     for (auto &MBB : MF) {
       llvm::SmallVector<llvm::MachineInstr *, 4> ToErase;
       for (auto &MI : MBB) {
@@ -104,12 +61,12 @@ public:
         Old->eraseFromParent();
     }
 
-    // PASS 3: AND(X, 0) -> VPXORrr X,X
+    // pass 2: AND(X, 0) -> VPXORrr X,X
     for (auto &MBB : MF) {
       llvm::SmallVector<llvm::MachineInstr *, 4> ToErase;
       for (auto &MI : MBB) {
         if (MI.getOpcode() == llvm::X86::PANDrr) {
-          auto &r1 = MI.getOperand(1), &r2 = MI.getOperand(2);
+          auto &r2 = MI.getOperand(2);
           auto *Def = MRI.getUniqueVRegDef(r2.getReg());
           if (!Def || Def->getOpcode() != llvm::X86::PXORrr)
             continue;
@@ -131,7 +88,7 @@ public:
         Old->eraseFromParent();
     }
 
-    // pass 4: single ops to AVX
+    // pass 3: single ops to AVX
     for (auto &MBB : MF) {
       for (auto MI = MBB.begin(), ME = MBB.end(); MI != ME;) {
         llvm::MachineInstr &Instr = *MI++;

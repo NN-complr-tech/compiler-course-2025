@@ -242,8 +242,17 @@ body:             |
   bb.0 (%ir-block.3):
     liveins: $xmm0, $xmm1, $xmm2
 
-    ; CHECK: VPANDrr
-    ; CHECK: VPORrr
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %14:vr128 = COPY %0
+    ; CHECK-NEXT: %13:vr128 = COPY %1
+    ; CHECK-NEXT: %12:vr128 = VPANDrr %13, %14
+    ; CHECK-NEXT: %9:vr128 = COPY %2
+    ; CHECK-NEXT: %8:vr128 = VPORrr %12, %9
+    ; CHECK-NEXT: %5:vr128 = COPY %8
+    ; CHECK-NEXT: $xmm0 = COPY %5
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: PANDrr
     ; CHECK-NOT: PORrr
   
@@ -328,7 +337,14 @@ body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
 
-    ; CHECK: VPANDrr
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %0
+    ; CHECK-NEXT: %8:vr128 = COPY %1
+    ; CHECK-NEXT: %7:vr128 = VPANDrr %8, %9
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: PANDrr
   
     %1:vr128 = COPY $xmm1
@@ -409,7 +425,14 @@ body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
 
-    ; CHECK: VPORrr
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %0
+    ; CHECK-NEXT: %8:vr128 = COPY %1
+    ; CHECK-NEXT: %7:vr128 = VPORrr %8, %9
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: PORrr
   
     %1:vr128 = COPY $xmm1
@@ -490,7 +513,14 @@ body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
 
-    ; CHECK: VPXORrr
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %0
+    ; CHECK-NEXT: %8:vr128 = COPY %1
+    ; CHECK-NEXT: %7:vr128 = VPXORrr %8, %9
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: PXORrr
   
     %1:vr128 = COPY $xmm1
@@ -572,8 +602,16 @@ body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
 
-    ; CHECK: VPXORrr
-    ; CHECK: VPANDrr
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %1
+    ; CHECK-NEXT: %10:vr128 = V_SETALLONES
+    ; CHECK-NEXT: %5:vr128 = VPXORrr %1, %10
+    ; CHECK-NEXT: %8:vr128 = COPY %0
+    ; CHECK-NEXT: %7:vr128 = VPANDrr %5, %8
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: PXORrr
     ; CHECK-NOT: PANDrr
   
@@ -653,7 +691,12 @@ body:             |
   bb.0 (%ir-block.1):
     liveins: $xmm0
 
-    ; CHECK: VPXORrr
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %6:vr128 = COPY %0
+    ; CHECK-NEXT: %5:vr128 = VPXORrr %5, %5
+    ; CHECK-NEXT: %3:vr128 = COPY %5
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: PXORrr
   
     %0:vr128 = COPY $xmm0
@@ -728,6 +771,12 @@ body:             |
   bb.0 (%ir-block.1):
     liveins: $xmm0
 
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %6:vr128 = COPY %0
+    ; CHECK-NEXT: %5:vr128 = COPY %6
+    ; CHECK-NEXT: %3:vr128 = COPY %5
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: VPORrr
     ; CHECK-NOT: PORrr
   
@@ -803,6 +852,12 @@ body:             |
   bb.0 (%ir-block.1):
     liveins: $xmm0
 
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %6:vr128 = COPY %0
+    ; CHECK-NEXT: %5:vr128 = COPY %6
+    ; CHECK-NEXT: %3:vr128 = COPY %5
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: VPANDrr
     ; CHECK-NOT: PANDrr
   
@@ -880,8 +935,13 @@ body:             |
   bb.0 (%ir-block.1):
     liveins: $xmm0
 
-    ; CHECK: VPXORrr
-    ; CHECK: VPANDrr
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %8:vr128 = COPY %0
+    ; CHECK-NEXT: %7:vr128 = VPXORrr %7, %7
+    ; CHECK-NEXT: %6:vr128 = VPANDrr %8, %7
+    ; CHECK-NEXT: %3:vr128 = COPY %6
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
     ; CHECK-NOT: PXORrr
     ; CHECK-NOT: PANDrr
   
