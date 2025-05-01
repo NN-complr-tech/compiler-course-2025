@@ -1,0 +1,18 @@
+; RUN: llc -mtriple=x86_64-unknown-linux-gnu --load=%llvmshlibdir/X86DecomposeAllFMA%shlibext \
+; RUN: -x86-decompose-all-fma -print-machineinstrs %s | FileCheck %s
+
+; ModuleID = 'test_mir'
+; Target: x86_64-unknown-linux-gnu
+
+func.func @test_fma_ss() {
+bb.0:
+  liveins: $xmm0, $xmm1, $xmm2, $xmm3
+
+  ; CHECK-NOT: VFMADD213SSrr
+  ; CHECK: VMULSSrr
+  ; CHECK: VADDSSrr
+
+  VFMADD213SSrr $xmm0, $xmm1, $xmm2, $xmm3
+
+  RET
+}
