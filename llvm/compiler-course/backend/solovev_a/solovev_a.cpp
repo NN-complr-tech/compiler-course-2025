@@ -35,16 +35,16 @@ public:
         if (SubOpcode != X86::VSUBSSrr && SubOpcode != X86::VSUBSDrr)
           continue;
         Register SubDst = Sub.getOperand(0).getReg();
-        Register SubOp1 = Sub.getOperand(1).getReg(); 
-        Register SubOp2 = Sub.getOperand(2).getReg(); 
+        Register SubOp1 = Sub.getOperand(1).getReg();
+        Register SubOp2 = Sub.getOperand(2).getReg();
         MachineInstr *Mul = MRI.getUniqueVRegDef(SubOp2);
         if (!Mul)
           continue;
         unsigned MulOpcode = Mul->getOpcode();
         if (MulOpcode != X86::VMULSSrr && MulOpcode != X86::VMULSDrr)
           continue;
-        Register MulOp1 = Mul->getOperand(1).getReg(); 
-        Register MulOp2 = Mul->getOperand(2).getReg(); 
+        Register MulOp1 = Mul->getOperand(1).getReg();
+        Register MulOp2 = Mul->getOperand(2).getReg();
         DebugLoc DL = Sub.getDebugLoc();
         MachineBasicBlock &MBBRef = *Sub.getParent();
         unsigned NewOpcode = (SubOpcode == X86::VSUBSSrr) ? X86::VFNMADD213SSr
@@ -61,12 +61,12 @@ public:
       }
     }
     return Changed;
-  }      
+  }
 };
 char FMSUBComposePass::ID = 0;
 
 } // namespace
 
 static RegisterPass<FMSUBComposePass>
-   X("mul_sub_solovev", "Fuse MUL + SUB into VFNMADD213 instructions", false,
-     false);
+    X("mul_sub_solovev", "Fuse MUL + SUB into VFNMADD213 instructions", false,
+      false);
