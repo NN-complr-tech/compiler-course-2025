@@ -2,46 +2,6 @@
 #  RUN:     --load=%llvmshlibdir/FMSUBComposePass_Lavrentyev_Alexey_FIIT3_BACKEND%shlibext \
 #  RUN:     -run-pass=fmsub-compose-x86 %s -o - | FileCheck %s
 
-# CHECK-LABEL: name: testPackedPS
-# CHECK: %2:gr64 = COPY $rdx
-# CHECK-NEXT: %1:gr64 = COPY $rsi
-# CHECK-NEXT: %0:gr64 = COPY $rdi
-# CHECK-NEXT: %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
-# CHECK-NEXT: %6:fr32 = VFMSUB213SSm %2, %5, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
-# CHECK-NEXT: %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
-# CHECK-NEXT: MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
-# CHECK-NEXT: RET 0
-
-# CHECK-LABEL: name: testPackedPD
-# CHECK: %2:gr64 = COPY $rdx
-# CHECK-NEXT: %1:gr64 = COPY $rsi
-# CHECK-NEXT: %0:gr64 = COPY $rdi
-# CHECK-NEXT: %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
-# CHECK-NEXT: %6:fr64 = VFMSUB213SDm %2, %5, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
-# CHECK-NEXT: %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
-# CHECK-NEXT: MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
-# CHECK-NEXT: RET 0
-
-# CHECK-LABEL: name: testScalarSS
-# CHECK: %2:gr64 = COPY $rdx
-# CHECK-NEXT: %1:gr64 = COPY $rsi
-# CHECK-NEXT: %0:gr64 = COPY $rdi
-# CHECK-NEXT: %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
-# CHECK-NEXT: %6:fr32 = VFMSUB213SSm %2, %5, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
-# CHECK-NEXT: %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
-# CHECK-NEXT: MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
-# CHECK-NEXT: RET 0
-
-# CHECK-LABEL: name: testScalarSD
-# CHECK: %2:gr64 = COPY $rdx
-# CHECK-NEXT: %1:gr64 = COPY $rsi
-# CHECK-NEXT: %0:gr64 = COPY $rdi
-# CHECK-NEXT: %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
-# CHECK-NEXT: %6:fr64 = VFMSUB213SDm %2, %5, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
-# CHECK-NEXT: %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
-# CHECK-NEXT: MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
-# CHECK-NEXT: RET 0
-
 --- |
   ; ModuleID = 'tests.ll'
   source_filename = "test.cpp"
@@ -111,6 +71,17 @@
 
 ...
 ---
+
+# CHECK-LABEL: name: testPackedPS
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
+# CHECK-NEXT: %6:fr32 = VFMSUB213SSm %2, %5, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
+# CHECK-NEXT: %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
+# CHECK-NEXT: MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
+# CHECK-NEXT: RET 0
+
 name:            testPackedPS
 alignment:       16
 exposesReturnsTwice: false
@@ -187,6 +158,17 @@ body:             |
 
 ...
 ---
+
+# CHECK-LABEL: name: testPackedPD
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
+# CHECK-NEXT: %6:fr64 = VFMSUB213SDm %2, %5, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
+# CHECK-NEXT: %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
+# CHECK-NEXT: MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
+# CHECK-NEXT: RET 0
+
 name:            testPackedPD
 alignment:       16
 exposesReturnsTwice: false
@@ -263,6 +245,17 @@ body:             |
 
 ...
 ---
+
+# CHECK-LABEL: name: testScalarSS
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
+# CHECK-NEXT: %6:fr32 = VFMSUB213SSm %2, %5, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
+# CHECK-NEXT: %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
+# CHECK-NEXT: MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
+# CHECK-NEXT: RET 0
+
 name:            testScalarSS
 alignment:       16
 exposesReturnsTwice: false
@@ -339,6 +332,17 @@ body:             |
 
 ...
 ---
+
+# CHECK-LABEL: name: testScalarSD
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
+# CHECK-NEXT: %6:fr64 = VFMSUB213SDm %2, %5, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
+# CHECK-NEXT: %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
+# CHECK-NEXT: MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
+# CHECK-NEXT: RET 0
+
 name:            testScalarSD
 alignment:       16
 exposesReturnsTwice: false
