@@ -9,7 +9,7 @@
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
-#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "add-to-call"
@@ -23,12 +23,6 @@ public:
   static char ID;
 
   AddToCallPass() : MachineFunctionPass(ID) {}
-
-  // Удаляем копирующий и перемещающий конструкторы
-  AddToCallPass(const AddToCallPass &) = delete;
-  AddToCallPass(AddToCallPass &&) = delete;
-  AddToCallPass &operator=(const AddToCallPass &) = delete;
-  AddToCallPass &operator=(AddToCallPass &&) = delete;
 
   bool runOnMachineFunction(MachineFunction &MF) override {
     const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
@@ -91,18 +85,6 @@ char AddToCallPass::ID = 0;
 
 } // end anonymous namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "AddToCallPass", "v0.1",
-          [](PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, MachineFunctionPassManager &MFPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "add-to-call") {
-                    MFPM.addPass(std::make_unique<AddToCallPass>());
-                    return true;
-                  }
-                  return false;
-                });
-          }};
-}
+static RegisterPass<AddToCallPass>
+    X("add-to-call", "Replace ADD instructions with calls to add function",
+      false, false);
