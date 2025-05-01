@@ -4,7 +4,7 @@
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Target/X86/X86InstrInfo.h"
+#include "X86InstrInfo.h"
 #include <map>
 
 using namespace llvm;
