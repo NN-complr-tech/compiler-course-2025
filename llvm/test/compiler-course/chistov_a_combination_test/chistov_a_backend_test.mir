@@ -1,7 +1,10 @@
 # RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/CombinationPass_Chistov_Alexey_FIIT1_BACKEND%shlibext \
 # RUN: -run-pass=x86-logic-opt %s -o - | FileCheck %s
 
-##include <emmintrin.h>
+# Source files
+# test.cpp
+
+#include <emmintrin.h>
 
 #__m128 test_basic_and_operation(__m128 a, __m128 b) {
 #    return _mm_and_ps(a, b);
@@ -29,26 +32,6 @@
 #    __m128 t3 = _mm_xor_ps(t2, a);
 #    return t3;
 #} 
-
-# CHECK-LABEL:name: _Z24test_basic_and_operationDv4_fS_
-# CHECK: VPANDrr
-# CHECK-NOT: PANDrr
-
-# CHECK-LABEL:name: _Z23test_basic_or_operationDv4_fS_
-# CHECK: VPORrr
-# CHECK-NOT: PORrr
-
-# CHECK-LABEL:name: _Z24test_basic_xor_operationDv4_fS_
-# CHECK: VPXORrr
-# CHECK-NOT: PXORrr
-
-# CHECK-LABEL:name: _Z30test_combined_logic_operationsDv4_fS_S_
-# CHECK: VPANDrr
-# CHECK: VPORrr
-# CHECK: VPXORrr
-# CHECK-NOT: PANDrr
-# CHECK-NOT: PORrr
-# CHECK-NOT: PXORrr
 
 --- |
   ; ModuleID = 'llvm/test/compiler-course/chistov_a_combination_test/test.ll'
@@ -112,6 +95,7 @@
 
 ...
 ---
+# CHECK-LABEL:name: _Z24test_basic_and_operationDv4_fS_
 name:            _Z24test_basic_and_operationDv4_fS_
 alignment:       16
 exposesReturnsTwice: false
@@ -170,6 +154,13 @@ machineFunctionInfo:
 body:             |
   bb.0.entry:
     liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPANDrr %1, %0
+    ; CHECK-NOT: %2:vr128 = PANDrr %1, %0
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
   
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -179,6 +170,7 @@ body:             |
 
 ...
 ---
+# CHECK-LABEL:name: _Z23test_basic_or_operationDv4_fS_
 name:            _Z23test_basic_or_operationDv4_fS_
 alignment:       16
 exposesReturnsTwice: false
@@ -237,6 +229,13 @@ machineFunctionInfo:
 body:             |
   bb.0.entry:
     liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPORrr %1, %0
+    ; CHECK-NOT: %2:vr128 = PORrr %1, %0
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
   
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -246,6 +245,7 @@ body:             |
 
 ...
 ---
+# CHECK-LABEL:name: _Z24test_basic_xor_operationDv4_fS_
 name:            _Z24test_basic_xor_operationDv4_fS_
 alignment:       16
 exposesReturnsTwice: false
@@ -304,6 +304,13 @@ machineFunctionInfo:
 body:             |
   bb.0.entry:
     liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPXORrr %1, %0
+    ; CHECK-NOT: %2:vr128 = PXORrr %1, %0
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
   
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -313,6 +320,7 @@ body:             |
 
 ...
 ---
+# CHECK-LABEL:name: _Z30test_combined_logic_operationsDv4_fS_S_
 name:            _Z30test_combined_logic_operationsDv4_fS_S_
 alignment:       16
 exposesReturnsTwice: false
@@ -375,6 +383,19 @@ machineFunctionInfo:
 body:             |
   bb.0.entry:
     liveins: $xmm0, $xmm1, $xmm2
+
+    
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %3:vr128 = VPANDrr %1, %0
+    ; CHECK-NEXT: %4:vr128 = VPORrr %3, %2
+    ; CHECK-NEXT: %5:vr128 = VPXORrr %4, %0
+    ; CHECK-NOT: %3:vr128 = PANDrr %1, %0
+    ; CHECK-NOT: %4:vr128 = PORrr %3, %2
+    ; CHECK-NOT: %5:vr128 = PXORrr %4, %0
+    ; CHECK-NEXT: $xmm0 = COPY %5
+    ; CHECK-NEXT: RET 0, $xmm0
   
     %2:vr128 = COPY $xmm2
     %1:vr128 = COPY $xmm1

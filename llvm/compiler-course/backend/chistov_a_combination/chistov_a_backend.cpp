@@ -1,6 +1,7 @@
 #include "X86.h"
 #include "X86InstrInfo.h"
 #include "X86Subtarget.h"
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
@@ -15,6 +16,16 @@ private:
   bool Changed = false;
   const llvm::X86InstrInfo *TII;
   const llvm::MachineRegisterInfo *MRI;
+
+  llvm::DenseMap<unsigned, unsigned> LogicToAVX = {
+      {llvm::X86::ANDPSrr, llvm::X86::VANDPSrr},
+      {llvm::X86::ORPSrr, llvm::X86::VORPSrr},
+      {llvm::X86::XORPSrr, llvm::X86::VXORPSrr},
+      {llvm::X86::PANDrr, llvm::X86::VPANDrr},
+      {llvm::X86::PORrr, llvm::X86::VPORrr},
+      {llvm::X86::PXORrr, llvm::X86::VPXORrr},
+      {llvm::X86::PANDNrr, llvm::X86::VPANDNrr},
+  };
 
   using OptimizationPredicate = std::function<bool(llvm::MachineInstr &)>;
   using OptimizationTransform =
@@ -39,39 +50,12 @@ private: // auxiliary functions
   }
 
   bool isLogicOpcode(unsigned Opcode) const {
-    switch (Opcode) {
-    case llvm::X86::ANDPSrr:
-    case llvm::X86::ORPSrr:
-    case llvm::X86::XORPSrr:
-    case llvm::X86::PANDrr:
-    case llvm::X86::PORrr:
-    case llvm::X86::PXORrr:
-    case llvm::X86::PANDNrr:
-      return true;
-    default:
-      return false;
-    }
+    return LogicToAVX.contains(Opcode);
   }
 
   unsigned getAVXOpcode(unsigned Opcode) const {
-    switch (Opcode) {
-    case llvm::X86::ANDPSrr:
-      return llvm::X86::VANDPSrr;
-    case llvm::X86::ORPSrr:
-      return llvm::X86::VORPSrr;
-    case llvm::X86::XORPSrr:
-      return llvm::X86::VXORPSrr;
-    case llvm::X86::PANDrr:
-      return llvm::X86::VPANDrr;
-    case llvm::X86::PORrr:
-      return llvm::X86::VPORrr;
-    case llvm::X86::PXORrr:
-      return llvm::X86::VPXORrr;
-    case llvm::X86::PANDNrr:
-      return llvm::X86::VPANDNrr;
-    default:
-      return 0;
-    }
+    auto It = LogicToAVX.find(Opcode);
+    return It != LogicToAVX.end() ? It->second : 0;
   }
 
   void replaceWithAVX(llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
@@ -88,15 +72,16 @@ private: // auxiliary functions
         .addReg(SrcReg1)
         .addReg(SrcReg2);
     ToRemove.push_back(&MI);
+    Changed = true;
   }
 
 private: // optimizing passes
   void optimizeLogicOperations(llvm::MachineFunction &MF) {
-    auto shouldTransform = [&](llvm::MachineInstr &MI) {
+    OptimizationPredicate shouldTransform = [&](llvm::MachineInstr &MI) {
       return isLogicOpcode(MI.getOpcode());
     };
 
-    auto transformInstr =
+    OptimizationTransform transformInstr =
         [&](llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
             llvm::SmallVectorImpl<llvm::MachineInstr *> &ToRemove) {
           replaceWithAVX(MBB, MI, ToRemove);
