@@ -97,7 +97,7 @@ public:
     localPref = "local_";
     globalPref = "global_";
     paramPref = "param_";
-	
+
     for (const auto &arg : args) {
       if (arg.rfind("--static=", 0) == 0)
         staticPref = arg.substr(9);
