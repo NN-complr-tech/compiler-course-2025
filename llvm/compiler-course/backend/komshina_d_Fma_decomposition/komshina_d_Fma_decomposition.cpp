@@ -59,9 +59,11 @@ namespace {
 
                     if (MI.getNumExplicitOperands() < 4)
                         continue;
-                    if (!MI.getOperand(0).isReg() || !MI.getOperand(1).isReg() ||
-                        !MI.getOperand(2).isReg() || !MI.getOperand(3).isReg())
+                    if (!llvm::all_of(MI.operands(), [](const llvm::MachineOperand& Op) {
+                        return Op.isReg();
+                        })) {
                         continue;
+                    }
 
                     Register Dest = MI.getOperand(0).getReg();
                     Register v1 = MI.getOperand(1).getReg();
