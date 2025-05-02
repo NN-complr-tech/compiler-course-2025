@@ -1,7 +1,7 @@
 #include "X86.h"
 #include "X86InstrInfo.h"
-#include "X86Subtarget.h"
 #include "X86RegisterInfo.h"
+#include "X86Subtarget.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 
@@ -36,13 +36,19 @@ public:
             {llvm::X86::VFMADD132SDr, {llvm::X86::MULSDrr, llvm::X86::ADDSDrr}},
             {llvm::X86::VFMADD213SDr, {llvm::X86::MULSDrr, llvm::X86::ADDSDrr}},
             {llvm::X86::VFMADD231SDr, {llvm::X86::MULSDrr, llvm::X86::ADDSDrr}},
-            {llvm::X86::VFMADD132PSYr, {llvm::X86::VMULPSrr, llvm::X86::VADDPSrr}},
-            {llvm::X86::VFMADD213PSYr, {llvm::X86::VMULPSrr, llvm::X86::VADDPSrr}},
-            {llvm::X86::VFMADD231PSYr, {llvm::X86::VMULPSrr, llvm::X86::VADDPSrr}},
-            {llvm::X86::VFMADD132PDYr, {llvm::X86::VMULPDrr, llvm::X86::VADDPDrr}},
-            {llvm::X86::VFMADD213PDYr, {llvm::X86::VMULPDrr, llvm::X86::VADDPDrr}},
-            {llvm::X86::VFMADD231PDYr, {llvm::X86::VMULPDrr, llvm::X86::VADDPDrr}},
-    };
+            {llvm::X86::VFMADD132PSYr,
+             {llvm::X86::VMULPSrr, llvm::X86::VADDPSrr}},
+            {llvm::X86::VFMADD213PSYr,
+             {llvm::X86::VMULPSrr, llvm::X86::VADDPSrr}},
+            {llvm::X86::VFMADD231PSYr,
+             {llvm::X86::VMULPSrr, llvm::X86::VADDPSrr}},
+            {llvm::X86::VFMADD132PDYr,
+             {llvm::X86::VMULPDrr, llvm::X86::VADDPDrr}},
+            {llvm::X86::VFMADD213PDYr,
+             {llvm::X86::VMULPDrr, llvm::X86::VADDPDrr}},
+            {llvm::X86::VFMADD231PDYr,
+             {llvm::X86::VMULPDrr, llvm::X86::VADDPDrr}},
+        };
 
     for (auto &MBB : MF) {
       llvm::SmallVector<llvm::MachineInstr *, 8> toRemove;
@@ -87,7 +93,6 @@ char FMADecomposePass::ID = 0;
 
 } // namespace
 
-
 static llvm::RegisterPass<FMADecomposePass>
-    X("fma-decompose",
-      "Decomposes FMA instructions into MUL and ADD", false, false);
+    X("fma-decompose", "Decomposes FMA instructions into MUL and ADD", false,
+      false);
