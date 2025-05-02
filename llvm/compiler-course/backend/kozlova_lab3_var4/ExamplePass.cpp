@@ -89,7 +89,7 @@ private:
 
     MI = MBB.begin();
   }
- };
+};
 char MulSubPass::ID = 0;
 } // namespace
 
