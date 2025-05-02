@@ -1,0 +1,481 @@
+#  RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+#  RUN:     --load=%llvmshlibdir/FMADecomposePass_Chizhov_Maxim_FIIT3_BACKEND%shlibext \
+#  RUN:     -run-pass=fma-decompose %s -o - | FileCheck %s
+
+##include <immintrin.h>
+#
+#__m128 test_vfmadd132ps(__m128 a, __m128 b, __m128 c) {
+#    return _mm_fmadd_ps(a, b, c);
+#}
+#
+#__m128d test_vfmadd132pd(__m128d a, __m128d b, __m128d c) {
+#    return _mm_fmadd_pd(a, b, c);
+#}
+#
+#
+#float test_test_vfmadd132ss(float a, float b, float c) {
+#    __m128 va = _mm_set_ss(a);
+#    __m128 vb = _mm_set_ss(b);
+#    __m128 vc = _mm_set_ss(c);
+#    __m128 res = _mm_fmadd_ss(va, vb, vc);
+#    return _mm_cvtss_f32(res);
+#}
+#
+#double test_vfmadd132sd(double a, double b, double c) {
+#    __m128d va = _mm_set_sd(a);
+#    __m128d vb = _mm_set_sd(b);
+#    __m128d vc = _mm_set_sd(c);
+#    __m128d res = _mm_fmadd_sd(va, vb, vc);
+#    return _mm_cvtsd_f64(res);
+#}
+#
+#__m256d test_vfmadd132pdy(__m256d a, __m256d b, __m256d c) {
+#    return _mm256_fmadd_pd(a, b, c);
+#}
+
+--- |
+  ; ModuleID = 'test-fma-decompose.ll'
+  source_filename = "test_fma_decompose.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z16test_vfmadd132psDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
+    %4 = tail call noundef <4 x float> @llvm.fma.v4f32(<4 x float> %0, <4 x float> %1, <4 x float> %2)
+    ret <4 x float> %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <2 x double> @_Z16test_vfmadd132pdDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
+    %4 = tail call noundef <2 x double> @llvm.fma.v2f64(<2 x double> %0, <2 x double> %1, <2 x double> %2)
+    ret <2 x double> %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef float @_Z21test_test_vfmadd132ssfff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #0 {
+    %4 = tail call float @llvm.fma.f32(float %0, float %1, float %2)
+    ret float %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef double @_Z16test_vfmadd132sdddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #0 {
+    %4 = tail call double @llvm.fma.f64(double %0, double %1, double %2)
+    ret double %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x double> @_Z17test_vfmadd132pdyDv4_dS_S_(<4 x double> noundef %0, <4 x double> noundef %1, <4 x double> noundef %2) local_unnamed_addr #1 {
+    %4 = tail call noundef <4 x double> @llvm.fma.v4f64(<4 x double> %0, <4 x double> %1, <4 x double> %2)
+    ret <4 x double> %4
+  }
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare <4 x float> @llvm.fma.v4f32(<4 x float>, <4 x float>, <4 x float>) #2
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare <2 x double> @llvm.fma.v2f64(<2 x double>, <2 x double>, <2 x double>) #2
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare float @llvm.fma.f32(float, float, float) #2
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare double @llvm.fma.f64(double, double, double) #2
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare <4 x double> @llvm.fma.v4f64(<4 x double>, <4 x double>, <4 x double>) #2
+  
+  attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "tune-cpu"="generic" }
+  attributes #1 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="256" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "tune-cpu"="generic" }
+  attributes #2 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 2}
+  !4 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
+
+...
+---
+# CHECK-LABEL: name: _Z16test_vfmadd132psDv4_fS_S_
+name:            _Z16test_vfmadd132psDv4_fS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo: {}
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %4:vr128 = MULPSrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:vr128 = ADDPSrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = nofpexcept VFMADD213PSr %1, %0, %2, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: _Z16test_vfmadd132pdDv2_dS_S_
+name:            _Z16test_vfmadd132pdDv2_dS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo: {}
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %4:vr128 = MULPDrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:vr128 = ADDPDrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = nofpexcept VFMADD213PDr %1, %0, %2, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: _Z21test_test_vfmadd132ssfff
+name:            _Z21test_test_vfmadd132ssfff
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr32, preferred-register: '' }
+  - { id: 1, class: fr32, preferred-register: '' }
+  - { id: 2, class: fr32, preferred-register: '' }
+  - { id: 3, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo: {}
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+    ; CHECK: %2:fr32 = COPY $xmm2
+    ; CHECK-NEXT: %1:fr32 = COPY $xmm1
+    ; CHECK-NEXT: %0:fr32 = COPY $xmm0
+    ; CHECK-NEXT: %4:fr32 = MULSSrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:fr32 = ADDSSrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VFMADD213SSr %1, %0, %2, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: _Z16test_vfmadd132sdddd
+name:            _Z16test_vfmadd132sdddd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr64, preferred-register: '' }
+  - { id: 1, class: fr64, preferred-register: '' }
+  - { id: 2, class: fr64, preferred-register: '' }
+  - { id: 3, class: fr64, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo: {}
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+    ; CHECK: %2:fr64 = COPY $xmm2
+    ; CHECK-NEXT: %1:fr64 = COPY $xmm1
+    ; CHECK-NEXT: %0:fr64 = COPY $xmm0
+    ; CHECK-NEXT: %4:fr64 = MULSDrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:fr64 = ADDSDrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:fr64 = COPY $xmm2
+    %1:fr64 = COPY $xmm1
+    %0:fr64 = COPY $xmm0
+    %3:fr64 = nofpexcept VFMADD213SDr %1, %0, %2, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: _Z17test_vfmadd132pdyDv4_dS_S_
+name:            _Z17test_vfmadd132pdyDv4_dS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr256, preferred-register: '' }
+  - { id: 1, class: vr256, preferred-register: '' }
+  - { id: 2, class: vr256, preferred-register: '' }
+  - { id: 3, class: vr256, preferred-register: '' }
+liveins:
+  - { reg: '$ymm0', virtual-reg: '%0' }
+  - { reg: '$ymm1', virtual-reg: '%1' }
+  - { reg: '$ymm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo: {}
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $ymm0, $ymm1, $ymm2
+    ; CHECK: %2:vr256 = COPY $ymm2
+    ; CHECK-NEXT: %1:vr256 = COPY $ymm1
+    ; CHECK-NEXT: %0:vr256 = COPY $ymm0
+    ; CHECK-NEXT: %4:vr256 = VMULPDrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:vr256 = VADDPDrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $ymm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $ymm0
+    ; CHECK-NOT: %3:fr64 = nofpexcept VFMADD213PDYr %1, %0, %2, implicit $mxcsr
+  
+    %2:vr256 = COPY $ymm2
+    %1:vr256 = COPY $ymm1
+    %0:vr256 = COPY $ymm0
+    %3:vr256 = nofpexcept VFMADD213PDYr %1, %0, %2, implicit $mxcsr
+    $ymm0 = COPY %3
+    RET 0, $ymm0
+
+...
