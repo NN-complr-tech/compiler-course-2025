@@ -91,6 +91,8 @@ entry:
 ; Test 8: (2.0 * a) + 1.0 - used constants (should replace)
 ; CHECK-LABEL: @fmul_fadd_with_constants
 ; CHECK-NEXT: entry:
+; CHECK-NOT: %mul = fmul float 2.0, %a
+; CHECK-NOT: %add = fadd float %mul, 1.0
 ; CHECK-NEXT: %0 = call float @llvm.fmuladd.f32(float 2.000000e+00, float %a, float 1.000000e+00)
 ; CHECK-NEXT: ret float %0
 define float @fmul_fadd_with_constants(float %a) {
@@ -136,4 +138,14 @@ define float @already_fused_fmuladd(float %a, float %b, float %c) {
 entry:
   %fma = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
   ret float %fma
+}
+
+
+define float @fmul_used_multiple_times_3(float %a, float %b, float %c, float %d) {
+entry:
+  %mul1 = fmul float %a, %b
+  %mul2 = fmul float %c, %d
+  %add = fadd float %mul1, %mul2
+  %add2 = fadd float %mul1, %add
+  ret float %add2
 }

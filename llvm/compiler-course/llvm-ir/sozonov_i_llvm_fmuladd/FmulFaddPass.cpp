@@ -34,7 +34,7 @@ struct FmulFaddPass : llvm::PassInfoMixin<FmulFaddPass> {
               B = Mul->getOperand(1);
               C = Operands[1 - i];
               MulInst = Mul;
-              break;
+              break; //hasOneUse
             }
           }
         }
