@@ -22,25 +22,28 @@ public:
     TII = MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
 
     for (auto &MBB : MF) {
-      std::vector<llvm::MachineInstr*> toErase;
-      for (auto I = MBB.begin(), E = MBB.end(); I != E; ) {
+      std::vector<llvm::MachineInstr *> toErase;
+      for (auto I = MBB.begin(), E = MBB.end(); I != E;) {
         llvm::MachineInstr *inst1 = &*I++;
 
         if (inst1->getOpcode() == llvm::X86::PANDrr) {
           if (I != E) {
             llvm::MachineInstr *inst2 = &*I;
             if (inst2->getOpcode() == llvm::X86::PORrr) {
-              if (inst1->getOperand(0).getReg() == inst2->getOperand(1).getReg()) {
+              if (inst1->getOperand(0).getReg() ==
+                  inst2->getOperand(1).getReg()) {
                 llvm::Register destRegPAND = inst1->getOperand(0).getReg();
                 llvm::Register srcRegPAND1 = inst1->getOperand(1).getReg();
                 llvm::Register srcRegPAND2 = inst2->getOperand(1).getReg();
                 llvm::Register destRegPOR = inst2->getOperand(0).getReg();
 
-                BuildMI(MBB, inst2, inst2->getDebugLoc(), TII->get(llvm::X86::PORrr), destRegPAND)
+                BuildMI(MBB, inst2, inst2->getDebugLoc(),
+                        TII->get(llvm::X86::PORrr), destRegPAND)
                   .addReg(inst2->getOperand(2).getReg())
                   .addReg(inst1->getOperand(2).getReg());
 
-                BuildMI(MBB, inst2, inst2->getDebugLoc(), TII->get(llvm::X86::PANDrr), destRegPOR)
+                BuildMI(MBB, inst2, inst2->getDebugLoc(),
+                        TII->get(llvm::X86::PANDrr), destRegPOR)
                   .addReg(destRegPAND)
                   .addReg(inst1->getOperand(1).getReg());
 
@@ -57,14 +60,15 @@ public:
         instr->eraseFromParent();
       }
     }
-	
+
     for (auto &MBB : MF) {
-      for (auto I = MBB.begin(), E = MBB.end(); I != E; ) {
+      for (auto I = MBB.begin(), E = MBB.end(); I != E;) {
         llvm::MachineInstr *inst = &*I++;
 
         if (inst->getOpcode() == llvm::X86::PORrr) {
           auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
-          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPORrr), inst->getOperand(0).getReg())
+          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPORrr),
+                  inst->getOperand(0).getReg())
             .addReg(inst->getOperand(1).getReg())
             .addReg(inst->getOperand(2).getReg());
 
@@ -74,7 +78,8 @@ public:
 
         if (inst->getOpcode() == llvm::X86::PXORrr) {
           auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
-          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPXORrr), inst->getOperand(0).getReg())
+          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPXORrr),
+                  inst->getOperand(0).getReg())
             .addReg(inst->getOperand(1).getReg())
             .addReg(inst->getOperand(2).getReg());
 
@@ -84,7 +89,8 @@ public:
 
         if (inst->getOpcode() == llvm::X86::PANDrr) {
           auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
-          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPANDrr), inst->getOperand(0).getReg())
+          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPANDrr),
+		          inst->getOperand(0).getReg())
             .addReg(inst->getOperand(1).getReg())
             .addReg(inst->getOperand(2).getReg());
 
