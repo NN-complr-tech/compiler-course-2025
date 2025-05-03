@@ -21,16 +21,16 @@ public:
   static char ID;
   FMSUBComposePass() : MachineFunctionPass(ID) {}
 
-  bool runOnMachineFunction(MachineFunction& MF) override {
-    const X86Subtarget& ST = MF.getSubtarget<X86Subtarget>();
+  bool runOnMachineFunction(MachineFunction &MF) override {
+    const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
     if (!ST.hasFMA())
       return false;
-    const X86InstrInfo* TII = ST.getInstrInfo();
+    const X86InstrInfo *TII = ST.getInstrInfo();
     auto &MRI = MF.getRegInfo();
     bool Changed = false;
     for (auto &MBB : MF) {
       for (auto MI = MBB.instr_begin(), ME = MBB.instr_end(); MI != ME;) {
-        MachineInstr& Sub = *MI++;
+        MachineInstr &Sub = *MI++;
         if (Sub.isMetaInstruction())
           continue;
         unsigned SubOpcode = Sub.getOpcode();
@@ -50,7 +50,7 @@ public:
         Register MulOp1 = Mul->getOperand(1).getReg();
         Register MulOp2 = Mul->getOperand(2).getReg();
         DebugLoc DL = Sub.getDebugLoc();
-        MachineBasicBlock& MBBRef = *Sub.getParent();
+        MachineBasicBlock &MBBRef = *Sub.getParent();
         unsigned NewOpcode = (SubOpcode == X86::VSUBSSrr) ? X86::VFNMADD213SSr
                                                           : X86::VFNMADD213SDr;
         BuildMI(MBBRef, &Sub, DL, TII->get(NewOpcode), SubDst)
