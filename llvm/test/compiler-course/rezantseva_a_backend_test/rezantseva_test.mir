@@ -1,33 +1,6 @@
-# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+fma \
-# RUN:     --load %llvmshlibdir/MultiplySubtractPass_RezantsevaAnastasia_FIIT1_BACKEND%shlibext \
-# RUN:     -run-pass=mult_sub_pass -o - %s | FileCheck %s
-
-# CHECK-LABEL: name: test_scalar
-# CHECK: %8:vr128 = VFMSUB213SSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
-# CHECK-NEXT: MOVSSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s32) into %ir.d, align 4)
-# CHECK-NEXT: RET64
-
-# CHECK-LABEL: name: test_sse
-# CHECK: %8:vr128 = VFMSUB213PSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
-# CHECK-NEXT: MOVUPSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s128) into %ir.d, align 16)
-# CHECK-NEXT: RET64
-
-# CHECK-LABEL: name: test_avx
-# CHECK: %8:vr256 = VFMSUB213PSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
-# CHECK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d, align 32)
-# CHECK-NEXT: RET64
-
-# CHECK-LABEL: name: test_avx_memory
-# CHECK: %6:vr256 = VMULPSYrm %4:vr256, %1:gr64, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.b, align 32)
-# CHECK: %8:vr256 = VSUBPSYrr %7:vr256, %6:vr256, implicit $mxcsr
-# CHECK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d, align 32)
-# CHECK-NEXT: RET64
-
-# CHECK-LABEL: name: test_negative
-# CHECK: VADDPSYrr
-# CHECK-NOT: VFMSUB213
-# CHECK-NEXT: RET64
-
+#  RUN: llc -mattr=+fma \
+#  RUN:     --load=%llvmshlibdir/MultiplySubtractPass_RezantsevaAnastasia_FIIT1_BACKEND%shlibext \
+#  RUN:     -run-pass=mult_sub_pass %s -o - | FileCheck %s
 --- |
   ; ModuleID = 'rezantseva_test.mir'
   source_filename = "test_rezantseva_a.c"
@@ -89,6 +62,7 @@
   attributes #0 = { "target-features"="+avx" }
 
 ---
+# CHECK-LABEL: name: test_scalar
 name:            test_scalar
 alignment:       16
 exposesReturnsTwice: false
@@ -156,6 +130,17 @@ body:             |
   bb.0.entry:
     liveins: $rdi, $rsi, $rdx, $rcx
 
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr128 = MOVSSrm %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.a)
+    ; CHECK-NEXT: %5:vr128 = MOVSSrm %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.b)
+    ; CHECK-NEXT: %6:vr128 = MOVSSrm %2, 1, $noreg, 0, $noreg :: (load (s32) from %ir.c)
+    ; CHECK-NEXT: %8:vr128 = VFMSUB213SSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
+    ; CHECK-NEXT: MOVSSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s32) into %ir.d)
+    ; CHECK-NEXT: RET64
+
     %0:gr64 = COPY $rdi
     %1:gr64 = COPY $rsi
     %2:gr64 = COPY $rdx
@@ -167,8 +152,8 @@ body:             |
     %8:vr128 = SUBSSrr %6:vr128, %7:vr128, implicit $mxcsr
     MOVSSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s32) into %ir.d, align 4)
     RET64
-
 ---
+# CHECK-LABEL: name: test_sse
 name:            test_sse
 alignment:       16
 exposesReturnsTwice: false
@@ -236,6 +221,17 @@ body:             |
   bb.0.entry:
     liveins: $rdi, $rsi, $rdx, $rcx
 
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr128 = MOVUPSrm %0, 1, $noreg, 0, $noreg :: (load (s128) from %ir.a)
+    ; CHECK-NEXT: %5:vr128 = MOVUPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.b)
+    ; CHECK-NEXT: %6:vr128 = MOVUPSrm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.c)
+    ; CHECK-NEXT: %8:vr128 = VFMSUB213PSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
+    ; CHECK-NEXT: MOVUPSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s128) into %ir.d)
+    ; CHECK-NEXT: RET64
+
     %0:gr64 = COPY $rdi
     %1:gr64 = COPY $rsi
     %2:gr64 = COPY $rdx
@@ -247,8 +243,8 @@ body:             |
     %8:vr128 = SUBPSrr %6:vr128, %7:vr128, implicit $mxcsr
     MOVUPSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s128) into %ir.d, align 16)
     RET64
-
 ---
+# CHECK-LABEL: name: test_avx
 name:            test_avx
 alignment:       16
 exposesReturnsTwice: false
@@ -316,6 +312,17 @@ body:             |
   bb.0.entry:
     liveins: $rdi, $rsi, $rdx, $rcx
 
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a)
+    ; CHECK-NEXT: %5:vr256 = VMOVUPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.b)
+    ; CHECK-NEXT: %6:vr256 = VMOVUPSYrm %2, 1, $noreg, 0, $noreg :: (load (s256) from %ir.c)
+    ; CHECK-NEXT: %8:vr256 = VFMSUB213PSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
+    ; CHECK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d)
+    ; CHECK-NEXT: RET64
+
     %0:gr64 = COPY $rdi
     %1:gr64 = COPY $rsi
     %2:gr64 = COPY $rdx
@@ -327,8 +334,8 @@ body:             |
     %8:vr256 = VSUBPSYrr %6:vr256, %7:vr256, implicit $mxcsr
     VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d, align 32)
     RET64
-
 ---
+# CHECK-LABEL: name: test_avx_memory
 name:            test_avx_memory
 alignment:       16
 exposesReturnsTwice: false
@@ -396,6 +403,17 @@ body:             |
   bb.0.entry:
     liveins: $rdi, $rsi, $rdx, $rcx
 
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a)
+    ; CHECK-NEXT: %6:vr256 = VMULPSYrm %4, %1, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.b)
+    ; CHECK-NEXT: %7:vr256 = VMOVUPSYrm %2, 1, $noreg, 0, $noreg :: (load (s256) from %ir.c)
+    ; CHECK-NEXT: %8:vr256 = VSUBPSYrr %7, %6, implicit $mxcsr
+    ; CHECK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d)
+    ; CHECK-NEXT: RET64
+
     %0:gr64 = COPY $rdi
     %1:gr64 = COPY $rsi
     %2:gr64 = COPY $rdx
@@ -406,8 +424,8 @@ body:             |
     %8:vr256 = VSUBPSYrr %7:vr256, %6:vr256, implicit $mxcsr
     VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d, align 32)
     RET64
-
 ---
+# CHECK-LABEL: name: test_negative
 name:            test_negative
 alignment:       16
 exposesReturnsTwice: false
@@ -472,6 +490,16 @@ machineFunctionInfo:
 body:             |
   bb.0.entry:
     liveins: $rdi, $rsi, $rdx, $rcx
+
+    ; CHEKK: %0:gr64 = COPY $rdi
+    ; CHEKK-NEXT: %1:gr64 = COPY $rsi
+    ; CHEKK-NEXT: %2:gr64 = COPY $rdx
+    ; CHEKK-NEXT: %3:gr64 = COPY $rcx
+    ; CHEKK-NEXT: %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a)
+    ; CHEKK-NEXT: %5:vr256 = VMOVUPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.b)
+    ; CHEKK-NEXT: %6:vr256 = VADDPSYrr %4, %5, implicit $mxcsr
+    ; CHEKK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %6 :: (store (s256) into %ir.d)
+    ; CHEKK-NEXT: RET64
 
     %0:gr64 = COPY $rdi
     %1:gr64 = COPY $rsi
