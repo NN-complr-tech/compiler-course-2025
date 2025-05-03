@@ -2,21 +2,6 @@
 #  RUN:     --load=%llvmshlibdir/Lab_3_backend_Solovev_a_FIIT1_BACKEND%shlibext \
 #  RUN:     -run-pass=mul_sub_solovev %s -o - | FileCheck %s
 
-# CHECK-LABEL: name: test_solovev_float
-# CHECK: %[[RES:[0-9]+]]:fr32 = VFNMADD213SSr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
-# CHECK: $xmm0 = COPY %[[RES]]
-# CHECK: RET64 implicit $xmm0
-
-# CHECK-LABEL: name: test_solovev_double
-# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
-# CHECK: $xmm0 = COPY %[[RES]]
-# CHECK: RET64 implicit $xmm0
-
-# CHECK-LABEL: name: test_solovev_double_change_vals
-# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %1, %0, 0, implicit $mxcsr, implicit $mxcsr
-# CHECK: $xmm0 = COPY %[[RES]]
-# CHECK: RET64 implicit $xmm0
-
 --- |
   ; ModuleID = 'mulsub_test_solovev_a.ll'
   source_filename = "mulsub_test_solovev_a.cpp"
@@ -71,6 +56,12 @@
 
 ...
 ---
+
+# CHECK-LABEL: name: test_solovev_float
+# CHECK: %[[RES:[0-9]+]]:fr32 = VFNMADD213SSr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
 name:            test_solovev_float
 alignment:       16
 exposesReturnsTwice: false
@@ -142,6 +133,12 @@ body:             |
 
 ...
 ---
+
+# CHECK-LABEL: name: test_solovev_double
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
 name:            test_solovev_double
 alignment:       16
 exposesReturnsTwice: false
@@ -213,6 +210,12 @@ body:             |
 
 ...
 ---
+
+# CHECK-LABEL: name: test_solovev_double_change_vals
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %1, %0, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
 name:            test_solovev_double_change_vals
 alignment:       16
 exposesReturnsTwice: false
