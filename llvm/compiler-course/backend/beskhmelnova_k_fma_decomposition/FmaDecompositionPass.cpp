@@ -59,8 +59,8 @@ public:
 
           llvm::BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(llvm::X86::ADDSSrr),
                         Dest)
-              .addReg(Src3)
-              .addReg(Tmp);
+              .addReg(Tmp)
+              .addReg(Src3);
 
           ToErase.push_back(&MI);
           Changed = true;

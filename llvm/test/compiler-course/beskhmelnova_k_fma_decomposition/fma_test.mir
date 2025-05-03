@@ -23,21 +23,32 @@
 #    __m128 add = _mm_add_ss(mul, _mm_set_ss(c));
 #    return _mm_cvtss_f32(add);
 #}
+#
+#// Test 4: FMA with immediate operand
+#float test_fma_imm(float a, float b) {
+#    __m128 imm = _mm_set_ss(2.0f);
+#    return _mm_cvtss_f32(_mm_fmadd_ss(_mm_set_ss(a), _mm_set_ss(b), imm));
+#}
 
 # CHECK-LABEL: name: _Z14test_fma_basicfff
 # CHECK: [[TMP:%[0-9]+]]:fr32 = MULSSrr %1, %0
-# CHECK-NEXT: %3:fr32 = ADDSSrr %2, [[TMP]]
+# CHECK-NEXT: %3:fr32 = ADDSSrr [[TMP]], %2
 # CHECK-NOT: VFMADD{{.*}}SSr
 
 # CHECK-LABEL: name: _Z17test_fma_same_regff
 # CHECK: [[TMP:%[0-9]+]]:fr32 = MULSSrr %0, %0
-# CHECK-NEXT: %2:fr32 = ADDSSrr %1, [[TMP]]
+# CHECK-NEXT: %2:fr32 = ADDSSrr [[TMP]], %1
 # CHECK-NOT: VFMADD{{.*}}SSr
 
 # CHECK-LABEL: name: _Z11test_no_fmafff
 # CHECK: %3:fr32 = nofpexcept VMULSSrr %0, %1, {{.*}}
 # CHECK-NEXT: %4:fr32 = nofpexcept VADDSSrr killed %3, %2, {{.*}}
 # CHECK-NOT: VFMADD{{.*}}SSr
+
+# CHECK-LABEL: name: _Z12test_fma_immff
+# CHECK: %2:fr32 = nofpexcept VFMADD213SSr_Int  %0, %1, 0, {{.*}}
+# CHECK-NOT: MULSSrr
+# CHECK-NOT: ADDSSrr
 
 --- |
   ; ModuleID = 'llvm/test/compiler-course/beskhmelnova_k_fma_decomposition/fma_test.ll'
@@ -260,4 +271,61 @@ body:             |
     $xmm0 = COPY %4
     RET 0, $xmm0
 
+...
+---
+
+name: _Z12test_fma_immff
+alignment: 16
+exposesReturnsTwice: false
+legalized: false
+regBankSelected: false
+selected: false
+failedISel: false
+tracksRegLiveness: true
+hasWinCFI: false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr32, preferred-register: '' }
+  - { id: 1, class: fr32, preferred-register: '' }
+  - { id: 2, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap: false
+  hasPatchPoint: false
+  stackSize: 0
+  offsetAdjustment: 0
+  maxAlignment: 1
+  adjustsStack: false
+  hasCalls: false
+  stackProtector: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart: false
+  hasMustTailInVarArgFunc: false
+  hasTailCall: false
+  localFrameSize: 0
+  savePoint: ''
+  restorePoint: ''
+fixedStack: []
+stack: []
+callSites: []
+debugValueSubstitutions: []
+constants:
+  - { id: 0, value: 2.0, alignment: 4 }
+machineFunctionInfo: {}
+body: |
+  bb.0 (%ir-block.2):
+    liveins: $xmm0, $xmm1
+  
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %2:fr32 = nofpexcept VFMADD213SSr_Int %0, %1, 0, implicit $mxcsr
+    $xmm0 = COPY %2
+    RET 0, $xmm0
 ...
