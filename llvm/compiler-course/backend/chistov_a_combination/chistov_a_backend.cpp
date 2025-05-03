@@ -124,6 +124,7 @@ public:
   X86LogicOptPass() : llvm::MachineFunctionPass(ID) {}
 
   bool runOnMachineFunction(llvm::MachineFunction &MF) override {
+    Changed = false;
     const auto *ST = &MF.getSubtarget<llvm::X86Subtarget>();
     TII = ST->getInstrInfo();
     MRI = &MF.getRegInfo();

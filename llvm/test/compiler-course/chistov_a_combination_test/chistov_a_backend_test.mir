@@ -158,7 +158,6 @@ body:             |
     ; CHECK: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
     ; CHECK-NEXT: %2:vr128 = VPANDrr %1, %0
-    ; CHECK-NOT: %2:vr128 = PANDrr %1, %0
     ; CHECK-NEXT: $xmm0 = COPY %2
     ; CHECK-NEXT: RET 0, $xmm0
   
@@ -233,7 +232,6 @@ body:             |
     ; CHECK: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
     ; CHECK-NEXT: %2:vr128 = VPORrr %1, %0
-    ; CHECK-NOT: %2:vr128 = PORrr %1, %0
     ; CHECK-NEXT: $xmm0 = COPY %2
     ; CHECK-NEXT: RET 0, $xmm0
   
@@ -308,7 +306,6 @@ body:             |
     ; CHECK: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
     ; CHECK-NEXT: %2:vr128 = VPXORrr %1, %0
-    ; CHECK-NOT: %2:vr128 = PXORrr %1, %0
     ; CHECK-NEXT: $xmm0 = COPY %2
     ; CHECK-NEXT: RET 0, $xmm0
   
@@ -391,9 +388,6 @@ body:             |
     ; CHECK-NEXT: %3:vr128 = VPANDrr %1, %0
     ; CHECK-NEXT: %4:vr128 = VPORrr %3, %2
     ; CHECK-NEXT: %5:vr128 = VPXORrr %4, %0
-    ; CHECK-NOT: %3:vr128 = PANDrr %1, %0
-    ; CHECK-NOT: %4:vr128 = PORrr %3, %2
-    ; CHECK-NOT: %5:vr128 = PXORrr %4, %0
     ; CHECK-NEXT: $xmm0 = COPY %5
     ; CHECK-NEXT: RET 0, $xmm0
   
