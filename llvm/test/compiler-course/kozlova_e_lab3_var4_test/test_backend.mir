@@ -2,21 +2,6 @@
 #  RUN:     --load=%llvmshlibdir/ExamplePass_Kozlova_Ekaterina_FIIT3_BACKEND%shlibext \
 #  RUN:     -run-pass=mul_sub %s -o - | FileCheck %s
 
-# CHECK-LABEL: name: test1
-# CHECK: %[[RES:[0-9]+]]:fr32 = VFNMADD213SSr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
-# CHECK: $xmm0 = COPY %[[RES]]
-# CHECK: RET64 implicit $xmm0
-
-# CHECK-LABEL: name: test2
-# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
-# CHECK: $xmm0 = COPY %[[RES]]
-# CHECK: RET64 implicit $xmm0
-
-# CHECK-LABEL: name: test3
-# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %1, %0, 0, implicit $mxcsr, implicit $mxcsr
-# CHECK: $xmm0 = COPY %[[RES]]
-# CHECK: RET64 implicit $xmm0
-
 --- |
   ; ModuleID = 'test.ll'
   source_filename = "test.cpp"
@@ -71,6 +56,12 @@
 
 ...
 ---
+
+# CHECK-LABEL: name: test1
+# CHECK: %[[RES:[0-9]+]]:fr32 = VFNMADD213SSr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
 name:            test1
 alignment:       16
 exposesReturnsTwice: false
@@ -141,6 +132,12 @@ body:             |
     RET64 implicit $xmm0
 ...
 ---
+
+# CHECK-LABEL: name: test2
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
 name:            test2
 alignment:       16
 exposesReturnsTwice: false
@@ -211,6 +208,12 @@ body:             |
     RET64 implicit $xmm0
 ...
 ---
+
+# CHECK-LABEL: name: test3
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %1, %0, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
 name:            test3
 alignment:       16
 exposesReturnsTwice: false
