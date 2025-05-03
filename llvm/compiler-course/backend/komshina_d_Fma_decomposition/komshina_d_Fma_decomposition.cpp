@@ -104,4 +104,4 @@ public:
 char FmaDecompose::ID = 0;
 static RegisterPass<FmaDecompose>
     X("decompose-fma", "Decompose FMA into MUL + ADD (SS/PS/SD/PD)", false,
-        false);
+      false);
