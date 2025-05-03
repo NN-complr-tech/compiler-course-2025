@@ -39,13 +39,13 @@ public:
 
                 BuildMI(MBB, inst2, inst2->getDebugLoc(),
                         TII->get(llvm::X86::PORrr), destRegPAND)
-                  .addReg(inst2->getOperand(2).getReg())
-                  .addReg(inst1->getOperand(2).getReg());
+                     .addReg(inst2->getOperand(2).getReg())
+                     .addReg(inst1->getOperand(2).getReg());
 
                 BuildMI(MBB, inst2, inst2->getDebugLoc(),
                         TII->get(llvm::X86::PANDrr), destRegPOR)
-                  .addReg(destRegPAND)
-                  .addReg(inst1->getOperand(1).getReg());
+                     .addReg(destRegPAND)
+                     .addReg(inst1->getOperand(1).getReg());
 
                 toErase.push_back(inst1);
                 toErase.push_back(inst2);
@@ -69,8 +69,8 @@ public:
           auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
           BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPORrr),
                   inst->getOperand(0).getReg())
-            .addReg(inst->getOperand(1).getReg())
-            .addReg(inst->getOperand(2).getReg());
+               .addReg(inst->getOperand(1).getReg())
+               .addReg(inst->getOperand(2).getReg());
 
           inst->eraseFromParent();
           modified = true;
@@ -80,8 +80,8 @@ public:
           auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
           BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPXORrr),
                   inst->getOperand(0).getReg())
-            .addReg(inst->getOperand(1).getReg())
-            .addReg(inst->getOperand(2).getReg());
+               .addReg(inst->getOperand(1).getReg())
+               .addReg(inst->getOperand(2).getReg());
 
           inst->eraseFromParent();
           modified = true;
@@ -90,9 +90,9 @@ public:
         if (inst->getOpcode() == llvm::X86::PANDrr) {
           auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
           BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPANDrr),
-		          inst->getOperand(0).getReg())
-            .addReg(inst->getOperand(1).getReg())
-            .addReg(inst->getOperand(2).getReg());
+                  inst->getOperand(0).getReg())
+               .addReg(inst->getOperand(1).getReg())
+               .addReg(inst->getOperand(2).getReg());
 
           inst->eraseFromParent();
           modified = true;
