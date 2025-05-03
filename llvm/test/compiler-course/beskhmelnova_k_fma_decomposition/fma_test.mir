@@ -75,6 +75,12 @@
     ret float %5
   }
   
+  ; Function Attrs: mustprogress nofree nosync nounwind readnone uwtable willreturn
+  define dso_local noundef float @_Z12test_fma_immff(float noundef %0, float noundef %1) local_unnamed_addr #0 {
+    %3 = tail call float @llvm.fma.f32(float %0, float %1, float 2.000000e+00) #3
+    ret float %3
+  }
+  
   ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
   declare float @llvm.fma.f32(float, float, float) #2
   
@@ -94,7 +100,6 @@
 
 ...
 ---
-
 name:            _Z14test_fma_basicfff
 alignment:       16
 exposesReturnsTwice: false
@@ -154,7 +159,6 @@ body:             |
 
 ...
 ---
-
 name:            _Z17test_fma_same_regff
 alignment:       16
 exposesReturnsTwice: false
@@ -202,7 +206,7 @@ machineFunctionInfo: {}
 body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
-
+  
     %1:fr32 = COPY $xmm1
     %0:fr32 = COPY $xmm0
     %2:fr32 = nofpexcept VFMADD213SSr %0, %0, %1, implicit $mxcsr
@@ -211,7 +215,6 @@ body:             |
 
 ...
 ---
-
 name:            _Z11test_no_fmafff
 alignment:       16
 exposesReturnsTwice: false
@@ -273,16 +276,15 @@ body:             |
 
 ...
 ---
-
-name: _Z12test_fma_immff
-alignment: 16
+name:            _Z12test_fma_immff
+alignment:       16
 exposesReturnsTwice: false
-legalized: false
+legalized:       false
 regBankSelected: false
-selected: false
-failedISel: false
+selected:        false
+failedISel:      false
 tracksRegLiveness: true
-hasWinCFI: false
+hasWinCFI:       false
 failsVerification: false
 tracksDebugUserValues: false
 registers:
@@ -295,37 +297,42 @@ liveins:
 frameInfo:
   isFrameAddressTaken: false
   isReturnAddressTaken: false
-  hasStackMap: false
-  hasPatchPoint: false
-  stackSize: 0
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
   offsetAdjustment: 0
-  maxAlignment: 1
-  adjustsStack: false
-  hasCalls: false
-  stackProtector: ''
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
   maxCallFrameSize: 4294967295
   cvBytesOfCalleeSavedRegisters: 0
   hasOpaqueSPAdjustment: false
-  hasVAStart: false
+  hasVAStart:      false
   hasMustTailInVarArgFunc: false
-  hasTailCall: false
-  localFrameSize: 0
-  savePoint: ''
-  restorePoint: ''
-fixedStack: []
-stack: []
-callSites: []
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+callSites:       []
 debugValueSubstitutions: []
 constants:
-  - { id: 0, value: 2.0, alignment: 4 }
+  - id:              0
+    value:           'float 2.000000e+00'
+    alignment:       4
+    isTargetSpecific: false
 machineFunctionInfo: {}
-body: |
+body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
   
     %1:fr32 = COPY $xmm1
     %0:fr32 = COPY $xmm0
-    %2:fr32 = nofpexcept VFMADD213SSr_Int %0, %1, 0, implicit $mxcsr
+    %2:fr32 = nofpexcept VFMADD213SSm %1, %0, $rip, 1, $noreg, %const.0, $noreg, implicit $mxcsr :: (load (s32) from constant-pool)
     $xmm0 = COPY %2
     RET 0, $xmm0
+
 ...
+
