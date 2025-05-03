@@ -6,85 +6,96 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
-#include "llvm/CodeGen/TargetRegisterInfo.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/Module.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "add-to-call"
+#define DEBUG_TYPE "fma-decompose"
 
 using namespace llvm;
 
 namespace {
 
-class AddToCallPass : public MachineFunctionPass {
+class FMADecomposePass : public MachineFunctionPass {
 public:
   static char ID;
-
-  AddToCallPass() : MachineFunctionPass(ID) {}
+  FMADecomposePass() : MachineFunctionPass(ID) {}
 
   bool runOnMachineFunction(MachineFunction &MF) override {
     const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
     const X86InstrInfo *TII = ST.getInstrInfo();
-    const TargetRegisterInfo *TRI = ST.getRegisterInfo();
+    MachineRegisterInfo &MRI = MF.getRegInfo();
     bool Changed = false;
 
-    Function &F = MF.getFunction();
-    Module *M = F.getParent();
-
-    Function *AddFunc = M->getFunction("my_add");
-    if (!AddFunc || AddFunc->isDeclaration()) {
-      LLVM_DEBUG(dbgs() << "Function my_add not found or is declaration\n");
-      return false;
-    }
-
     for (auto &MBB : MF) {
-      SmallVector<MachineInstr *, 4> ToRemove;
+      SmallVector<MachineInstr *, 8> ToErase;
 
       for (auto &MI : MBB) {
-        if (MI.getOpcode() != X86::ADD32rr)
-          continue;
+        unsigned Opc = MI.getOpcode();
+        unsigned MulOpc = 0, AddOpc = 0;
 
-        Register DstReg = MI.getOperand(0).getReg();
-        Register Src1Reg = MI.getOperand(1).getReg();
-        Register Src2Reg = MI.getOperand(2).getReg();
+        // Определяем соответствующие MUL и ADD инструкции
+        switch (Opc) {
+        case X86::VFMADD132PSr:
+        case X86::VFMADD213PSr:
+        case X86::VFMADD231PSr:
+          MulOpc = X86::MULPSrr;
+          AddOpc = X86::ADDPSrr;
+          break;
+        case X86::VFMADD132PDr:
+        case X86::VFMADD213PDr:
+        case X86::VFMADD231PDr:
+          MulOpc = X86::MULPDrr;
+          AddOpc = X86::ADDPDrr;
+          break;
+        case X86::VFMADD132SSr:
+        case X86::VFMADD213SSr:
+        case X86::VFMADD231SSr:
+          MulOpc = X86::MULSSrr;
+          AddOpc = X86::ADDSSrr;
+          break;
+        case X86::VFMADD132SDr:
+        case X86::VFMADD213SDr:
+        case X86::VFMADD231SDr:
+          MulOpc = X86::MULSDrr;
+          AddOpc = X86::ADDSDrr;
+          break;
+        default:
+          continue;
+        }
+
+        Register Dst = MI.getOperand(0).getReg();
+        Register A = MI.getOperand(1).getReg();
+        Register B = MI.getOperand(2).getReg();
+        Register C = MI.getOperand(3).getReg();
         DebugLoc DL = MI.getDebugLoc();
 
-        // Insert call sequence
-        BuildMI(MBB, MI, DL, TII->get(X86::ADJCALLSTACKDOWN64))
-            .addImm(0)
-            .addImm(0);
+        // Создаем временный регистр
+        const TargetRegisterClass *RC = MRI.getRegClass(A);
+        Register Tmp = MRI.createVirtualRegister(RC);
 
-        BuildMI(MBB, MI, DL, TII->get(X86::CALL64pcrel32))
-            .addGlobalAddress(AddFunc)
-            .addReg(Src1Reg, RegState::Implicit)
-            .addReg(Src2Reg, RegState::Implicit)
-            .addReg(DstReg, RegState::ImplicitDefine)
-            .addRegMask(TRI->getCallPreservedMask(MF, F.getCallingConv()));
+        // Вставляем MUL перед FMA
+        BuildMI(MBB, MI, DL, TII->get(MulOpc), Tmp).addReg(A).addReg(B);
 
-        BuildMI(MBB, MI, DL, TII->get(X86::ADJCALLSTACKUP64))
-            .addImm(0)
-            .addImm(0);
+        // Вставляем ADD перед FMA
+        BuildMI(MBB, MI, DL, TII->get(AddOpc), Dst).addReg(C).addReg(Tmp);
 
-        ToRemove.push_back(&MI);
+        ToErase.push_back(&MI);
         Changed = true;
       }
 
-      for (auto *MI : ToRemove)
+      // Удаляем оригинальные FMA инструкции
+      for (auto *MI : ToErase)
         MI->eraseFromParent();
     }
 
     return Changed;
   }
 
-  StringRef getPassName() const override { return "Replace ADD with CALL"; }
+  StringRef getPassName() const override { return "FMA Decompose Pass"; }
 };
 
-char AddToCallPass::ID = 0;
+char FMADecomposePass::ID = 0;
 
-} // end anonymous namespace
+} // namespace
 
-static RegisterPass<AddToCallPass>
-    X("add-to-call", "Replace ADD instructions with calls to add function",
-      false, false);
+static RegisterPass<FMADecomposePass>
+    X("fma-decompose", "Decompose FMA instructions into MUL+ADD", false, false);
