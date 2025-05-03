@@ -399,5 +399,3 @@ body:             |
     %5:vr128 = PXORrr %4, %0
     $xmm0 = COPY %5
     RET 0, $xmm0
-
-...
