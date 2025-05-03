@@ -46,7 +46,7 @@
 # CHECK-NOT: VFMADD{{.*}}SSr
 
 # CHECK-LABEL: name: _Z12test_fma_immff
-# CHECK: %2:fr32 = nofpexcept VFMADD213SSr_Int  %0, %1, 0, {{.*}}
+# CHECK: %2:fr32 = nofpexcept VFMADD213SSm  %1, %0, {{.*}}, %const.0, {{.*}}
 # CHECK-NOT: MULSSrr
 # CHECK-NOT: ADDSSrr
 
