@@ -26,76 +26,117 @@ public:
     bool Changed = false;
 
     for (auto &MBB : MF) {
-      SmallVector<MachineInstr *, 8> ToErase;
-
-      for (auto &MI : MBB) {
-        unsigned Opc = MI.getOpcode();
-        unsigned MulOpc = 0, AddOpc = 0;
-
-        // Определяем соответствующие MUL и ADD инструкции
-        switch (Opc) {
-        case X86::VFMADD132PSr:
-        case X86::VFMADD213PSr:
-        case X86::VFMADD231PSr:
-          MulOpc = X86::MULPSrr;
-          AddOpc = X86::ADDPSrr;
-          break;
-        case X86::VFMADD132PDr:
-        case X86::VFMADD213PDr:
-        case X86::VFMADD231PDr:
-          MulOpc = X86::MULPDrr;
-          AddOpc = X86::ADDPDrr;
-          break;
-        case X86::VFMADD132SSr:
-        case X86::VFMADD213SSr:
-        case X86::VFMADD231SSr:
-          MulOpc = X86::MULSSrr;
-          AddOpc = X86::ADDSSrr;
-          break;
-        case X86::VFMADD132SDr:
-        case X86::VFMADD213SDr:
-        case X86::VFMADD231SDr:
-          MulOpc = X86::MULSDrr;
-          AddOpc = X86::ADDSDrr;
-          break;
-        default:
-          continue;
-        }
-
-        Register Dst = MI.getOperand(0).getReg();
-        Register A = MI.getOperand(1).getReg();
-        Register B = MI.getOperand(2).getReg();
-        Register C = MI.getOperand(3).getReg();
-        DebugLoc DL = MI.getDebugLoc();
-
-        // Создаем временный регистр
-        const TargetRegisterClass *RC = MRI.getRegClass(A);
-        Register Tmp = MRI.createVirtualRegister(RC);
-
-        // Вставляем MUL перед FMA
-        BuildMI(MBB, MI, DL, TII->get(MulOpc), Tmp).addReg(A).addReg(B);
-
-        // Вставляем ADD перед FMA
-        BuildMI(MBB, MI, DL, TII->get(AddOpc), Dst).addReg(C).addReg(Tmp);
-
-        ToErase.push_back(&MI);
-        Changed = true;
-      }
-
-      // Удаляем оригинальные FMA инструкции
-      for (auto *MI : ToErase)
-        MI->eraseFromParent();
+      Changed |= processBasicBlock(MBB, TII, MRI);
     }
 
     return Changed;
   }
 
-  StringRef getPassName() const override { return "FMA Decompose Pass"; }
+private:
+  bool processBasicBlock(MachineBasicBlock &MBB, const X86InstrInfo *TII,
+                         MachineRegisterInfo &MRI) {
+    bool Changed = false;
+    SmallVector<MachineInstr *, 8> ToErase;
+
+    for (auto &MI : MBB) {
+      if (!processInstruction(MI, MBB, TII, MRI, ToErase)) {
+        continue;
+      }
+      Changed = true;
+    }
+
+    for (auto *MI : ToErase) {
+      MI->eraseFromParent();
+    }
+
+    return Changed;
+  }
+
+  bool processInstruction(MachineInstr &MI, MachineBasicBlock &MBB,
+                          const X86InstrInfo *TII, MachineRegisterInfo &MRI,
+                          SmallVectorImpl<MachineInstr *> &ToErase) {
+    unsigned MulOpc, AddOpc;
+    if (!getFMADecompositionInfo(MI.getOpcode(), MulOpc, AddOpc)) {
+      return false;
+    }
+
+    decomposeFMAInstruction(MI, MBB, TII, MRI, MulOpc, AddOpc);
+    ToErase.push_back(&MI);
+    return true;
+  }
+
+  bool getFMADecompositionInfo(unsigned Opc, unsigned &MulOpc,
+                               unsigned &AddOpc) const {
+    switch (Opc) {
+    case X86::VFMADD132PSr:
+    case X86::VFMADD213PSr:
+    case X86::VFMADD231PSr:
+      MulOpc = X86::MULPSrr;
+      AddOpc = X86::ADDPSrr;
+      return true;
+    case X86::VFMADD132PDr:
+    case X86::VFMADD213PDr:
+    case X86::VFMADD231PDr:
+      MulOpc = X86::MULPDrr;
+      AddOpc = X86::ADDPDrr;
+      return true;
+    case X86::VFMADD132SSr:
+    case X86::VFMADD213SSr:
+    case X86::VFMADD231SSr:
+      MulOpc = X86::MULSSrr;
+      AddOpc = X86::ADDSSrr;
+      return true;
+    case X86::VFMADD132SDr:
+    case X86::VFMADD213SDr:
+    case X86::VFMADD231SDr:
+      MulOpc = X86::MULSDrr;
+      AddOpc = X86::ADDSDrr;
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  void decomposeFMAInstruction(MachineInstr &MI, MachineBasicBlock &MBB,
+                               const X86InstrInfo *TII,
+                               MachineRegisterInfo &MRI, unsigned MulOpc,
+                               unsigned AddOpc) {
+    Register Dst = MI.getOperand(0).getReg();
+    Register A = MI.getOperand(1).getReg();
+    Register B = MI.getOperand(2).getReg();
+    Register C = MI.getOperand(3).getReg();
+    DebugLoc DL = MI.getDebugLoc();
+
+    // Создаем временный регистр того же класса, что и операнды
+    const TargetRegisterClass *RC = MRI.getRegClass(A);
+    Register Tmp = MRI.createVirtualRegister(RC);
+
+    // Вставляем умножение перед оригинальной инструкцией
+    BuildMI(MBB, MI, DL, TII->get(MulOpc), Tmp).addReg(A).addReg(B);
+
+    // Вставляем сложение перед оригинальной инструкцией
+    BuildMI(MBB, MI, DL, TII->get(AddOpc), Dst).addReg(C).addReg(Tmp);
+  }
+
+  StringRef getPassName() const override { return "FMA Decomposition Pass"; }
 };
 
 char FMADecomposePass::ID = 0;
 
 } // namespace
 
-static RegisterPass<FMADecomposePass>
-    X("fma-decompose", "Decompose FMA instructions into MUL+ADD", false, false);
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "FMADecomposePass", "v0.1",
+          [](PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, MachineFunctionPassManager &MFPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "fma-decompose") {
+                    MFPM.addPass(FMADecomposePass());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
+}
