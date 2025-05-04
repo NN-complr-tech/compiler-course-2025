@@ -33,8 +33,8 @@ public:
           continue;
 
         Register Dst = MI.getOperand(0).getReg();
-        Register A = MI.getOperand(MulOp1).getReg();
-        Register B = MI.getOperand(MulOp2).getReg();
+        Register A = MI.getOperand(1).getReg();
+        Register B = MI.getOperand(2).getReg();
         Register C = MI.getOperand(3).getReg();
         DebugLoc Loc = MI.getDebugLoc();
 
@@ -52,52 +52,64 @@ public:
   }
 
 private:
-  bool identifyFMA(unsigned Op, unsigned &Mul, unsigned &Add,
-                   unsigned &MulOp1, unsigned &MulOp2) {
+  bool identifyFMA(unsigned Op, unsigned &Mul, unsigned &Add, unsigned &MulOp1,
+                   unsigned &MulOp2) {
     switch (Op) {
     // Packed single-precision
     case X86::VFMADD132PSr:
-      Mul = X86::MULPSrr; Add = X86::ADDPSrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULPSrr;
+      Add = X86::ADDPSrr;
+      return true;
     case X86::VFMADD213PSr:
-      Mul = X86::MULPSrr; Add = X86::ADDPSrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULPSrr;
+      Add = X86::ADDPSrr;
+      return true;
     case X86::VFMADD231PSr:
-      Mul = X86::MULPSrr; Add = X86::ADDPSrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULPSrr;
+      Add = X86::ADDPSrr;
+      return true;
 
     // Packed double-precision
     case X86::VFMADD132PDr:
-      Mul = X86::MULPDrr; Add = X86::ADDPDrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULPDrr;
+      Add = X86::ADDPDrr;
+      return true;
     case X86::VFMADD213PDr:
-      Mul = X86::MULPDrr; Add = X86::ADDPDrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULPDrr;
+      Add = X86::ADDPDrr;
+      return true;
     case X86::VFMADD231PDr:
-      Mul = X86::MULPDrr; Add = X86::ADDPDrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULPDrr;
+      Add = X86::ADDPDrr;
+      return true;
 
     // Scalar single-precision
     case X86::VFMADD132SSr:
-      Mul = X86::MULSSrr; Add = X86::ADDSSrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULSSrr;
+      Add = X86::ADDSSrr;
+      return true;
     case X86::VFMADD213SSr:
-      Mul = X86::MULSSrr; Add = X86::ADDSSrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULSSrr;
+      Add = X86::ADDSSrr;
+      return true;
     case X86::VFMADD231SSr:
-      Mul = X86::MULSSrr; Add = X86::ADDSSrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULSSrr;
+      Add = X86::ADDSSrr;
+      return true;
 
     // Scalar double-precision
     case X86::VFMADD132SDr:
-      Mul = X86::MULSDrr; Add = X86::ADDSDrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULSDrr;
+      Add = X86::ADDSDrr;
+      return true;
     case X86::VFMADD213SDr:
-      Mul = X86::MULSDrr; Add = X86::ADDSDrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULSDrr;
+      Add = X86::ADDSDrr;
+      return true;
     case X86::VFMADD231SDr:
-      Mul = X86::MULSDrr; Add = X86::ADDSDrr;
-      MulOp1 = 1; MulOp2 = 2; return true;
+      Mul = X86::MULSDrr;
+      Add = X86::ADDSDrr;
+      return true;
 
     default:
       return false;
@@ -109,5 +121,7 @@ char FMAFlatten::ID = 0;
 } // namespace
 
 static llvm::RegisterPass<FMAFlatten>
-    X("FMA-flatten-x86", "Decomposes FMA instructions into MUL and ADD", false, false);
+    X("FMA-flatten-x86", "Decomposes FMA instructions into MUL and ADD", false,
+      false);
+
 

@@ -53,14 +53,14 @@ body:             |
     %6:vr128 = COPY $xmm6
     %6:vr128 = VFMADD132PSr %4, %5, %6, implicit $mxcsr
 
-    ; 6. VFMADD213PDr с разными регистрами
+    ; 6. VFMADD213PDr с перекрытием регистров
     ; CHECK:      [[MUL6:%[0-9]+]]:vr128 = MULPDrr %7, %5, implicit $mxcsr
     ; CHECK-NEXT: %5:vr128 = ADDPDrr %5, [[MUL6]], implicit $mxcsr
     %7:vr128 = COPY $xmm7
     %5:vr128 = COPY $xmm5
     %5:vr128 = VFMADD213PDr %7, %5, %5, implicit $mxcsr
 
-    ; 7. VFMADD231SSr с разными регистрами
+    ; 7. VFMADD231SSr со смешанными типами данных
     ; CHECK:      [[MUL7:%[0-9]+]]:fr32 = MULSSrr %8, %2, implicit $mxcsr
     ; CHECK-NEXT: %2:fr32 = ADDSSrr %2, [[MUL7]], implicit $mxcsr
     %8:fr32 = COPY $xmm3
