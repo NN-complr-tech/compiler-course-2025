@@ -140,6 +140,7 @@ body:             |
   bb.0 (%ir-block.3):
     liveins: $xmm0, $xmm1, $xmm2
     
+    ; CHECK-NOT: %3:fr32 = nofpexcept VFMADD213SSr %1, %0, %2, implicit $mxcsr
     ; CHECK: %2:fr32 = COPY $xmm2
     ; CHECK-NEXT: %1:fr32 = COPY $xmm1
     ; CHECK-NEXT: %0:fr32 = COPY $xmm0
@@ -147,7 +148,6 @@ body:             |
     ; CHECK-NEXT: %3:fr32 = VADDSSrr %2, %4, implicit $mxcsr
     ; CHECK-NEXT: $xmm0 = COPY %3
     ; CHECK-NEXT: RET 0, $xmm0
-    ; CHECK-NOT: %3:fr32 = nofpexcept VFMADD213SSr %1, %0, %2, implicit $mxcsr
     
     %2:fr32 = COPY $xmm2
     %1:fr32 = COPY $xmm1
@@ -220,6 +220,7 @@ body:             |
   bb.0 (%ir-block.3):
     liveins: $xmm0, $xmm1, $xmm2
     
+    ; CHECK-NOT: %3:fr64 = nofpexcept VFMADD213SDr %1, %0, %2, implicit $mxcsr    
     ; CHECK: %2:fr64 = COPY $xmm2
     ; CHECK-NEXT: %1:fr64 = COPY $xmm1
     ; CHECK-NEXT: %0:fr64 = COPY $xmm0
@@ -227,8 +228,7 @@ body:             |
     ; CHECK-NEXT: %3:fr64 = VADDSDrr %2, %4, implicit $mxcsr
     ; CHECK-NEXT: $xmm0 = COPY %3
     ; CHECK-NEXT: RET 0, $xmm0
-    ; CHECK-NOT: %3:fr64 = nofpexcept VFMADD213SDr %1, %0, %2, implicit $mxcsr
-  
+
     %2:fr64 = COPY $xmm2
     %1:fr64 = COPY $xmm1
     %0:fr64 = COPY $xmm0
@@ -300,6 +300,7 @@ body:             |
   bb.0 (%ir-block.3):
     liveins: $xmm0, $xmm1, $xmm2
     
+    ; CHECK-NOT: %3:fr64 = nofpexcept VFMADD213PSr %1, %0, %2, implicit $mxcsr    
     ; CHECK: %2:vr128 = COPY $xmm2
     ; CHECK-NEXT: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
@@ -307,8 +308,7 @@ body:             |
     ; CHECK-NEXT: %3:vr128 = VADDPSrr %2, %4, implicit $mxcsr
     ; CHECK-NEXT: $xmm0 = COPY %3
     ; CHECK-NEXT: RET 0, $xmm0
-    ; CHECK-NOT: %3:fr64 = nofpexcept VFMADD213PSr %1, %0, %2, implicit $mxcsr
-  
+
     %2:vr128 = COPY $xmm2
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -380,6 +380,7 @@ body:             |
   bb.0 (%ir-block.3):
     liveins: $ymm0, $ymm1, $ymm2
   	
+    ; CHECK-NOT: %3:fr64 = nofpexcept VFMADD213PDYr %1, %0, %2, implicit $mxcsr 	
   	; CHECK: %2:vr256 = COPY $ymm2
     ; CHECK-NEXT: %1:vr256 = COPY $ymm1
     ; CHECK-NEXT: %0:vr256 = COPY $ymm0
@@ -387,7 +388,6 @@ body:             |
     ; CHECK-NEXT: %3:vr256 = VADDPDrr %2, %4, implicit $mxcsr
     ; CHECK-NEXT: $ymm0 = COPY %3
     ; CHECK-NEXT: RET 0, $ymm0
-    ; CHECK-NOT: %3:fr64 = nofpexcept VFMADD213PDYr %1, %0, %2, implicit $mxcsr
   	
     %2:vr256 = COPY $ymm2
     %1:vr256 = COPY $ymm1
