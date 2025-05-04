@@ -81,13 +81,12 @@ private:
         .addReg(SubOp1)
         .addReg(MulOp1)
         .addReg(MulOp2)
-        .addImm(0)
         .addReg(X86::MXCSR, RegState::Implicit);
 
     Sub.eraseFromParent();
     Mul->eraseFromParent();
 
-    MI = MBB.begin();
+    MI = std::next(MBB.begin(), 1);
   }
 };
 char MulSubPass::ID = 0;

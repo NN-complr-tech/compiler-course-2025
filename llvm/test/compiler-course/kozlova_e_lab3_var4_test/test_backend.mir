@@ -58,7 +58,7 @@
 ---
 
 # CHECK-LABEL: name: test1
-# CHECK: %[[RES:[0-9]+]]:fr32 = VFNMADD213SSr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: %[[RES:[0-9]+]]:fr32 = VFNMADD213SSr %2, %0, %1, implicit $mxcsr, implicit $mxcsr
 # CHECK: $xmm0 = COPY %[[RES]]
 # CHECK: RET64 implicit $xmm0
 
@@ -134,7 +134,7 @@ body:             |
 ---
 
 # CHECK-LABEL: name: test2
-# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %0, %1, implicit $mxcsr, implicit $mxcsr
 # CHECK: $xmm0 = COPY %[[RES]]
 # CHECK: RET64 implicit $xmm0
 
@@ -210,7 +210,7 @@ body:             |
 ---
 
 # CHECK-LABEL: name: test3
-# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %1, %0, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %1, %0, implicit $mxcsr, implicit $mxcsr
 # CHECK: $xmm0 = COPY %[[RES]]
 # CHECK: RET64 implicit $xmm0
 
