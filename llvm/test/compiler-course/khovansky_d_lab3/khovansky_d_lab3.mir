@@ -1,0 +1,73 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/FMAFlatten_Khovansky_Dmitry_FIIT2_BACKEND%shlibext \
+# RUN: -run-pass=FMA-flatten-x86  %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'FMAFlatten.c'
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+
+  declare <4 x float> @llvm.fma.v4f32(<4 x float>, <4 x float>, <4 x float>)
+  declare <2 x double> @llvm.fma.v2f64(<2 x double>, <2 x double>, <2 x double>)
+  declare float @llvm.fma.f32(float, float, float)
+  declare double @llvm.fma.f64(double, double, double)
+
+  define void @FMAFlatten(<4 x float> %a, <2 x double> %b, float %c, double %d) {
+    ret void
+  }
+...
+---
+name:            FMAFlatten
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2, $xmm3, $xmm4, $xmm5, $xmm6, $xmm7
+
+    ; 1. VFMADD132PSr (packed float)
+    ; CHECK:      [[MUL1:%[0-9]+]]:vr128 = MULPSrr %0, %0, implicit $mxcsr
+    ; CHECK-NEXT: %0:vr128 = ADDPSrr %0, [[MUL1]], implicit $mxcsr
+    %0:vr128 = COPY $xmm0
+    %0:vr128 = VFMADD132PSr %0, %0, %0, implicit $mxcsr
+
+    ; 2. VFMADD231PDr (packed double)
+    ; CHECK:      [[MUL2:%[0-9]+]]:vr128 = MULPDrr %1, %1, implicit $mxcsr
+    ; CHECK-NEXT: %1:vr128 = ADDPDrr %1, [[MUL2]], implicit $mxcsr
+    %1:vr128 = COPY $xmm1
+    %1:vr128 = VFMADD231PDr %1, %1, %1, implicit $mxcsr
+
+    ; 3. VFMADD213SSr (scalar float)
+    ; CHECK:      [[MUL3:%[0-9]+]]:fr32 = MULSSrr %2, %2, implicit $mxcsr
+    ; CHECK-NEXT: %2:fr32 = ADDSSrr %2, [[MUL3]], implicit $mxcsr
+    %2:fr32 = COPY $xmm2
+    %2:fr32 = VFMADD213SSr %2, %2, %2, implicit $mxcsr
+
+    ; 4. VFMADD132SDr (scalar double)
+    ; CHECK:      [[MUL4:%[0-9]+]]:fr64 = MULSDrr %3, %3, implicit $mxcsr
+    ; CHECK-NEXT: %3:fr64 = ADDSDrr %3, [[MUL4]], implicit $mxcsr
+    %3:fr64 = COPY $xmm3
+    %3:fr64 = VFMADD132SDr %3, %3, %3, implicit $mxcsr
+
+    ; 5. VFMADD132PSr с разными регистрами
+    ; CHECK:      [[MUL5:%[0-9]+]]:vr128 = MULPSrr %4, %5, implicit $mxcsr
+    ; CHECK-NEXT: %6:vr128 = ADDPSrr %6, [[MUL5]], implicit $mxcsr
+    %4:vr128 = COPY $xmm4
+    %5:vr128 = COPY $xmm5
+    %6:vr128 = COPY $xmm6
+    %6:vr128 = VFMADD132PSr %4, %5, %6, implicit $mxcsr
+
+    ; 6. VFMADD213PDr с разными регистрами
+    ; CHECK:      [[MUL6:%[0-9]+]]:vr128 = MULPDrr %7, %5, implicit $mxcsr
+    ; CHECK-NEXT: %5:vr128 = ADDPDrr %5, [[MUL6]], implicit $mxcsr
+    %7:vr128 = COPY $xmm7
+    %5:vr128 = COPY $xmm5
+    %5:vr128 = VFMADD213PDr %7, %5, %5, implicit $mxcsr
+
+    ; 7. VFMADD231SSr с разными регистрами
+    ; CHECK:      [[MUL7:%[0-9]+]]:fr32 = MULSSrr %8, %2, implicit $mxcsr
+    ; CHECK-NEXT: %2:fr32 = ADDSSrr %2, [[MUL7]], implicit $mxcsr
+    %8:fr32 = COPY $xmm3
+    %2:fr32 = COPY $xmm2
+    %2:fr32 = VFMADD231SSr %8, %2, %2, implicit $mxcsr
+
+    ; Общая проверка
+    ; CHECK-NOT: VFMADD
+    RET 0
+
