@@ -19,7 +19,6 @@ public:
 
   bool runOnMachineFunction(MachineFunction &MF) override {
     bool Changed = false;
-    const X86InstrInfo *TII = MF.getSubtarget<X86Subtarget>().getInstrInfo();
 
     for (auto &MBB : MF) {
       for (auto MI = MBB.begin(); MI != MBB.end();) {
@@ -37,10 +36,10 @@ private:
   const DenseMap<unsigned, OperandOrder> FMAOperandOrder = {
       {X86::VFMADD213SSr, {2, 1, 3}}, {X86::VFMADD213SDr, {2, 1, 3}},
       {X86::VFMADD213PSr, {2, 1, 3}}, {X86::VFMADD213PDr, {2, 1, 3}},
-      {X86::VFMADD231SSr, {1, 3, 2}}, {X86::VFMADD231SDr, {1, 3, 2}},
-      {X86::VFMADD231PSr, {1, 3, 2}}, {X86::VFMADD231PDr, {1, 3, 2}},
-      {X86::VFMADD132SSr, {1, 2, 3}}, {X86::VFMADD132SDr, {1, 2, 3}},
-      {X86::VFMADD132PSr, {1, 2, 3}}, {X86::VFMADD132PDr, {1, 2, 3}},
+      {X86::VFMADD231SSr, {2, 3, 1}}, {X86::VFMADD231SDr, {2, 3, 1}},
+      {X86::VFMADD231PSr, {2, 3, 1}}, {X86::VFMADD231PDr, {2, 3, 1}},
+      {X86::VFMADD132SSr, {1, 3, 2}}, {X86::VFMADD132SDr, {1, 3, 2}},
+      {X86::VFMADD132PSr, {1, 3, 2}}, {X86::VFMADD132PDr, {1, 3, 2}},
   };
 
   bool isFMAOpcode(unsigned Opcode) const {
