@@ -125,18 +125,5 @@ char FMADecomposePass::ID = 0;
 
 } // namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "FMADecomposePass", "v0.1",
-          [](PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, MachineFunctionPassManager &MFPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "fma-decompose") {
-                    MFPM.addPass(FMADecomposePass());
-                    return true;
-                  }
-                  return false;
-                });
-          }};
-}
+static RegisterPass<FMADecomposePass>
+    X("fma-decompose", "Decompose FMA instructions into MUL+ADD", false, false);
