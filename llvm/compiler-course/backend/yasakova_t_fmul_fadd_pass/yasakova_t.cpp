@@ -32,10 +32,10 @@ private:
       std::function<void(llvm::MachineBasicBlock &, llvm::MachineInstr &,
                          llvm::SmallVectorImpl<llvm::MachineInstr *> &)>;
 
-private: // auxiliary functions
+private:
   void processOptimizations(llvm::MachineFunction &MF,
-                          OptimizationPredicate shouldTransform,
-                          OptimizationTransform performTransform) {
+                            OptimizationPredicate shouldTransform,
+                            OptimizationTransform performTransform) {
     for (auto &MBB : MF) {
       llvm::SmallVector<llvm::MachineInstr *, 8> InstrsToRemove;
       for (auto &MI : MBB) {
@@ -59,7 +59,7 @@ private: // auxiliary functions
   }
 
   void convertToAVX(llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
-                      llvm::SmallVectorImpl<llvm::MachineInstr *> &ToRemove) {
+                    llvm::SmallVectorImpl<llvm::MachineInstr *> &ToRemove) {
     unsigned NewOpc = getAVXOpcode(MI.getOpcode());
     if (!NewOpc)
       return;
