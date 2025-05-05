@@ -1,0 +1,102 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+# RUN:     -load %llvmshlibdir/AVXLogicOptPass_Baranov_Aleksey_FIIT1_BACKEND%shlibext \
+# RUN:     -run-pass=AVXLogicOptPass_Baranov_Aleksey_FIIT1_BACKEND %s -o - | FileCheck %s
+---
+|
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+
+  define void @test_and_or_chain() { ret void }
+  define void @_Z15test_simple_andDv4_fS_() { ret void }
+  define void @_Z13test_xor_selfDv4_f() { ret void }
+  define void @_Z13test_and_selfDv4_f() { ret void }
+  define void @_Z13test_and_zeroDv4_f() { ret void }
+---
+# Test AND -> OR chain
+# CHECK-LABEL: name: test_and_or_chain
+name: test_and_or_chain
+body: |
+  bb.0:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK: %3:vr128 = VPANDNrr %2, %1
+    ; CHECK: %4:vr128 = VPORrr %3, %0
+    ; CHECK: $xmm0 = COPY %4
+    ; CHECK: RET64 implicit $xmm0
+
+    %0:vr128 = COPY $xmm0    ; a
+    %1:vr128 = COPY $xmm1    ; b
+    %2:vr128 = COPY $xmm2    ; c
+    %3:vr128 = PANDrr %0, %1
+    %4:vr128 = PORrr %3, %2
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+---
+# Test simple AND
+# CHECK-LABEL: name: _Z15test_simple_andDv4_fS_
+name: _Z15test_simple_andDv4_fS_
+body: |
+  bb.0:
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: VPANDrr
+    ; CHECK-NOT: PANDrr
+
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %7:vr128 = PANDrr %1, %0
+    $xmm0 = COPY %7
+    RET64 implicit $xmm0
+
+---
+# Test XOR x, x
+# CHECK-LABEL: name: _Z13test_xor_selfDv4_f
+name: _Z13test_xor_selfDv4_f
+body: |
+  bb.0:
+    liveins: $xmm0
+
+    ; CHECK: VPXORrr
+    ; CHECK-NOT: PXORrr
+
+    %0:vr128 = COPY $xmm0
+    %5:vr128 = PXORrr %0, %0
+    $xmm0 = COPY %5
+    RET64 implicit $xmm0
+
+---
+# Test AND x, x
+# CHECK-LABEL: name: _Z13test_and_selfDv4_f
+name: _Z13test_and_selfDv4_f
+body: |
+  bb.0:
+    liveins: $xmm0
+
+    ; CHECK: COPY
+    ; CHECK-NOT: PANDrr
+
+    %0:vr128 = COPY $xmm0
+    %5:vr128 = PANDrr %0, %0
+    $xmm0 = COPY %5
+    RET64 implicit $xmm0
+
+---
+# Test AND with zero
+# CHECK-LABEL: name: _Z13test_and_zeroDv4_f
+name: _Z13test_and_zeroDv4_f
+body: |
+  bb.0:
+    liveins: $xmm0
+
+    ; CHECK: VPXORrr
+    ; CHECK-NOT: PANDrr
+
+    %0:vr128 = COPY $xmm0
+    %7:vr128 = PXORrr %0, %0
+    %6:vr128 = PANDrr %0, %7
+    $xmm0 = COPY %6
+    RET64 implicit $xmm0
