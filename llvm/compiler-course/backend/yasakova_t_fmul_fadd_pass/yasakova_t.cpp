@@ -1,159 +1,144 @@
 #include "X86.h"
 #include "X86InstrInfo.h"
 #include "X86Subtarget.h"
-#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
-#include <unordered_map>
+#include "llvm/Passes/PassBuilder.h"
+#include <functional>
 
-namespace llvm {
-
-class X86LogicalOpsEnhancer : public MachineFunctionPass {
-public:
-  static char ID;
-
-  X86LogicalOpsEnhancer() : MachineFunctionPass(ID) {}
-
-  StringRef getPassName() const override {
-    return "X86 Logical Operations Enhancement Pass";
-  }
-
-  bool runOnMachineFunction(MachineFunction &MF) override {
-    if (!initializeOptimization(MF))
-      return false;
-
-    processLogicInstructions(MF);
-    combineAdjacentLogicOps(MF);
-
-    return OptimizationModified;
-  }
-
+namespace {
+class X86LogicOptPass : public llvm::MachineFunctionPass {
 private:
-  bool OptimizationModified = false;
-  const X86InstrInfo *InstructionDetails = nullptr;
-  const MachineRegisterInfo *RegisterDetails = nullptr;
+  bool Modified = false;
+  const llvm::X86InstrInfo *InstrInfo;
+  const llvm::MachineRegisterInfo *MRegisterInfo;
 
-  struct InstructionConversion {
-    unsigned LegacyOp;
-    unsigned EnhancedOp;
+  llvm::DenseMap<unsigned, unsigned> LogicOpAVXMapping = {
+      {llvm::X86::ANDPSrr, llvm::X86::VANDPSrr},
+      {llvm::X86::ORPSrr, llvm::X86::VORPSrr},
+      {llvm::X86::XORPSrr, llvm::X86::VXORPSrr},
+      {llvm::X86::PANDrr, llvm::X86::VPANDrr},
+      {llvm::X86::PORrr, llvm::X86::VPORrr},
+      {llvm::X86::PXORrr, llvm::X86::VPXORrr},
+      {llvm::X86::PANDNrr, llvm::X86::VPANDNrr},
   };
 
-  const SmallVector<InstructionConversion, 8> ConversionTable = {
-      {X86::ANDPSrr, X86::VANDPSrr},
-      {X86::ORPSrr, X86::VORPSrr},
-      {X86::XORPSrr, X86::VXORPSrr},
-      {X86::PANDrr, X86::VPANDrr},
-      {X86::PORrr, X86::VPORrr},
-      {X86::PXORrr, X86::VPXORrr},
-      {X86::PANDNrr, X86::VPANDNrr},
-  };
+  using OptimizationPredicate = std::function<bool(llvm::MachineInstr &)>;
+  using OptimizationTransform =
+      std::function<void(llvm::MachineBasicBlock &, llvm::MachineInstr &,
+                         llvm::SmallVectorImpl<llvm::MachineInstr *> &)>;
 
-  bool initializeOptimization(MachineFunction &MF) {
-    const auto &ST = MF.getSubtarget<X86Subtarget>();
-    InstructionDetails = ST.getInstrInfo();
-    RegisterDetails = &MF.getRegInfo();
-    return InstructionDetails && RegisterDetails;
-  }
-
-  bool shouldConvertInstruction(unsigned Opcode) const {
-    for (const auto &Entry : ConversionTable) {
-      if (Entry.LegacyOp == Opcode)
-        return true;
-    }
-    return false;
-  }
-
-  unsigned getEnhancedVariant(unsigned Opcode) const {
-    for (const auto &Entry : ConversionTable) {
-      if (Entry.LegacyOp == Opcode)
-        return Entry.EnhancedOp;
-    }
-    return 0;
-  }
-
-  void transformToEnhancedVariant(MachineBasicBlock &MBB,
-                                 MachineInstr &OriginalInstr,
-                                 SmallVectorImpl<MachineInstr *> &ForRemoval) {
-    unsigned NewOpcode = getEnhancedVariant(OriginalInstr.getOpcode());
-    if (!NewOpcode)
-      return;
-
-    Register Destination = OriginalInstr.getOperand(0).getReg();
-    Register Source1 = OriginalInstr.getOperand(1).getReg();
-    Register Source2 = OriginalInstr.getOperand(2).getReg();
-
-    BuildMI(MBB, OriginalInstr, OriginalInstr.getDebugLoc(),
-            InstructionDetails->get(NewOpcode), Destination)
-        .addReg(Source1)
-        .addReg(Source2);
-
-    ForRemoval.push_back(&OriginalInstr);
-    OptimizationModified = true;
-  }
-
-  void processInstructions(
-      MachineFunction &MF,
-      function_ref<bool(MachineInstr &)> Filter,
-      function_ref<void(MachineBasicBlock &, MachineInstr &,
-                       SmallVectorImpl<MachineInstr *> &)> Transformer) {
+private: // auxiliary functions
+  void processOptimizations(llvm::MachineFunction &MF,
+                          OptimizationPredicate shouldTransform,
+                          OptimizationTransform performTransform) {
     for (auto &MBB : MF) {
-      SmallVector<MachineInstr *, 4> InstructionsToRemove;
-      
+      llvm::SmallVector<llvm::MachineInstr *, 8> InstrsToRemove;
       for (auto &MI : MBB) {
-        if (Filter(MI)) {
-          Transformer(MBB, MI, InstructionsToRemove);
+        if (shouldTransform(MI)) {
+          performTransform(MBB, MI, InstrsToRemove);
+          Modified = true;
         }
       }
-
-      for (auto *Instr : InstructionsToRemove) {
-        Instr->eraseFromParent();
-      }
+      for (auto *I : InstrsToRemove)
+        I->eraseFromParent();
     }
   }
 
-  void processLogicInstructions(MachineFunction &MF) {
-    auto InstructionFilter = [this](MachineInstr &MI) {
-      return shouldConvertInstruction(MI.getOpcode());
-    };
-
-    auto Transformation = [this](MachineBasicBlock &MBB, MachineInstr &MI,
-                                SmallVectorImpl<MachineInstr *> &ToRemove) {
-      transformToEnhancedVariant(MBB, MI, ToRemove);
-    };
-
-    processInstructions(MF, InstructionFilter, Transformation);
+  bool isLogicOpcode(unsigned Opcode) const {
+    return LogicOpAVXMapping.contains(Opcode);
   }
 
-  void combineAdjacentLogicOps(MachineFunction &MF) {
-    auto InstructionFilter = [this](MachineInstr &MI) {
-      return shouldConvertInstruction(MI.getOpcode());
+  unsigned getAVXOpcode(unsigned Opcode) const {
+    auto It = LogicOpAVXMapping.find(Opcode);
+    return It != LogicOpAVXMapping.end() ? It->second : 0;
+  }
+
+  void convertToAVX(llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
+                      llvm::SmallVectorImpl<llvm::MachineInstr *> &ToRemove) {
+    unsigned NewOpc = getAVXOpcode(MI.getOpcode());
+    if (!NewOpc)
+      return;
+
+    llvm::Register DestReg = MI.getOperand(0).getReg();
+    llvm::Register SrcReg1 = MI.getOperand(1).getReg();
+    llvm::Register SrcReg2 = MI.getOperand(2).getReg();
+
+    llvm::BuildMI(MBB, MI, MI.getDebugLoc(), InstrInfo->get(NewOpc), DestReg)
+        .addReg(SrcReg1)
+        .addReg(SrcReg2);
+    ToRemove.push_back(&MI);
+    Modified = true;
+  }
+
+private: // optimizing passes
+  void processLogicOps(llvm::MachineFunction &MF) {
+    OptimizationPredicate shouldTransform = [&](llvm::MachineInstr &MI) {
+      return isLogicOpcode(MI.getOpcode());
     };
 
-    auto Transformation = [this](MachineBasicBlock &MBB, MachineInstr &MI,
-                                SmallVectorImpl<MachineInstr *> &ToRemove) {
-      Register IntermediateReg = MI.getOperand(1).getReg();
-      MachineInstr *FirstInstr = RegisterDetails->getUniqueVRegDef(IntermediateReg);
-      
-      if (!FirstInstr || !RegisterDetails->hasOneUse(IntermediateReg))
-        return;
+    OptimizationTransform transformInstr =
+        [&](llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
+            llvm::SmallVectorImpl<llvm::MachineInstr *> &ToRemove) {
+          convertToAVX(MBB, MI, ToRemove);
+        };
 
-      if (!shouldConvertInstruction(FirstInstr->getOpcode()))
-        return;
+    processOptimizations(MF, shouldTransform, transformInstr);
+  }
 
-      transformToEnhancedVariant(MBB, *FirstInstr, ToRemove);
-      transformToEnhancedVariant(MBB, MI, ToRemove);
+  void mergeLogicOps(llvm::MachineFunction &MF) {
+    OptimizationPredicate shouldTransform = [&](llvm::MachineInstr &MI) {
+      return isLogicOpcode(MI.getOpcode());
     };
 
-    processInstructions(MF, InstructionFilter, Transformation);
+    OptimizationTransform transformInstr =
+        [&](llvm::MachineBasicBlock &MBB, llvm::MachineInstr &MI,
+            llvm::SmallVectorImpl<llvm::MachineInstr *> &InstrsToRemove) {
+          llvm::Register IntermediateReg = MI.getOperand(1).getReg();
+          auto *FirstInstr = MRegisterInfo->getUniqueVRegDef(IntermediateReg);
+          if (!FirstInstr || !MRegisterInfo->hasOneUse(IntermediateReg))
+            return;
+
+          unsigned FirstOpcode = FirstInstr->getOpcode();
+          if (!isLogicOpcode(FirstOpcode))
+            return;
+
+          unsigned AVXFirstOp = getAVXOpcode(FirstOpcode);
+          unsigned AVXSecondOp = getAVXOpcode(MI.getOpcode());
+          if (!AVXFirstOp || !AVXSecondOp)
+            return;
+
+          convertToAVX(MBB, *FirstInstr, InstrsToRemove);
+          convertToAVX(MBB, MI, InstrsToRemove);
+        };
+
+    processOptimizations(MF, shouldTransform, transformInstr);
+  }
+
+public:
+  static char ID;
+  X86LogicOptPass() : llvm::MachineFunctionPass(ID) {}
+
+  bool runOnMachineFunction(llvm::MachineFunction &MF) override {
+    Modified = false;
+    const auto *ST = &MF.getSubtarget<llvm::X86Subtarget>();
+    InstrInfo = ST->getInstrInfo();
+    MRegisterInfo = &MF.getRegInfo();
+
+    processLogicOps(MF);
+    mergeLogicOps(MF);
+
+    return Modified;
   }
 };
 
-char X86LogicalOpsEnhancer::ID = 0;
+char X86LogicOptPass::ID = 0;
+} // namespace
 
-static RegisterPass<X86LogicalOpsEnhancer>
-    Y("x86-logic-enhancer", "Enhances X86 Logical Operations", false, false);
-
-} // namespace llvm
+static llvm::RegisterPass<X86LogicOptPass>
+    X("x86-logic-opt", "X86 Logical Operations Optimization Pass", false,
+      false);
