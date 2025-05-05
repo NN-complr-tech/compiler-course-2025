@@ -32,19 +32,14 @@ public:
             if (inst2->getOpcode() == llvm::X86::PORrr) {
               if (inst1->getOperand(0).getReg() ==
                   inst2->getOperand(1).getReg()) {
-                llvm::Register destRegPAND = inst1->getOperand(0).getReg();
-                llvm::Register srcRegPAND1 = inst1->getOperand(1).getReg();
-                llvm::Register srcRegPAND2 = inst2->getOperand(1).getReg();
-                llvm::Register destRegPOR = inst2->getOperand(0).getReg();
-
                 BuildMI(MBB, inst2, inst2->getDebugLoc(),
-                        TII->get(llvm::X86::PORrr), destRegPAND)
+                        TII->get(llvm::X86::PORrr), inst1->getOperand(0).getReg())
                     .addReg(inst2->getOperand(2).getReg())
                     .addReg(inst1->getOperand(2).getReg());
 
                 BuildMI(MBB, inst2, inst2->getDebugLoc(),
-                        TII->get(llvm::X86::PANDrr), destRegPOR)
-                    .addReg(destRegPAND)
+                        TII->get(llvm::X86::PANDrr), inst2->getOperand(0).getReg())
+                    .addReg(inst1->getOperand(0).getReg())
                     .addReg(inst1->getOperand(1).getReg());
 
                 toErase.push_back(inst1);
