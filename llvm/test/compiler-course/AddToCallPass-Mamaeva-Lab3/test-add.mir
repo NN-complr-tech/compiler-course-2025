@@ -1,0 +1,50 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu \
+# RUN:     --load=%llvmshlibdir/FMADecomposePass_Mamaeva_Olga_FIIT3_BACKEND%shlibext \
+# RUN:     -run-pass=fma-decompose %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'test-fma.c'
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-unknown-linux-gnu"
+
+  ; Объявления функций для тестирования всех вариантов
+  declare <4 x float> @llvm.fma.v4f32(<4 x float>, <4 x float>, <4 x float>)
+  declare <2 x double> @llvm.fma.v2f64(<2 x double>, <2 x double>, <2 x double>)
+  declare float @llvm.fma.f32(float, float, float)
+  declare double @llvm.fma.f64(double, double, double)
+
+  define void @test_all_types(<4 x float> %a, <2 x double> %b, float %c, double %d) {
+    ret void
+  }
+...
+---
+name:            test_all_types
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2, $xmm3
+
+    ; 1. Проверка VFMADD*PSr (упакованные float)
+    ; CHECK:      [[TMP1:%.*]]:vr128 = MULPSrr %0, %0, implicit $mxcsr
+    ; CHECK-NEXT: %0:vr128 = ADDPSrr %0, [[TMP1]], implicit $mxcsr
+    %0:vr128 = COPY $xmm0
+    %0:vr128 = VFMADD132PSr %0, %0, %0, implicit $mxcsr
+
+    ; 2. Проверка VFMADD*PDr (упакованные double)
+    ; CHECK:      [[TMP2:%.*]]:vr128 = MULPDrr %1, %1, implicit $mxcsr
+    ; CHECK-NEXT: %1:vr128 = ADDPDrr %1, [[TMP2]], implicit $mxcsr
+    %1:vr128 = COPY $xmm1
+    %1:vr128 = VFMADD213PDr %1, %1, %1, implicit $mxcsr
+
+    ; 3. Проверка VFMADD*SSr (скалярные float)
+    ; CHECK:      [[TMP3:%.*]]:fr32 = MULSSrr %2, %2, implicit $mxcsr
+    ; CHECK-NEXT: %2:fr32 = ADDSSrr %2, [[TMP3]], implicit $mxcsr
+    %2:fr32 = COPY $xmm2
+    %2:fr32 = VFMADD231SSr %2, %2, %2, implicit $mxcsr
+
+    ; 4. Проверка VFMADD*SDr (скалярные double)
+    ; CHECK:      [[TMP4:%.*]]:fr64 = MULSDrr %3, %3, implicit $mxcsr
+    ; CHECK-NEXT: %3:fr64 = ADDSDrr %3, [[TMP4]], implicit $mxcsr
+    %3:fr64 = COPY $xmm3
+    %3:fr64 = VFMADD132SDr %3, %3, %3, implicit $mxcsr
+
+    RET 0
