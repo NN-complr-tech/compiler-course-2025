@@ -77,15 +77,41 @@ public:
         }
 
         Register Dest = MI.getOperand(0).getReg();
-        Register v1 = MI.getOperand(1).getReg();
-        Register v2 = MI.getOperand(2).getReg();
-        Register v3 = MI.getOperand(3).getReg();
+        Register a = MI.getOperand(1).getReg();
+        Register b = MI.getOperand(2).getReg();
+        Register c = MI.getOperand(3).getReg();
 
-        const TargetRegisterClass *RC = MRI.getRegClass(v1);
+        const TargetRegisterClass* RC = MRI.getRegClass(a);
         Register MulTmp = MRI.createVirtualRegister(RC);
 
-        BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(v1).addReg(v2);
-        BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(v3).addReg(MulTmp);
+        switch (Opcode) {
+        case X86::VFMADD132SSr:
+        case X86::VFMADD132SDr:
+        case X86::VFMADD132PSr:
+        case X86::VFMADD132PDr:
+
+            BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(a).addReg(c);
+            BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(b).addReg(MulTmp);
+            break;
+        case X86::VFMADD213SSr:
+        case X86::VFMADD213SDr:
+        case X86::VFMADD213PSr:
+        case X86::VFMADD213PDr:
+
+            BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(a).addReg(b);
+            BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(c).addReg(MulTmp);
+            break;
+        case X86::VFMADD231SSr:
+        case X86::VFMADD231SDr:
+        case X86::VFMADD231PSr:
+        case X86::VFMADD231PDr:
+
+            BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(c).addReg(b);
+            BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(a).addReg(MulTmp);
+            break;
+        default:
+            continue;
+        }
 
         ToErase.push_back(&MI);
         Changed = true;
