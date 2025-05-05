@@ -11,7 +11,7 @@ using namespace llvm;
 namespace {
 
 bool isSIMDInstruction(const MachineInstr &MI, const MachineFunction &MF) {
-  if (MI.getOpcode() == TargetOpcode::COPY){
+  if (MI.getOpcode() == TargetOpcode::COPY) {
     return false;
   }
   for (const MachineOperand &MO : MI.operands()) {
@@ -65,7 +65,7 @@ bool SimdCounterPass::runOnMachineFunction(MachineFunction &MF) {
           .addImm(1)
           .addReg(0)
           .addExternalSymbol("simd_counter")
-          .addReg(0);    
+          .addReg(0);
       BuildMI(MBB, InsertPos, DL, TII->get(X86::ADD64ri32), X86::RAX)
           .addReg(X86::RAX)
           .addImm(1);
