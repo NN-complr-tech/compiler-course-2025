@@ -38,7 +38,7 @@
   ; Function Attrs: nounwind uwtable mustprogress noinline
   define dso_local noundef float @ss_mul_rev_test_shurigin(float noundef %a, float noundef %b, float noundef %c) #0 {
   entry:
-    %tmp = fmul float %b, %a 
+    %tmp = fmul float %b, %a
     %d = fsub float %c, %tmp
     ret float %d
   }
@@ -70,9 +70,9 @@
 # CHECK: bb.0.entry:
 # CHECK-NOT: VMULSSrr
 # CHECK-NOT: VSUBSSrr
-# CHECK:{{ *}}%[[RES:.+]]:fr32 = VFNMADD213SSr{{.*}}
-# CHECK:{{ *}}$xmm0 = COPY %[[RES]]
-# CHECK:{{ *}}RET64 implicit $xmm0
+# CHECK: %[[RES:.+]]:fr32 = VFNMADD213SSr{{.*}}
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
 
 ...
 ---
@@ -150,9 +150,9 @@ body:             |
 # CHECK: bb.0.entry:
 # CHECK-NOT: VMULSSrr
 # CHECK-NOT: VSUBSSrr
-# CHECK:{{ *}}%[[RES:.+]]:fr32 = VFNMADD213SSr{{.*}}
-# CHECK:{{ *}}$xmm0 = COPY %[[RES]]
-# CHECK:{{ *}}RET64 implicit $xmm0
+# CHECK: %[[RES:.+]]:fr32 = VFNMADD213SSr{{.*}}
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
 
 ...
 ---
@@ -230,9 +230,9 @@ body:             |
 # CHECK: bb.0.entry:
 # CHECK-NOT: VMULSSrr
 # CHECK-NOT: VSUBSSrr
-# CHECK:{{ *}}%[[RES:.+]]:fr32 = VFNMADD213SSr{{.*}}
-# CHECK:{{ *}}$xmm0 = COPY %[[RES]]
-# CHECK:{{ *}}RET64 implicit $xmm0
+# CHECK: %[[RES:.+]]:fr32 = VFNMADD213SSr{{.*}}
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
 
 ...
 ---
@@ -311,9 +311,9 @@ body:             |
 # CHECK: bb.0.entry:
 # CHECK-NOT: VMULSDrr
 # CHECK-NOT: VSUBSDrr
-# CHECK:{{ *}}%[[RES:.+]]:fr64 = VFNMADD213SDr{{.*}}
-# CHECK:{{ *}}$xmm0 = COPY %[[RES]]
-# CHECK:{{ *}}RET64 implicit $xmm0
+# CHECK: %[[RES:.+]]:fr64 = VFNMADD213SDr{{.*}}
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
 
 ...
 ---
@@ -386,4 +386,3 @@ body:             |
     %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr ; d = c - tmp
     $xmm0 = COPY %4
     RET64 implicit $xmm0
-
