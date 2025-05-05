@@ -33,12 +33,14 @@ public:
               if (inst1->getOperand(0).getReg() ==
                   inst2->getOperand(1).getReg()) {
                 BuildMI(MBB, inst2, inst2->getDebugLoc(),
-                        TII->get(llvm::X86::PORrr), inst1->getOperand(0).getReg())
+                        TII->get(llvm::X86::PORrr),
+                        inst1->getOperand(0).getReg())
                     .addReg(inst2->getOperand(2).getReg())
                     .addReg(inst1->getOperand(2).getReg());
 
                 BuildMI(MBB, inst2, inst2->getDebugLoc(),
-                        TII->get(llvm::X86::PANDrr), inst2->getOperand(0).getReg())
+                        TII->get(llvm::X86::PANDrr),
+                        inst2->getOperand(0).getReg())
                     .addReg(inst1->getOperand(0).getReg())
                     .addReg(inst1->getOperand(1).getReg());
 
