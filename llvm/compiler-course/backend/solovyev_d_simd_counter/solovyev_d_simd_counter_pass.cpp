@@ -19,24 +19,24 @@ bool isSIMDInstruction(const MachineInstr &MI, const MachineFunction &MF) {
       continue;
 
     Register R = MO.getReg();
-    
+
     if (!R.isValid() || !R.isVirtual())
       continue;
 
     const TargetRegisterClass *RC = MF.getRegInfo().getRegClass(R);
 
     switch (RC->getID()) {
-      case X86::VR128RegClassID:
-      case X86::VR256RegClassID:
-      case X86::VR512RegClassID:
-        return true;
-      default:
-        break;
+    case X86::VR128RegClassID:
+    case X86::VR256RegClassID:
+    case X86::VR512RegClassID:
+      return true;
+    default:
+      break;
     }
   }
   return false;
 }
-  
+
 class SimdCounterPass : public MachineFunctionPass {
 public:
   static char ID;
@@ -53,30 +53,29 @@ bool SimdCounterPass::runOnMachineFunction(MachineFunction &MF) {
   for (auto &MBB : MF) {
     for (auto MI = MBB.begin(); MI != MBB.end(); ++MI) {
       MachineInstr &Inst = *MI;
-      //llvm::outs() << "Checking " << TII->getName(MI->getOpcode()) << '\n';
-      if (!isSIMDInstruction(Inst,MF))
+      // llvm::outs() << "Checking " << TII->getName(MI->getOpcode()) << '\n';
+      if (!isSIMDInstruction(Inst, MF))
         continue;
-      //llvm::outs() << TII->getName(MI->getOpcode()) << " is vector!" << '\n';
+      // llvm::outs() << TII->getName(MI->getOpcode()) << " is vector!" << '\n';
       DebugLoc DL = MI->getDebugLoc();
       MachineBasicBlock::iterator InsertPos = std::next(MI);
 
       BuildMI(MBB, InsertPos, DL, TII->get(X86::MOV64rm), X86::RAX)
-          .addReg(0)                          // base
-          .addImm(1)                          // scale
-          .addReg(0)                          // index
-          .addExternalSymbol("simd_counter") // disp
+          .addReg(0)
+          .addImm(1)
+          .addReg(0)
+          .addExternalSymbol("simd_counter")
           .addReg(0);    
-                               // seg
       BuildMI(MBB, InsertPos, DL, TII->get(X86::ADD64ri32), X86::RAX)
           .addReg(X86::RAX)
           .addImm(1);
 
       BuildMI(MBB, InsertPos, DL, TII->get(X86::MOV64mr))
-          .addReg(0)                          // base
-          .addImm(1)                          // scale
-          .addReg(0)                          // index
-          .addExternalSymbol("simd_counter") // disp
-          .addReg(0)                          // seg
+          .addReg(0)
+          .addImm(1)
+          .addReg(0)
+          .addExternalSymbol("simd_counter")
+          .addReg(0)
           .addReg(X86::RAX);
     }
   }
