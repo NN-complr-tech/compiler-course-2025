@@ -81,7 +81,7 @@ public:
         Register b = MI.getOperand(2).getReg();
         Register c = MI.getOperand(3).getReg();
 
-        const TargetRegisterClass* RC = MRI.getRegClass(a);
+        const TargetRegisterClass *RC = MRI.getRegClass(a);
         Register MulTmp = MRI.createVirtualRegister(RC);
 
         switch (Opcode) {
@@ -90,27 +90,27 @@ public:
         case X86::VFMADD132PSr:
         case X86::VFMADD132PDr:
 
-            BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(a).addReg(c);
-            BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(b).addReg(MulTmp);
-            break;
+          BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(a).addReg(c);
+          BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(b).addReg(MulTmp);
+          break;
         case X86::VFMADD213SSr:
         case X86::VFMADD213SDr:
         case X86::VFMADD213PSr:
         case X86::VFMADD213PDr:
 
-            BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(a).addReg(b);
-            BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(c).addReg(MulTmp);
-            break;
+          BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(a).addReg(b);
+          BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(c).addReg(MulTmp);
+          break;
         case X86::VFMADD231SSr:
         case X86::VFMADD231SDr:
         case X86::VFMADD231PSr:
         case X86::VFMADD231PDr:
 
-            BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(c).addReg(b);
-            BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(a).addReg(MulTmp);
-            break;
+          BuildMI(MBB, MI, DL, TII->get(MulOpc), MulTmp).addReg(c).addReg(b);
+          BuildMI(MBB, MI, DL, TII->get(AddOpc), Dest).addReg(a).addReg(MulTmp);
+          break;
         default:
-            continue;
+          continue;
         }
 
         ToErase.push_back(&MI);
