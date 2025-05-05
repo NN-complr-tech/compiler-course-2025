@@ -5,7 +5,10 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/Passes/PassBuilder.h"
+
+#define DEBUG_TYPE "fmsub-compose"
 
 using namespace llvm;
 
@@ -57,13 +60,14 @@ public:
         Register TmpReg = MulMI.getOperand(0).getReg();
         auto ScanIt = std::next(MIit);
         for (; ScanIt != ME; ++ScanIt) {
-          for (const auto &Op : ScanIt->operands()) {
-            if (Op.isReg() && Op.isDef() && Op.getReg() == TmpReg)
+          for (auto &Op : ScanIt->operands()) {
+            if (Op.isReg() && Op.isDef() && Op.getReg() == TmpReg) {
               ScanIt = ME;
+              break;
+            }
           }
           if (ScanIt == ME)
             break;
-
           if (ScanIt->getOpcode() == SubOpc &&
               ScanIt->getOperand(2).getReg() == TmpReg) {
             SubMI = &*ScanIt;
@@ -72,8 +76,6 @@ public:
         }
         if (!SubMI)
           continue;
-        if (SubMI->getOperand(2).getReg() != TmpReg)
-          continue;
 
         Register Dst = SubMI->getOperand(0).getReg();
         Register C = SubMI->getOperand(1).getReg();
@@ -81,18 +83,20 @@ public:
 
         auto MIB = BuildMI(MBB, MulMI, DL, TII->get(FMAOpc), Dst);
 
-        const MachineMemOperand *MMO = *MulMI.memoperands_begin();
-        MachineMemOperand *MMO_nc = const_cast<MachineMemOperand *>(MMO);
         Register A = MulMI.getOperand(2).getReg();
-
-        MIB.addReg(A).addMemOperand(MMO_nc).addReg(C);
+        MIB.addReg(A);
+        for (auto *MO : MulMI.memoperands()) {
+          auto *MMO_nc = const_cast<MachineMemOperand *>(MO);
+          MIB.addMemOperand(MMO_nc);
+        }
+        MIB.addReg(C);
 
         ToErase.push_back(&MulMI);
         ToErase.push_back(SubMI);
         Changed = true;
       }
 
-      for (MachineInstr *MI : ToErase)
+      for (auto *MI : ToErase)
         MI->eraseFromParent();
     }
 
@@ -102,9 +106,9 @@ public:
 
 char FMSUBComposePass::ID = 0;
 
-} // namespace
-
-// old passmamger for llc tool
 static RegisterPass<FMSUBComposePass>
     X("fmsub-compose-x86",
-      "Compose MUL+SUB into a single fused multiply‐subtract", false, false);
+      "Compose MULrm+SUBrr into a single fused multiply‑subtract (mem‑reg)",
+      false, false);
+
+} // namespace
