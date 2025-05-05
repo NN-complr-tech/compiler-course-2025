@@ -14,65 +14,65 @@
   declare double @llvm.fma.f64(double, double, double)
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @_Z18test_132_singlefff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #1 {
+  define dso_local noundef float @_Z15test_132_singlefff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #1 {
     %4 = tail call float @llvm.fma.f32(float %0, float %1, float %2)
     ret float %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @_Z18test_213_singlefff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #1 {
+  define dso_local noundef float @_Z15test_213_singlefff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #1 {
     %4 = tail call float @llvm.fma.f32(float %0, float %1, float %2)
     ret float %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @_Z18test_231_singlefff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #1 {
+  define dso_local noundef float @_Z15test_231_singlefff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #1 {
     %4 = tail call float @llvm.fma.f32(float %0, float %1, float %2)
     ret float %4
   }
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef double @_Z18test_132_doubleddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #1 {
+  define dso_local noundef double @_Z15test_132_doubleddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #1 {
     %4 = tail call double @llvm.fma.f64(double %0, double %1, double %2)
     ret double %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef double @_Z18test_213_doubleddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #1 {
+  define dso_local noundef double @_Z15test_213_doubleddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #1 {
     %4 = tail call double @llvm.fma.f64(double %0, double %1, double %2)
     ret double %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef double @_Z18test_231_doubleddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #1 {
+  define dso_local noundef double @_Z15test_231_doubleddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #1 {
     %4 = tail call double @llvm.fma.f64(double %0, double %1, double %2)
     ret double %4
   }
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <4 x float> @_Z7test_132_psDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
+  define dso_local noundef <4 x float> @_Z11test_132_psDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
     %4 = tail call noundef <4 x float> @llvm.fma.v4f32(<4 x float> %0, <4 x float> %1, <4 x float> %2)
     ret <4 x float> %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <4 x float> @_Z7test_213_psDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
+  define dso_local noundef <4 x float> @_Z11test_213_psDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
     %4 = tail call noundef <4 x float> @llvm.fma.v4f32(<4 x float> %0, <4 x float> %1, <4 x float> %2)
     ret <4 x float> %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <4 x float> @_Z7test_231_psDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
+  define dso_local noundef <4 x float> @_Z11test_231_psDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
     %4 = tail call noundef <4 x float> @llvm.fma.v4f32(<4 x float> %0, <4 x float> %1, <4 x float> %2)
     ret <4 x float> %4
   }
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <2 x double> @_Z7test_132_pdDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
+  define dso_local noundef <2 x double> @_Z11test_132_pdDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
     %4 = tail call noundef <2 x double> @llvm.fma.v2f64(<2 x double> %0, <2 x double> %1, <2 x double> %2)
     ret <2 x double> %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <2 x double> @_Z7test_213_pdDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
+  define dso_local noundef <2 x double> @_Z11test_213_pdDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
     %4 = tail call noundef <2 x double> @llvm.fma.v2f64(<2 x double> %0, <2 x double> %1, <2 x double> %2)
     ret <2 x double> %4
   }
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <2 x double> @_Z7test_231_pdDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
+  define dso_local noundef <2 x double> @_Z11test_231_pdDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
     %4 = tail call noundef <2 x double> @llvm.fma.v2f64(<2 x double> %0, <2 x double> %1, <2 x double> %2)
     ret <2 x double> %4
   }
@@ -92,7 +92,7 @@
 
 ...
 ---
-name:            _Z18test_132_singlefff
+name:            _Z15test_132_singlefff
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -169,7 +169,7 @@ body:             |
 
 ...
 ---
-name:            _Z18test_213_singlefff
+name:            _Z15test_213_singlefff
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -246,7 +246,7 @@ body:             |
 
 ...
 ---
-name:            _Z18test_231_singlefff
+name:            _Z15test_231_singlefff
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -323,7 +323,7 @@ body:             |
 
 ...
 ---
-name:            _Z18test_132_doubleddd
+name:            _Z15test_132_doubleddd
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -400,7 +400,7 @@ body:             |
 
 ...
 ---
-name:            _Z18test_213_doubleddd
+name:            _Z15test_213_doubleddd
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -477,7 +477,7 @@ body:             |
 
 ...
 ---
-name:            _Z18test_231_doubleddd
+name:            _Z15test_231_doubleddd
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -554,7 +554,7 @@ body:             |
 
 ...
 ---
-name:            _Z7test_132_psDv4_fS_S_
+name:            _Z11test_132_psDv4_fS_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -631,7 +631,7 @@ body:             |
 
 ...
 ---
-name:            _Z7test_213_psDv4_fS_S_
+name:            _Z11test_213_psDv4_fS_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -708,7 +708,7 @@ body:             |
 
 ...
 ---
-name:            _Z7test_231_psDv4_fS_S_
+name:            _Z11test_231_psDv4_fS_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -785,7 +785,7 @@ body:             |
 
 ...
 ---
-name:            _Z7test_132_pdDv2_dS_S_
+name:            _Z11test_132_pdDv2_dS_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -862,7 +862,7 @@ body:             |
 
 ...
 ---
-name:            _Z7test_213_pdDv2_dS_S_
+name:            _Z11test_213_pdDv2_dS_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -939,7 +939,7 @@ body:             |
 
 ...
 ---
-name:            _Z7test_231_pdDv2_dS_S_
+name:            _Z11test_231_pdDv2_dS_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
