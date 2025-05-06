@@ -75,7 +75,7 @@ private:
     Modified = true;
   }
 
-private: // optimizing passes
+private:
   void processLogicOps(llvm::MachineFunction &MF) {
     OptimizationPredicate shouldTransform = [&](llvm::MachineInstr &MI) {
       return isLogicOpcode(MI.getOpcode());
