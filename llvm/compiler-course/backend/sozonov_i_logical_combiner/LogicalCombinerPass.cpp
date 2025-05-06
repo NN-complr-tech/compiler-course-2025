@@ -23,6 +23,7 @@ bool LogicalCombinerPass::runOnMachineFunction(MachineFunction &MF) {
   const X86Subtarget &STI = MF.getSubtarget<X86Subtarget>();
   const X86InstrInfo *TII = STI.getInstrInfo();
   MachineRegisterInfo &MRI = MF.getRegInfo();
+
   bool Changed = false;
 
   for (auto &MBB : MF) {
@@ -95,4 +96,4 @@ bool LogicalCombinerPass::runOnMachineFunction(MachineFunction &MF) {
 } // namespace
 
 static RegisterPass<LogicalCombinerPass>
-    X("logical-combiner-x86", "Combine logical ops into AVX", false, false);
+    X("logic-combiner-x86", "Combine logical ops into AVX", false, false);
