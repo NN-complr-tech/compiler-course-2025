@@ -14,7 +14,7 @@
 #     return _mm_xor_ps(a,b);
 #}
 #
-#__m128 test_and_or(__m128 a, __m128 b, __m128 c) {
+#__m128 test_and_and(__m128 a, __m128 b, __m128 c) {
 #     return _mm_or_ps(_mm_and_ps(a, b), c);
 #}
 #
@@ -61,7 +61,7 @@
   }
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <4 x float> @_Z11test_and_orDv4_fS_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c) local_unnamed_addr #0 {
+  define dso_local noundef <4 x float> @_Z11test_and_andDv4_fS_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c) local_unnamed_addr #0 {
   entry:
     %0 = bitcast <4 x float> %a to <4 x i32>
     %1 = bitcast <4 x float> %b to <4 x i32>
@@ -73,7 +73,7 @@
   }
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <4 x float> @_Z19test_not_opt_and_orDv4_fS_S_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c, <4 x float> noundef %d) local_unnamed_addr #0 {
+  define dso_local noundef <4 x float> @_Z19test_not_opt_and_andDv4_fS_S_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c, <4 x float> noundef %d) local_unnamed_addr #0 {
   entry:
     %0 = bitcast <4 x float> %a to <4 x i32>
     %1 = bitcast <4 x float> %b to <4 x i32>
@@ -318,9 +318,9 @@ body:             |
     RET 0, $xmm0
 
 ...
-#CHECK-LABEL:name: _Z11test_and_orDv4_fS_S_
+#CHECK-LABEL:name: _Z11test_and_andDv4_fS_S_
 ---
-name:            _Z11test_and_orDv4_fS_S_
+name:            _Z11test_and_andDv4_fS_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -385,7 +385,7 @@ body:             |
     ;CHECK: %2:vr128 = COPY $xmm2
     ;CHECK-NEXT: %1:vr128 = COPY $xmm1
     ;CHECK-NEXT: %0:vr128 = COPY $xmm0
-    ;CHECK-NEXT: %3:vr128 = VPORrr %2, %0
+    ;CHECK-NEXT: %3:vr128 = VPANDrr %2, %0
     ;CHECK-NEXT: %4:vr128 = VPANDrr %3, %1
     ;CHECK-NEXT: $xmm0 = COPY %4
     ;CHECK-NEXT: RET 0, $xmm0
@@ -394,14 +394,14 @@ body:             |
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
     %3:vr128 = PANDrr %1, %0
-    %4:vr128 = PORrr %3, %2
+    %4:vr128 = PANDrr %3, %2
     $xmm0 = COPY %4
     RET 0, $xmm0
 
 ...
-#CHECK-LABEL:name: _Z19test_not_opt_and_orDv4_fS_S_S_
+#CHECK-LABEL:name: _Z19test_not_opt_and_andDv4_fS_S_S_
 ---
-name:            _Z19test_not_opt_and_orDv4_fS_S_S_
+name:            _Z19test_not_opt_and_andDv4_fS_S_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -471,7 +471,7 @@ body:             |
     ; CHECK-NEXT: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
     ; CHECK-NEXT: %4:vr128 = VPANDrr %1, %0
-    ; CHECK-NEXT: %5:vr128 = VPORrr %3, %2
+    ; CHECK-NEXT: %5:vr128 = VPANDrr %3, %2
     ; CHECK-NEXT: %6:vr128 = VPXORrr %5, %4
     ; CHECK-NEXT: $xmm0 = COPY %6
     ; CHECK-NEXT: RET 0, $xmm0
@@ -481,7 +481,7 @@ body:             |
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
     %4:vr128 = PANDrr %1, %0
-    %5:vr128 = PORrr %3, %2
+    %5:vr128 = PANDrr %3, %2
     %6:vr128 = PXORrr %5, killed %4
     $xmm0 = COPY %6
     RET 0, $xmm0
