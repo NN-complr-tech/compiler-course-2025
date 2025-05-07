@@ -85,15 +85,16 @@ public:
     }
     return modified;
   }
-  void replaceInstruction(llvm::MachineFunction &MF, llvm::MachineBasicBlock &MBB, 
+  void replaceInstruction(llvm::MachineFunction &MF,
+                          llvm::MachineBasicBlock &MBB,
                           llvm::MachineInstr *inst, unsigned newOpcode) {
-      auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
-      BuildMI(MBB, inst, inst->getDebugLoc(), 
-              TII.get(newOpcode), inst->getOperand(0).getReg())
-          .addReg(inst->getOperand(1).getReg())
-          .addReg(inst->getOperand(2).getReg());
+    auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
+    BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(newOpcode),
+            inst->getOperand(0).getReg())
+        .addReg(inst->getOperand(1).getReg())
+        .addReg(inst->getOperand(2).getReg());
 
-      inst->eraseFromParent();
+    inst->eraseFromParent();
   }
 };
 
