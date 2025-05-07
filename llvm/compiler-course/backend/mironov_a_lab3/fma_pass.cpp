@@ -88,8 +88,8 @@ public:
             instraction.getNumExplicitOperands() <= 3) {
           continue;
         }
-
-        std::array<unsigned, 3>& order =
+        instraction.dump();
+        std::array<unsigned, 3> &order =
             fma_instruction_order[instraction.getOpcode()];
 
         std::pair<unsigned, unsigned> mul_add =

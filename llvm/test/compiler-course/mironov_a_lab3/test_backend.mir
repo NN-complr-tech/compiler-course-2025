@@ -26,20 +26,8 @@
   target triple = "x86_64-pc-linux-gnu"
   
   ; Function Attrs: mustprogress nofree nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @_Z11test_fma123fff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #0 {
+  define dso_local noundef float @_Z8test_fmafff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #0 {
     %4 = tail call float @llvm.fma.f32(float %0, float %1, float %2)
-    ret float %4
-  }
-  
-  ; Function Attrs: mustprogress nofree nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @_Z11test_fma132fff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #0 {
-    %4 = tail call float @llvm.fma.f32(float %2, float %0, float %1)
-    ret float %4
-  }
-  
-  ; Function Attrs: mustprogress nofree nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef float @_Z11test_fma231fff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #0 {
-    %4 = tail call float @llvm.fma.f32(float %2, float %0, float %1)
     ret float %4
   }
   
@@ -74,8 +62,8 @@
 
 ...
 ---
-# CHECK-LABEL: name: _Z11test_fma123fff
-name:            _Z11test_fma123fff
+# CHECK-LABEL: name: _Z8test_fmafff
+name:            _Z8test_fmafff
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -144,130 +132,7 @@ body:             |
     RET 0, $xmm0
 ...
 ---
-# CHECK-LABEL: name: _Z11test_fma132fff
-name:            _Z11test_fma132fff
-alignment:       16
-exposesReturnsTwice: false
-legalized:       false
-regBankSelected: false
-selected:        false
-failedISel:      false
-tracksRegLiveness: true
-hasWinCFI:       false
-callsEHReturn:   false
-callsUnwindInit: false
-hasEHCatchret:   false
-hasEHScopes:     false
-hasEHFunclets:   false
-isOutlined:      false
-debugInstrRef:   false
-failsVerification: false
-tracksDebugUserValues: false
-registers:       []
-liveins:         []
-frameInfo:
-  isFrameAddressTaken: false
-  isReturnAddressTaken: false
-  hasStackMap:     false
-  hasPatchPoint:   false
-  stackSize:       0
-  offsetAdjustment: 0
-  maxAlignment:    1
-  adjustsStack:    false
-  hasCalls:        false
-  stackProtector:  ''
-  functionContext: ''
-  maxCallFrameSize: 4294967295
-  cvBytesOfCalleeSavedRegisters: 0
-  hasOpaqueSPAdjustment: false
-  hasVAStart:      false
-  hasMustTailInVarArgFunc: false
-  hasTailCall:     false
-  isCalleeSavedInfoValid: false
-  localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
-fixedStack:      []
-stack:           []
-entry_values:    []
-callSites:       []
-debugValueSubstitutions: []
-constants:       []
-machineFunctionInfo:
-  amxProgModel:    None
-body:             |
-  bb.0:
-    liveins: $xmm0, $xmm1, $xmm2
-    ; CHECK: %0:vr128 = COPY $xmm2
-    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
-    ; CHECK-NEXT: %2:vr128 = COPY $xmm0
-    ; CHECK-NEXT: %4:fr32 = MULPSrr %2, %1, implicit $mxcsr
-    ; CHECK-NEXT: %3:vr128 = ADDPSrr %4, %0, implicit $mxcsr
-    ; CHECK-NEXT: $xmm0 = COPY %3
-    ; CHECK-NEXT: RET 0, $xmm0
-  
-    %2:vr128 = COPY $xmm2
-    %1:vr128 = COPY $xmm1
-    %0:vr128 = COPY $xmm0
-    %3:vr128 = nofpexcept VFMADD213PSr %1, %0, %2, implicit $mxcsr
-    $xmm0 = COPY %3
-    RET 0, $xmm0
-...
----
-name:            _Z11test_fma231fff
-alignment:       16
-exposesReturnsTwice: false
-legalized:       false
-regBankSelected: false
-selected:        false
-failedISel:      false
-tracksRegLiveness: true
-hasWinCFI:       false
-callsEHReturn:   false
-callsUnwindInit: false
-hasEHCatchret:   false
-hasEHScopes:     false
-hasEHFunclets:   false
-isOutlined:      false
-debugInstrRef:   false
-failsVerification: false
-tracksDebugUserValues: false
-registers:       []
-liveins:         []
-frameInfo:
-  isFrameAddressTaken: false
-  isReturnAddressTaken: false
-  hasStackMap:     false
-  hasPatchPoint:   false
-  stackSize:       0
-  offsetAdjustment: 0
-  maxAlignment:    1
-  adjustsStack:    false
-  hasCalls:        false
-  stackProtector:  ''
-  functionContext: ''
-  maxCallFrameSize: 4294967295
-  cvBytesOfCalleeSavedRegisters: 0
-  hasOpaqueSPAdjustment: false
-  hasVAStart:      false
-  hasMustTailInVarArgFunc: false
-  hasTailCall:     false
-  isCalleeSavedInfoValid: false
-  localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
-fixedStack:      []
-stack:           []
-entry_values:    []
-callSites:       []
-debugValueSubstitutions: []
-constants:       []
-machineFunctionInfo:
-  amxProgModel:    None
-body:             |
-
-...
----
+# CHECK-LABEL: name: _Z13test_same_fmaff
 name:            _Z13test_same_fmaff
 alignment:       16
 exposesReturnsTwice: false
@@ -319,9 +184,23 @@ constants:       []
 machineFunctionInfo:
   amxProgModel:    None
 body:             |
-
+  bb.0:
+    liveins: $xmm0, $xmm1
+    ; CHECK: %0:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %3:fr32 = MULPSrr %1, %1, implicit $mxcsr
+    ; CHECK-NEXT: %2:vr128 = ADDPSrr %3, %0, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %2:vr128 = nofpexcept VFMADD213PSr %0, %0, %1, implicit $mxcsr
+    $xmm0 = COPY %2
+    RET 0, $xmm0
 ...
 ---
+# CHECK-LABEL: name: _Z11test_no_fmafff
 name:            _Z11test_no_fmafff
 alignment:       16
 exposesReturnsTwice: false
@@ -373,5 +252,22 @@ constants:       []
 machineFunctionInfo:
   amxProgModel:    None
 body:             |
+  bb.0:
+    liveins: $xmm0, $xmm1, $xmm2
+    ; CHECK: %0:fr32 = COPY $xmm0
+    ; CHECK: %1:fr32 = COPY $xmm1
+    ; CHECK: %2:fr32 = COPY $xmm2
+    ; CHECK: %3:fr32 = ADDSSrr %0, %1, implicit $mxcsr
+    ; CHECK: %4:fr32 = ADDSSrr %3, %2, implicit $mxcsr
+    ; CHECK: $xmm0 = COPY %4
+    ; CHECK: RET 0, $xmm0
+
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    %3:fr32 = ADDSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = ADDSSrr %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET 0, $xmm0
 
 ...
