@@ -63,23 +63,23 @@ public:
         llvm::MachineInstr *inst = &*I++;
 
         switch (inst->getOpcode()) {
-            case llvm::X86::PORrr:
-                ::replaceInstruction(MF, MBB, inst, llvm::X86::VPORrr);
-                modified = true;
-                break;
+        case llvm::X86::PORrr:
+          replaceInstruction(MF, MBB, inst, llvm::X86::VPORrr);
+          modified = true;
+          break;
 
-            case llvm::X86::PXORrr:
-                ::replaceInstruction(MF, MBB, inst, llvm::X86::VPXORrr);
-                modified = true;
-                break;
+        case llvm::X86::PXORrr:
+          replaceInstruction(MF, MBB, inst, llvm::X86::VPXORrr);
+          modified = true;
+          break;
 
-            case llvm::X86::PANDrr:
-                ::replaceInstruction(MF, MBB, inst, llvm::X86::VPANDrr);
-                modified = true;
-                break;
+        case llvm::X86::PANDrr:
+          replaceInstruction(MF, MBB, inst, llvm::X86::VPANDrr);
+          modified = true;
+          break;
 
-            default:
-                break;
+        default:
+          break;
         }
       }
     }
