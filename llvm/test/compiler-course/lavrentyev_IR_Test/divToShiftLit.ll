@@ -92,3 +92,11 @@ entry:
   %div = udiv i64 %q, 64
   ret i64 %div
 }
+
+; Test 32-bit constants
+; CHECK-LABEL: @test_i32_constants
+; CHECK:    ret i32 15
+define i32 @test_i32_constants() {
+  %div = sdiv i32 123, 8
+  ret i32 %div
+}
