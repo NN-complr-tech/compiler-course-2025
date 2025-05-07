@@ -7,10 +7,10 @@
   target triple = "x86_64-pc-linux-gnu"
 
   define void @test_and_or_chain() { ret void }
-  define void @_Z15test_simple_andDv4_fS_() { ret void }
-  define void @_Z13test_xor_selfDv4_f() { ret void }
-  define void @_Z13test_and_selfDv4_f() { ret void }
-  define void @_Z13test_and_zeroDv4_f() { ret void }
+  define void @test_simple_and() { ret void }
+  define void @test_xor_self_change() { ret void }
+  define void @test_and_self() { ret void }
+  define void @test_zero_and() { ret void }
 ---
 # Test AND -> OR chain
 # CHECK-LABEL: name: test_and_or_chain
@@ -20,12 +20,12 @@ body: |
     liveins: $xmm0, $xmm1, $xmm2
 
     ; CHECK: %0:vr128 = COPY $xmm0
-    ; CHECK: %1:vr128 = COPY $xmm1
-    ; CHECK: %2:vr128 = COPY $xmm2
-    ; CHECK: %3:vr128 = VPANDNrr %2, %1
-    ; CHECK: %4:vr128 = VPORrr %3, %0
-    ; CHECK: $xmm0 = COPY %4
-    ; CHECK: RET64 implicit $xmm0
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %3:vr128 = VPANDNrr %2, %1
+    ; CHECK-NEXT: %4:vr128 = VPORrr %3, %0
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
 
     %0:vr128 = COPY $xmm0    ; a
     %1:vr128 = COPY $xmm1    ; b
@@ -37,14 +37,17 @@ body: |
 
 ---
 # Test simple AND
-# CHECK-LABEL: name: _Z15test_simple_andDv4_fS_
-name: _Z15test_simple_andDv4_fS_
+# CHECK-LABEL: name: test_simple_and
+name: test_simple_and
 body: |
   bb.0:
     liveins: $xmm0, $xmm1
 
-    ; CHECK: VPANDrr
-    ; CHECK-NOT: PANDrr
+    ; CHECK: %0:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPANDrr %0, %1
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET64 implicit $xmm0
 
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -54,14 +57,16 @@ body: |
 
 ---
 # Test XOR x, x
-# CHECK-LABEL: name: _Z13test_xor_selfDv4_f
-name: _Z13test_xor_selfDv4_f
+# CHECK-LABEL: name: test_xor_self_change
+name: test_xor_self_change
 body: |
   bb.0:
     liveins: $xmm0
 
-    ; CHECK: VPXORrr
-    ; CHECK-NOT: PXORrr
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %1:vr128 = VPXORrr %0, %0
+    ; CHECK-NEXT: $xmm0 = COPY %1
+    ; CHECK-NEXT: RET64 implicit $xmm0
 
     %0:vr128 = COPY $xmm0
     %5:vr128 = PXORrr %0, %0
@@ -70,14 +75,16 @@ body: |
 
 ---
 # Test AND x, x
-# CHECK-LABEL: name: _Z13test_and_selfDv4_f
-name: _Z13test_and_selfDv4_f
+# CHECK-LABEL: name: test_and_self
+name: test_and_self
 body: |
   bb.0:
     liveins: $xmm0
 
-    ; CHECK: COPY
-    ; CHECK-NOT: PANDrr
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %1:vr128 = COPY %0
+    ; CHECK-NEXT: $xmm0 = COPY %1
+    ; CHECK-NEXT: RET64 implicit $xmm0
 
     %0:vr128 = COPY $xmm0
     %5:vr128 = PANDrr %0, %0
@@ -86,14 +93,16 @@ body: |
 
 ---
 # Test AND with zero
-# CHECK-LABEL: name: _Z13test_and_zeroDv4_f
-name: _Z13test_and_zeroDv4_f
+# CHECK-LABEL: name: test_zero_and
+name: test_zero_and
 body: |
   bb.0:
     liveins: $xmm0
 
-    ; CHECK: VPXORrr
-    ; CHECK-NOT: PANDrr
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPXORrr %2, %2
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET64 implicit $xmm0
 
     %0:vr128 = COPY $xmm0
     %7:vr128 = PXORrr %0, %0

@@ -81,9 +81,10 @@ public:
       if (!llvm::Register::isVirtualRegister(Reg))
         return false;
       const auto *RC = MRI.getRegClass(Reg);
-      llvm::StringRef Name = TRI->getRegClassName(RC);
-      return Name.starts_with("XMM") || Name.starts_with("YMM") ||
-             Name.starts_with("ZMM") || Name.starts_with("VR");
+      unsigned RCID = RC->getID();
+      return RCID == llvm::X86::VR128RegClassID ||
+             RCID == llvm::X86::VR256RegClassID ||
+             RCID == llvm::X86::VR512RegClassID;
     };
 
     for (auto &MBB : MF) {
