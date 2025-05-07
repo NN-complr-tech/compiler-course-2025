@@ -88,7 +88,6 @@ public:
             instraction.getNumExplicitOperands() <= 3) {
           continue;
         }
-        instraction.dump();
         std::array<unsigned, 3> &order =
             fma_instruction_order[instraction.getOpcode()];
 
