@@ -29,11 +29,11 @@ public:
         if (inst1->getOpcode() == llvm::X86::PANDrr) {
           if (I != E) {
             llvm::MachineInstr *inst2 = &*I;
-            if (inst2->getOpcode() == llvm::X86::PORrr) {
+            if (inst2->getOpcode() == llvm::X86::PANDrr) {
               if (inst1->getOperand(0).getReg() ==
                   inst2->getOperand(1).getReg()) {
                 BuildMI(MBB, inst2, inst2->getDebugLoc(),
-                        TII->get(llvm::X86::PORrr),
+                        TII->get(llvm::X86::PANDrr),
                         inst1->getOperand(0).getReg())
                     .addReg(inst2->getOperand(2).getReg())
                     .addReg(inst1->getOperand(2).getReg());
@@ -62,44 +62,39 @@ public:
       for (auto I = MBB.begin(), E = MBB.end(); I != E;) {
         llvm::MachineInstr *inst = &*I++;
 
-        if (inst->getOpcode() == llvm::X86::PORrr) {
-          auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
-          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPORrr),
-                  inst->getOperand(0).getReg())
-              .addReg(inst->getOperand(1).getReg())
-              .addReg(inst->getOperand(2).getReg());
+        switch (inst->getOpcode()) {
+            case llvm::X86::PORrr:
+                ::replaceInstruction(MF, MBB, inst, llvm::X86::VPORrr);
+                modified = true;
+                break;
 
-          inst->eraseFromParent();
-          modified = true;
-        }
+            case llvm::X86::PXORrr:
+                ::replaceInstruction(MF, MBB, inst, llvm::X86::VPXORrr);
+                modified = true;
+                break;
 
-        if (inst->getOpcode() == llvm::X86::PXORrr) {
-          auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
-          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPXORrr),
-                  inst->getOperand(0).getReg())
-              .addReg(inst->getOperand(1).getReg())
-              .addReg(inst->getOperand(2).getReg());
+            case llvm::X86::PANDrr:
+                ::replaceInstruction(MF, MBB, inst, llvm::X86::VPANDrr);
+                modified = true;
+                break;
 
-          inst->eraseFromParent();
-          modified = true;
-        }
-
-        if (inst->getOpcode() == llvm::X86::PANDrr) {
-          auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
-          BuildMI(MBB, inst, inst->getDebugLoc(), TII.get(llvm::X86::VPANDrr),
-                  inst->getOperand(0).getReg())
-              .addReg(inst->getOperand(1).getReg())
-              .addReg(inst->getOperand(2).getReg());
-
-          inst->eraseFromParent();
-          modified = true;
+            default:
+                break;
         }
       }
     }
     return modified;
   }
 };
+void replaceInstruction(llvm::MachineFunction &MF, llvm::MachineBasicBlock &MBB, llvm::MachineInstr *inst, unsigned newOpcode) {
+    auto &TII = *MF.getSubtarget<llvm::X86Subtarget>().getInstrInfo();
+    BuildMI(MBB, inst, inst->getDebugLoc(), 
+            TII.get(newOpcode), inst->getOperand(0).getReg())
+        .addReg(inst->getOperand(1).getReg())
+        .addReg(inst->getOperand(2).getReg());
 
+    inst->eraseFromParent();
+}
 char LogicalChainOptimization::ID = 0;
 } // namespace
 
