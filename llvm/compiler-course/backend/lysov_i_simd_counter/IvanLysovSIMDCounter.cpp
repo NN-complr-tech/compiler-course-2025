@@ -49,7 +49,7 @@ public:
     const X86RegisterInfo &RI = TII->getRegisterInfo();
     const TargetRegisterClass *GPR64RC = RI.getRegClass(X86::GR64RegClassID);
 
-    bool Changed = false;
+    bool isChanged = false;
     for (auto &MBB : MF) {
       for (auto MIIt = MBB.begin(), E = MBB.end(); MIIt != E; ++MIIt) {
         MachineInstr &MI = *MIIt;
@@ -84,11 +84,11 @@ public:
 
             .addReg(0, RegState::Implicit); // segment
 
-        Changed = true;
+        isChanged = true;
       }
     }
 
-    return Changed;
+    return isChanged;
   }
 };
 
