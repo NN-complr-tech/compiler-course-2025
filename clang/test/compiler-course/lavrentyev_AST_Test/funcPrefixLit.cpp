@@ -9,6 +9,7 @@
 // CHECK-NEXT: }
 // CHECK-NEXT: int static global_var4 = 3;
 // CHECK-NEXT: int static global_var5 = foo(1, global_var4);
+// CHECK-NEXT: unsigned global_global_var = 0;
 
 int var1 = 0;
 int foo(int a, int b) {
@@ -19,6 +20,7 @@ int foo(int a, int b) {
 }
 int static var4 = 3;
 int static var5 = foo(1, var4);
+unsigned global_var = 0;
 
 // RUN: %clang_cc1 -load %llvmshlibdir/FuncPrefixPlugin_Lavrentyev_Alexey_FIIT3_ClangAST%pluginext -plugin prefix-renamer -plugin-arg-prefix-renamer --static=st_ -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s --check-prefix=CHECK-STATIC
 
