@@ -49,12 +49,12 @@ public:
     const X86RegisterInfo &RI = TII->getRegisterInfo();
     const TargetRegisterClass *GPR64RC = RI.getRegClass(X86::GR64RegClassID);
 
-    bool isChanged = false;
+    bool IsChanged = false;
     for (auto &MBB : MF) {
       for (auto MIIt = MBB.begin(), E = MBB.end(); MIIt != E; ++MIIt) {
         MachineInstr &MI = *MIIt;
 
-        bool isSimd = false;
+        bool IsSimd = false;
         for (const MachineOperand &MO : MI.operands()) {
           if (!MO.isReg())
             continue;
@@ -66,11 +66,11 @@ public:
           unsigned RCID = RC->getID();
           if (RCID == X86::VR128RegClassID || RCID == X86::VR256RegClassID ||
               RCID == X86::VR512RegClassID) {
-            isSimd = true;
+            IsSimd = true;
             break;
           }
         }
-        if (!isSimd)
+        if (!IsSimd)
           continue;
 
         DebugLoc DL = MI.getDebugLoc();
@@ -84,11 +84,11 @@ public:
 
             .addReg(0, RegState::Implicit); // segment
 
-        isChanged = true;
+        IsChanged = true;
       }
     }
 
-    return isChanged;
+    return IsChanged;
   }
 };
 
