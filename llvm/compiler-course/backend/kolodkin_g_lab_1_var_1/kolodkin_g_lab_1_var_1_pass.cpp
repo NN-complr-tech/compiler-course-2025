@@ -23,7 +23,7 @@ public:
 
     for (auto &MBB : MF) {
       std::vector<llvm::MachineInstr *> toErase;
-      for (auto I = MBB.begin(), E = MBB.end(); I != E; ) {
+      for (auto I = MBB.begin(), E = MBB.end(); I != E;) {
         llvm::MachineInstr *inst = &*I++;
 
         if (inst->getOpcode() == llvm::X86::PORrr) {
@@ -33,7 +33,6 @@ public:
 
           llvm::MachineInstr *nextInst1 = &*I;
           llvm::MachineInstr *nextInst2 = &*(std::next(I));
-
 
           if (nextInst1->getOpcode() == llvm::X86::PORrr &&
               nextInst2->getOpcode() == llvm::X86::PANDrr) {
@@ -49,9 +48,9 @@ public:
             llvm::Register thirdOpSrc2 = nextInst2->getOperand(2).getReg();
 
             if ((firstOpSrc1 == secondOpSrc1 || firstOpSrc2 == secondOpSrc2) &&
-			    (thirdOpSrc1 == firstOpDest && thirdOpSrc2 == secondOpDest)) {
+                (thirdOpSrc1 == firstOpDest && thirdOpSrc2 == secondOpDest)) {
               llvm::Register resReg1, resReg2, resReg3;
-              if (firstOpSrc1 == secondOpSrc1){
+              if (firstOpSrc1 == secondOpSrc1) {
                 resReg1 = firstOpSrc2;
                 resReg2 = secondOpSrc2;
                 resReg3 = firstOpSrc1;
@@ -69,7 +68,6 @@ public:
                       TII->get(llvm::X86::PORrr), thirdOpDest)
                   .addReg(resReg3)
                   .addReg(secondOpDest);
-
 
               toErase.push_back(inst);
               toErase.push_back(nextInst1);
