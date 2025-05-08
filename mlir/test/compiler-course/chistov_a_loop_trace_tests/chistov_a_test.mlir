@@ -6,11 +6,10 @@ module {
   // CHECK-NEXT: func.func private @trace_loop_iter_begin()
 
   // CHECK-LABEL: func.func @affine_for()
-  // CHECK: affine.for
-  // CHECK-DAG: func.call @trace_loop_iter_begin() : () -> ()
+  // CHECK: func.call @trace_loop_iter_begin() : () -> ()
   // CHECK-NEXT: %1 = arith.index_cast %arg0 : index to i32
   // CHECK-NEXT: %2 = arith.addi %arg1, %1 : i32
-  // CHECK-DAG: func.call @trace_loop_iter_end() : () -> ()
+  // CHECK-NEXT: func.call @trace_loop_iter_end() : () -> ()
   func.func @affine_for() -> i32 {
     %sum_init = arith.constant 0 : i32
     %result = affine.for %i = 0 to 10 iter_args(%sum_iter = %sum_init) -> i32 {
@@ -20,13 +19,12 @@ module {
     }
     return %result : i32
   }
-  
- // CHECK-LABEL: func.func @scf_for()
-  // CHECK: scf.for
-  // CHECK-DAG: func.call @trace_loop_iter_begin() : () -> ()
+
+  // CHECK-LABEL: func.func @scf_for()
+  // CHECK: func.call @trace_loop_iter_begin() : () -> ()
   // CHECK-NEXT: %1 = arith.index_cast %arg0 : index to i32
   // CHECK-NEXT: %2 = arith.addi %arg1, %1 : i32
-  // CHECK-DAG: func.call @trace_loop_iter_end() : () -> ()
+  // CHECK-NEXT: func.call @trace_loop_iter_end() : () -> ()
   func.func @scf_for() -> i32 {
     %sum_init = arith.constant 0 : i32
     %lower = arith.constant 0 : index
@@ -43,13 +41,11 @@ module {
   }
 
   // CHECK-LABEL: func.func @scf_while()
-  // CHECK: scf.while
-  // CHECK: do {
-  // CHECK-DAG: func.call @trace_loop_iter_begin() : () -> ()
+  // CHECK: func.call @trace_loop_iter_begin() : () -> ()
   // CHECK-NEXT: %1 = arith.addi %arg0, %arg1 : i32
   // CHECK-NEXT: %c1_i32 = arith.constant 1 : i32
   // CHECK-NEXT: arith.addi %arg1, %c1_i32 : i32
-  // CHECK-DAG: func.call @trace_loop_iter_end() : () -> ()
+  // CHECK-NEXT: func.call @trace_loop_iter_end() : () -> ()
   func.func @scf_while() -> i32 {
     %sum_init = arith.constant 0 : i32
     %i_init = arith.constant 0 : i32
@@ -70,11 +66,10 @@ module {
   }
 
   // CHECK-LABEL: func.func @scf_parallel()
-  // CHECK: scf.parallel
-  // CHECK-DAG: func.call @trace_loop_iter_begin() : () -> ()
+  // CHECK: func.call @trace_loop_iter_begin() : () -> ()
   // CHECK-NEXT: %1 = arith.index_cast %arg0 : index to i32
   // CHECK-NEXT: %2 = arith.addi %c0_i32, %1 : i32
-  // CHECK-DAG: func.call @trace_loop_iter_end() : () -> ()
+  // CHECK-NEXT: func.call @trace_loop_iter_end() : () -> ()
   func.func @scf_parallel() -> i32 {
     %sum_init = arith.constant 0 : i32
     %lower = arith.constant 0 : index
@@ -94,6 +89,4 @@ module {
 
     return %result : i32
   }
-
- 
 }
