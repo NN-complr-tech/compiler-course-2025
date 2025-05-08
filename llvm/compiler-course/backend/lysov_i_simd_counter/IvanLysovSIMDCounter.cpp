@@ -81,7 +81,6 @@ public:
             .addImm(1)                      // scale (unused)
             .addReg(0, RegState::Implicit)  // index
             .addGlobalAddress(CounterGV, 0) // символ simd_counter
-
             .addReg(0, RegState::Implicit); // segment
 
         IsChanged = true;
