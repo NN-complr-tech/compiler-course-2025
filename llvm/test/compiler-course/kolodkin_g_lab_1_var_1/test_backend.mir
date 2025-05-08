@@ -19,6 +19,10 @@
 #}
 #
 #__m128 test_and_or(__m128 a, __m128 b, __m128 c) {
+#     return _mm_and_ps(_mm_or_ps(c, a), _mm_or_ps(c,b));
+#}
+#
+#__m128 test_and_or_2(__m128 a, __m128 b, __m128 c) {
 #     return _mm_and_ps(_mm_or_ps(a, c), _mm_or_ps(b,c));
 #}
 
