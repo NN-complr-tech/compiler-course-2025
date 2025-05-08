@@ -11,38 +11,35 @@ using namespace mlir;
 namespace {
 class LoopTracePass
     : public PassWrapper<LoopTracePass, OperationPass<ModuleOp>> {
-private: // declaration
-  static constexpr StringRef traceBegin = "trace_loop_iter_begin";
-  static constexpr StringRef traceEnd = "trace_loop_iter_end";
+  ModuleOp module;
+  OpBuilder builder;
 
-  void ensureTraceFunctionExists(ModuleOp module, StringRef name) {
-    if (module.lookupSymbol<func::FuncOp>(name))
+private: // declaration
+  void ensureTraceFunctionExists(StringRef name) {
+    if (SymbolTable::lookupSymbolIn(module, name))
       return;
 
-    OpBuilder builder(module.getContext());
     builder.setInsertionPointToStart(module.getBody());
-
     auto func = builder.create<func::FuncOp>(module.getLoc(), name,
                                              builder.getFunctionType({}, {}));
     func.setSymVisibility("private");
   }
 
-  void declareTraceFunctions(ModuleOp module) {
-
-    ensureTraceFunctionExists(module, traceBegin);
-    ensureTraceFunctionExists(module, traceEnd);
+  void declareTraceFunctions() {
+    ensureTraceFunctionExists("trace_loop_iter_begin");
+    ensureTraceFunctionExists("trace_loop_iter_end");
   }
 
 private: // insertion
   void insertLoopTraceCalls(Block &body, Location loc) {
-    OpBuilder b(body.getParent()->getContext());
-
-    b.setInsertionPointToStart(&body);
-    b.create<func::CallOp>(loc, traceBegin, TypeRange{}, ValueRange{});
+    builder.setInsertionPointToStart(&body);
+    builder.create<func::CallOp>(loc, "trace_loop_iter_end", TypeRange{},
+                                 ValueRange{});
 
     Operation *term = body.getTerminator();
-    b.setInsertionPoint(term);
-    b.create<func::CallOp>(loc, traceEnd, TypeRange{}, ValueRange{});
+    builder.setInsertionPoint(term);
+    builder.create<func::CallOp>(loc, "trace_loop_iter_end", TypeRange{},
+                                 ValueRange{});
   }
 
   void insertLoopTraceCallsForOp(Operation *op, Location loc) {
@@ -80,16 +77,16 @@ public:
   }
 
   void runOnOperation() override {
-    ModuleOp module = getOperation();
-    declareTraceFunctions(module);
+    module = getOperation();
+    OpBuilder builder(module.getContext());
 
+    declareTraceFunctions();
     module.walk([&](Operation *op) {
       Location loc = op->getLoc();
       insertLoopTraceCallsForOp(op, loc);
     });
   }
 };
-
 } // namespace
 
 MLIR_DECLARE_EXPLICIT_TYPE_ID(LoopTracePass)
