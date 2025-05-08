@@ -45,44 +45,40 @@ struct TraceLoopPass
     }
 
     module.walk([&](Operation *op) {
-      OpBuilder b(op);
       Location loopLoc = op->getLoc();
-
+      OpBuilder::InsertionGuard guard(builder);
       // affine.for: getBody() returns Block*
       if (auto forOp = dyn_cast<affine::AffineForOp>(op)) {
         Block &body = *forOp.getBody();
-        b.setInsertionPointToStart(&body);
-        b.create<func::CallOp>(loopLoc, "trace_loop_iter_begin", TypeRange{},
-                               ValueRange{});
+        builder.setInsertionPointToStart(&body);
+        builder.create<func::CallOp>(loopLoc, "trace_loop_iter_begin",
+                                     TypeRange{}, ValueRange{});
         Operation *term = body.getTerminator();
-        OpBuilder endBuilder(term->getContext());
-        endBuilder.setInsertionPoint(term);
-        endBuilder.create<func::CallOp>(loopLoc, "trace_loop_iter_end",
-                                        TypeRange{}, ValueRange{});
+        builder.setInsertionPoint(term);
+        builder.create<func::CallOp>(loopLoc, "trace_loop_iter_end",
+                                     TypeRange{}, ValueRange{});
       }
       // scf.for: getBody() returns Region&, use front() to get Block&
       else if (auto scfFor = dyn_cast<scf::ForOp>(op)) {
         Block &body = *scfFor.getBody();
-        b.setInsertionPointToStart(&body);
-        b.create<func::CallOp>(loopLoc, "trace_loop_iter_begin", TypeRange{},
-                               ValueRange{});
+        builder.setInsertionPointToStart(&body);
+        builder.create<func::CallOp>(loopLoc, "trace_loop_iter_begin",
+                                     TypeRange{}, ValueRange{});
         Operation *term = body.getTerminator();
-        OpBuilder endBuilder(term->getContext());
-        endBuilder.setInsertionPoint(term);
-        endBuilder.create<func::CallOp>(loopLoc, "trace_loop_iter_end",
-                                        TypeRange{}, ValueRange{});
+        builder.setInsertionPoint(term);
+        builder.create<func::CallOp>(loopLoc, "trace_loop_iter_end",
+                                     TypeRange{}, ValueRange{});
       }
       // scf.while: after region holds the body
       else if (auto whileOp = dyn_cast<scf::WhileOp>(op)) {
         Block &body = whileOp.getAfter().front();
-        b.setInsertionPointToStart(&body);
-        b.create<func::CallOp>(loopLoc, "trace_loop_iter_begin", TypeRange{},
-                               ValueRange{});
+        builder.setInsertionPointToStart(&body);
+        builder.create<func::CallOp>(loopLoc, "trace_loop_iter_begin",
+                                     TypeRange{}, ValueRange{});
         Operation *term = body.getTerminator();
-        OpBuilder endBuilder(term->getContext());
-        endBuilder.setInsertionPoint(term);
-        endBuilder.create<func::CallOp>(loopLoc, "trace_loop_iter_end",
-                                        TypeRange{}, ValueRange{});
+        builder.setInsertionPoint(term);
+        builder.create<func::CallOp>(loopLoc, "trace_loop_iter_end",
+                                     TypeRange{}, ValueRange{});
       }
     });
   }
