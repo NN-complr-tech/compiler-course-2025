@@ -33,6 +33,19 @@ public:
       op->replaceAllUsesWith(sub);
       op->erase();
     });
+
+    moduleOp.walk([&](arith::RemUIOp op) {
+      auto lhs = op.getLhs();
+      auto rhs = op.getRhs();
+      auto loc = op.getLoc();
+      builder.setInsertionPoint(op);
+
+      auto div = builder.create<arith::DivUIOp>(loc, lhs, rhs);
+      auto mul = builder.create<arith::MulIOp>(loc, div, rhs);
+      auto sub = builder.create<arith::SubIOp>(loc, lhs, mul);
+      op->replaceAllUsesWith(sub);
+      op->erase();
+    });
   }
 };
 } // namespace
