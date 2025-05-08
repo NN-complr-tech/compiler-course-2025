@@ -93,5 +93,6 @@ char InstSimdPass::ID = 0;
 
 } // namespace
 
+
 static RegisterPass<InstSimdPass>
     X("inst-simd-x86", "Instrument SIMD instructions", false, false);

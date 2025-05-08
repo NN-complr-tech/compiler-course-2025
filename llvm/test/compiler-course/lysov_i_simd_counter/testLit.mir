@@ -3,7 +3,7 @@
 #  RUN:     -run-pass=inst-simd-x86 %s -o - | FileCheck %s
 
 # test.cpp
-# // vaddpd
+# // SSE2: сложение двух double‑векторов (vaddpd)
 # NOINLINE void simd_add_pd(double* out, const double* a, const double* b) {
 #     __m128d va = _mm_load_pd(a);
 #     __m128d vb = _mm_load_pd(b);
@@ -11,7 +11,7 @@
 #     _mm_store_pd(out, vc);
 # }
 # 
-# // pxor
+# // SSE2: xor двух 128‑бит целых (pxor)
 # NOINLINE void simd_xor_si128(int32_t* out, const int32_t* a, const int32_t* b) {
 #     __m128i va = _mm_load_si128(reinterpret_cast<const __m128i*>(a));
 #     __m128i vb = _mm_load_si128(reinterpret_cast<const __m128i*>(b));
@@ -19,7 +19,7 @@
 #     _mm_store_si128(reinterpret_cast<__m128i*>(out), vc);
 # }
 # 
-# // vsubps
+# // SSE: вычитание четырёх float‑элементов (vsubps)
 # NOINLINE void simd_sub_ps(float* out, const float* a, const float* b) {
 #     __m128 va = _mm_load_ps(a);
 #     __m128 vb = _mm_load_ps(b);
@@ -27,7 +27,7 @@
 #     _mm_store_ps(out, vc);
 # }
 # 
-# // vmulps
+# // AVX: умножение восьми float‑элементов (vmulps)
 # NOINLINE void simd_mul_ps(float* out, const float* a, const float* b) {
 #     __m256 va = _mm256_load_ps(a);
 #     __m256 vb = _mm256_load_ps(b);
@@ -35,7 +35,7 @@
 #     _mm256_store_ps(out, vc);
 # }
 # 
-# // vaddpd
+# // AVX: сложение четырёх double‑элементов (vaddpd)
 # NOINLINE void simd_add_pd256(double* out, const double* a, const double* b) {
 #     __m256d va = _mm256_load_pd(a);
 #     __m256d vb = _mm256_load_pd(b);
@@ -179,11 +179,9 @@ body:             |
     ; CHECK-NEXT: %1:gr64 = COPY $rsi
     ; CHECK-NEXT: %0:gr64 = COPY $rdi
     ; CHECK-NEXT: %3:vr128 = VMOVAPDrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: %4:vr128 = nofpexcept VADDPDrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s128) from %ir.2, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: VMOVAPDmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: RET 0
   
     %2:gr64 = COPY $rdx
@@ -263,11 +261,9 @@ body:             |
     ; CHECK-NEXT: %1:gr64 = COPY $rsi
     ; CHECK-NEXT: %0:gr64 = COPY $rdi
     ; CHECK-NEXT: %3:vr128 = VMOVDQArm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.2, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: %4:vr128 = VPXORrm killed %3, %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: VMOVDQAmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: RET 0
   
     %2:gr64 = COPY $rdx
@@ -347,11 +343,9 @@ body:             |
     ; CHECK-NEXT: %1:gr64 = COPY $rsi
     ; CHECK-NEXT: %0:gr64 = COPY $rdi
     ; CHECK-NEXT: %3:vr128 = VMOVAPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: %4:vr128 = nofpexcept VSUBPSrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s128) from %ir.2, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: VMOVAPSmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: RET 0
   
     %2:gr64 = COPY $rdx
@@ -431,11 +425,9 @@ body:             |
     ; CHECK-NEXT: %1:gr64 = COPY $rsi
     ; CHECK-NEXT: %0:gr64 = COPY $rdi
     ; CHECK-NEXT: %3:vr256 = VMOVAPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.1, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: %4:vr256 = nofpexcept VMULPSYrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.2, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: VMOVAPSYmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s256) into %ir.0, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: RET 0
   
     %2:gr64 = COPY $rdx
@@ -515,13 +507,11 @@ body:             |
     ; CHECK-NEXT: %1:gr64 = COPY $rsi
     ; CHECK-NEXT: %0:gr64 = COPY $rdi
     ; CHECK-NEXT: %3:vr256 = VMOVAPDYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.1, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: %4:vr256 = nofpexcept VADDPDYrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.2, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: VMOVAPDYmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s256) into %ir.0, !tbaa !5)
-    ; CHECK-NEXT: INC64m 1, @simd_counter, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
     ; CHECK-NEXT: RET 0
-  
+
     %2:gr64 = COPY $rdx
     %1:gr64 = COPY $rsi
     %0:gr64 = COPY $rdi
