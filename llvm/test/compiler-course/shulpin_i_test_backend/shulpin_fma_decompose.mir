@@ -157,8 +157,8 @@ body:             |
     ; CHECK: %2:vr128 = COPY $xmm2
     ; CHECK-NEXT: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
-    ; CHECK-NEXT: %4:vr128 = MULPSrr %0, %2, implicit $mxcsr
-    ; CHECK-NEXT: %3:vr128 = ADDPSrr %1, %4, implicit $mxcsr
+    ; CHECK-NEXT: %4:vr128 = MULPSrr %0, %1, implicit $mxcsr
+    ; CHECK-NEXT: %3:vr128 = ADDPSrr %2, %4, implicit $mxcsr
     ; CHECK-NEXT: $xmm0 = COPY %3
     ; CHECK-NEXT: RET 0, $xmm0
   
@@ -315,8 +315,8 @@ body:             |
     ; CHECK: %2:fr32 = COPY $xmm2
     ; CHECK-NEXT: %1:fr32 = COPY $xmm1
     ; CHECK-NEXT: %0:fr32 = COPY $xmm0
-    ; CHECK-NEXT: %4:fr32 = MULSSrr %2, %1, implicit $mxcsr
-    ; CHECK-NEXT: %3:fr32 = ADDSSrr %0, %4, implicit $mxcsr
+    ; CHECK-NEXT: %4:fr32 = MULSSrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:fr32 = ADDSSrr %2, %4, implicit $mxcsr
     ; CHECK-NEXT: $xmm0 = COPY %3
     ; CHECK-NEXT: RET 0, $xmm0
   
