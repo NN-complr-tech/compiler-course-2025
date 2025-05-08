@@ -11,11 +11,10 @@ using namespace mlir;
 namespace {
 class LoopTracePass
     : public PassWrapper<LoopTracePass, OperationPass<ModuleOp>> {
-  ModuleOp module;
-  OpBuilder builder;
 
 private: // declaration
-  void ensureTraceFunctionExists(StringRef name) {
+  void ensureTraceFunctionExists(ModuleOp module, StringRef name,
+                                 OpBuilder &builder) {
     if (SymbolTable::lookupSymbolIn(module, name))
       return;
 
@@ -25,15 +24,15 @@ private: // declaration
     func.setSymVisibility("private");
   }
 
-  void declareTraceFunctions() {
-    ensureTraceFunctionExists("trace_loop_iter_begin");
-    ensureTraceFunctionExists("trace_loop_iter_end");
+  void declareTraceFunctions(ModuleOp module, OpBuilder &builder) {
+    ensureTraceFunctionExists(module, "trace_loop_iter_begin", builder);
+    ensureTraceFunctionExists(module, "trace_loop_iter_end", builder);
   }
 
 private: // insertion
-  void insertLoopTraceCalls(Block &body, Location loc) {
+  void insertLoopTraceCalls(Block &body, Location loc, OpBuilder &builder) {
     builder.setInsertionPointToStart(&body);
-    builder.create<func::CallOp>(loc, "trace_loop_iter_end", TypeRange{},
+    builder.create<func::CallOp>(loc, "trace_loop_iter_begin", TypeRange{},
                                  ValueRange{});
 
     Operation *term = body.getTerminator();
@@ -42,26 +41,27 @@ private: // insertion
                                  ValueRange{});
   }
 
-  void insertLoopTraceCallsForOp(Operation *op, Location loc) {
+  void insertLoopTraceCallsForOp(Operation *op, Location loc,
+                                 OpBuilder &builder) {
     if (auto affineFor = dyn_cast<affine::AffineForOp>(op)) {
-      insertLoopTraceCalls(*affineFor.getBody(), loc);
+      insertLoopTraceCalls(*affineFor.getBody(), loc, builder);
       return;
     }
 
     if (auto scfFor = dyn_cast<scf::ForOp>(op)) {
-      insertLoopTraceCalls(*scfFor.getBody(), loc);
+      insertLoopTraceCalls(*scfFor.getBody(), loc, builder);
       return;
     }
 
     if (auto scfWhile = dyn_cast<scf::WhileOp>(op)) {
-      insertLoopTraceCalls(scfWhile.getAfter().front(), loc);
+      insertLoopTraceCalls(scfWhile.getAfter().front(), loc, builder);
       return;
     }
 
     if (auto scfParallel = dyn_cast<scf::ParallelOp>(op)) {
       for (Region &region : scfParallel->getRegions()) {
         for (Block &block : region) {
-          insertLoopTraceCalls(block, loc);
+          insertLoopTraceCalls(block, loc, builder);
         }
       }
       return;
@@ -77,13 +77,13 @@ public:
   }
 
   void runOnOperation() override {
-    module = getOperation();
+    ModuleOp module = getOperation();
     OpBuilder builder(module.getContext());
 
-    declareTraceFunctions();
+    declareTraceFunctions(module, builder);
     module.walk([&](Operation *op) {
       Location loc = op->getLoc();
-      insertLoopTraceCallsForOp(op, loc);
+      insertLoopTraceCallsForOp(op, loc, builder);
     });
   }
 };

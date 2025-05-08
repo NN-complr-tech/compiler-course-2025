@@ -20,8 +20,8 @@ module {
     }
     return %result : i32
   }
-
-  // CHECK-LABEL: func.func @scf_for()
+  
+ // CHECK-LABEL: func.func @scf_for()
   // CHECK: scf.for
   // CHECK-DAG: func.call @trace_loop_iter_begin() : () -> ()
   // CHECK-NEXT: %1 = arith.index_cast %arg0 : index to i32
@@ -94,4 +94,6 @@ module {
 
     return %result : i32
   }
+
+ 
 }
