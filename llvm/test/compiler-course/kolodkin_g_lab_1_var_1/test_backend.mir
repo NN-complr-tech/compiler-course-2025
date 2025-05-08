@@ -14,14 +14,12 @@
 #     return _mm_xor_ps(a,b);
 #}
 #
-#__m128 test_and_and(__m128 a, __m128 b, __m128 c) {
-#     return _mm_or_ps(_mm_and_ps(a, b), c);
+#__m128 test_not_and_or(__m128 a, __m128 b, __m128 c, __m128 d) {
+#     return _mm_and_ps(_mm_or_ps(a, c), _mm_or_ps(b,d));
 #}
 #
-#__m128 test_not_opt_and_or(__m128 a, __m128 b, __m128 c, __m128 d) {
-#     __m128 and_result = _mm_and_ps(a, b);
-#     __m128 or_result = _mm_or_ps(c, d);
-#     return _mm_xor_ps(and_result, or_result);
+#__m128 test_and_or(__m128 a, __m128 b, __m128 c) {
+#     return _mm_and_ps(_mm_or_ps(a, c), _mm_or_ps(b,c));
 #}
 
 --- |
@@ -61,29 +59,41 @@
   }
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <4 x float> @_Z11test_and_andDv4_fS_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c) local_unnamed_addr #0 {
+  define dso_local noundef <4 x float> @_Z15test_not_and_orDv4_fS_S_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c, <4 x float> noundef %d) local_unnamed_addr #0 {
   entry:
     %0 = bitcast <4 x float> %a to <4 x i32>
-    %1 = bitcast <4 x float> %b to <4 x i32>
-    %and.i = and <4 x i32> %1, %0
-    %2 = bitcast <4 x float> %c to <4 x i32>
-    %or.i = or <4 x i32> %and.i, %2
-    %3 = bitcast <4 x i32> %or.i to <4 x float>
+    %1 = bitcast <4 x float> %c to <4 x i32>
+    %or.i3 = or <4 x i32> %1, %0
+    %2 = bitcast <4 x float> %b to <4 x i32>
+    %3 = bitcast <4 x float> %d to <4 x i32>
+    %or.i = or <4 x i32> %3, %2
+    %and.i = and <4 x i32> %or.i, %or.i3
+    %4 = bitcast <4 x i32> %and.i to <4 x float>
+    ret <4 x float> %4
+  }
+
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z11test_and_orDv4_fS_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c) local_unnamed_addr #0 {
+  entry:
+    %0 = bitcast <4 x float> %a to <4 x i32>
+    %1 = bitcast <4 x float> %c to <4 x i32>
+    %2 = bitcast <4 x float> %b to <4 x i32>
+    %or.i45 = and <4 x i32> %2, %0
+    %and.i = or <4 x i32> %or.i45, %1
+    %3 = bitcast <4 x i32> %and.i to <4 x float>
     ret <4 x float> %3
   }
 
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef <4 x float> @_Z19test_not_opt_and_andDv4_fS_S_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c, <4 x float> noundef %d) local_unnamed_addr #0 {
+  define dso_local noundef <4 x float> @_Z13test_and_or_2Dv4_fS_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c) local_unnamed_addr #0 {
   entry:
     %0 = bitcast <4 x float> %a to <4 x i32>
-    %1 = bitcast <4 x float> %b to <4 x i32>
-    %and.i = and <4 x i32> %1, %0
-    %2 = bitcast <4 x float> %c to <4 x i32>
-    %3 = bitcast <4 x float> %d to <4 x i32>
-    %or.i = or <4 x i32> %3, %2
-    %xor.i = xor <4 x i32> %or.i, %and.i
-    %4 = bitcast <4 x i32> %xor.i to <4 x float>
-    ret <4 x float> %4
+    %1 = bitcast <4 x float> %c to <4 x i32>
+    %2 = bitcast <4 x float> %b to <4 x i32>
+    %or.i45 = and <4 x i32> %2, %0
+    %and.i = or <4 x i32> %or.i45, %1
+    %3 = bitcast <4 x i32> %and.i to <4 x float>
+    ret <4 x float> %3
   }
 
   attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
@@ -157,12 +167,14 @@ machineFunctionInfo:
   amxProgModel:    None
 body:             |
   bb.0.entry:
+    liveins: $xmm0, $xmm1
+
     ; CHECK: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
     ; CHECK-NEXT: %2:vr128 = VPANDrr %1, %0
     ; CHECK-NEXT: $xmm0 = COPY %2
     ; CHECK-NEXT: RET 0, $xmm0
-    liveins: $xmm0, $xmm1
+
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
     %2:vr128 = PANDrr %1, %0
@@ -318,90 +330,9 @@ body:             |
     RET 0, $xmm0
 
 ...
-#CHECK-LABEL:name: _Z11test_and_andDv4_fS_S_
+#CHECK-LABEL:name: _Z15test_not_and_orDv4_fS_S_S_
 ---
-name:            _Z11test_and_andDv4_fS_S_
-alignment:       16
-exposesReturnsTwice: false
-legalized:       false
-regBankSelected: false
-selected:        false
-failedISel:      false
-tracksRegLiveness: true
-hasWinCFI:       false
-callsEHReturn:   false
-callsUnwindInit: false
-hasEHCatchret:   false
-hasEHScopes:     false
-hasEHFunclets:   false
-isOutlined:      false
-debugInstrRef:   true
-failsVerification: false
-tracksDebugUserValues: false
-registers:
-  - { id: 0, class: vr128, preferred-register: '' }
-  - { id: 1, class: vr128, preferred-register: '' }
-  - { id: 2, class: vr128, preferred-register: '' }
-  - { id: 3, class: vr128, preferred-register: '' }
-  - { id: 4, class: vr128, preferred-register: '' }
-liveins:
-  - { reg: '$xmm0', virtual-reg: '%0' }
-  - { reg: '$xmm1', virtual-reg: '%1' }
-  - { reg: '$xmm2', virtual-reg: '%2' }
-frameInfo:
-  isFrameAddressTaken: false
-  isReturnAddressTaken: false
-  hasStackMap:     false
-  hasPatchPoint:   false
-  stackSize:       0
-  offsetAdjustment: 0
-  maxAlignment:    1
-  adjustsStack:    false
-  hasCalls:        false
-  stackProtector:  ''
-  functionContext: ''
-  maxCallFrameSize: 4294967295
-  cvBytesOfCalleeSavedRegisters: 0
-  hasOpaqueSPAdjustment: false
-  hasVAStart:      false
-  hasMustTailInVarArgFunc: false
-  hasTailCall:     false
-  isCalleeSavedInfoValid: false
-  localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
-fixedStack:      []
-stack:           []
-entry_values:    []
-callSites:       []
-debugValueSubstitutions: []
-constants:       []
-machineFunctionInfo:
-  amxProgModel:    None
-body:             |
-  bb.0.entry:
-    liveins: $xmm0, $xmm1, $xmm2
-
-    ;CHECK: %2:vr128 = COPY $xmm2
-    ;CHECK-NEXT: %1:vr128 = COPY $xmm1
-    ;CHECK-NEXT: %0:vr128 = COPY $xmm0
-    ;CHECK-NEXT: %3:vr128 = VPANDrr %2, %0
-    ;CHECK-NEXT: %4:vr128 = VPANDrr %3, %1
-    ;CHECK-NEXT: $xmm0 = COPY %4
-    ;CHECK-NEXT: RET 0, $xmm0
-
-    %2:vr128 = COPY $xmm2
-    %1:vr128 = COPY $xmm1
-    %0:vr128 = COPY $xmm0
-    %3:vr128 = PANDrr %1, %0
-    %4:vr128 = PANDrr %3, %2
-    $xmm0 = COPY %4
-    RET 0, $xmm0
-
-...
-#CHECK-LABEL:name: _Z19test_not_opt_and_andDv4_fS_S_S_
----
-name:            _Z19test_not_opt_and_andDv4_fS_S_S_
+name:            _Z15test_not_and_orDv4_fS_S_S_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -470,9 +401,9 @@ body:             |
     ; CHECK-NEXT: %2:vr128 = COPY $xmm2
     ; CHECK-NEXT: %1:vr128 = COPY $xmm1
     ; CHECK-NEXT: %0:vr128 = COPY $xmm0
-    ; CHECK-NEXT: %4:vr128 = VPANDrr %1, %0
-    ; CHECK-NEXT: %5:vr128 = VPANDrr %3, %2
-    ; CHECK-NEXT: %6:vr128 = VPXORrr %5, %4
+    ; CHECK-NEXT: %4:vr128 = VPORrr %2, %0
+    ; CHECK-NEXT: %5:vr128 = VPORrr %3, %1
+    ; CHECK-NEXT: %6:vr128 = VPANDrr %5, %4
     ; CHECK-NEXT: $xmm0 = COPY %6
     ; CHECK-NEXT: RET 0, $xmm0
 
@@ -480,10 +411,174 @@ body:             |
     %2:vr128 = COPY $xmm2
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
-    %4:vr128 = PANDrr %1, %0
-    %5:vr128 = PANDrr %3, %2
-    %6:vr128 = PXORrr %5, killed %4
+    %4:vr128 = PORrr %2, %0
+    %5:vr128 = PORrr %3, %1
+    %6:vr128 = PANDrr %5, killed %4
     $xmm0 = COPY %6
+    RET 0, $xmm0
+
+...
+#CHECK-LABEL:name: _Z11test_and_orDv4_fS_S_
+---
+name:            _Z11test_and_orDv4_fS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ;CHECK: %2:vr128 = COPY $xmm2
+    ;CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ;CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ;CHECK-NEXT: %4:vr128 = VPANDrr %2, %1
+    ;CHECK-NEXT: %5:vr128 = VPORrr %0, %4
+    ;CHECK-NEXT: $xmm0 = COPY %5
+    ;CHECK-NEXT: RET 0, $xmm0
+
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = PORrr %0, %2
+    %4:vr128 = PORrr %0, %1
+    %5:vr128 = PANDrr %3, %4
+    $xmm0 = COPY %5
+    RET 0, $xmm0
+
+...
+#CHECK-LABEL:name: _Z13test_and_or_2Dv4_fS_S_
+---
+name:            _Z13test_and_or_2Dv4_fS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ;CHECK: %2:vr128 = COPY $xmm2
+    ;CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ;CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ;CHECK-NEXT: %4:vr128 = VPANDrr %2, %1
+    ;CHECK-NEXT: %5:vr128 = VPORrr %0, %4
+    ;CHECK-NEXT: $xmm0 = COPY %5
+    ;CHECK-NEXT: RET 0, $xmm0
+
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = PORrr %2, %0
+    %4:vr128 = PORrr %1, %0
+    %5:vr128 = PANDrr %3, %4
+    $xmm0 = COPY %5
     RET 0, $xmm0
 
 ...
