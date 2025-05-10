@@ -1,4 +1,4 @@
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
+п»ї#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/Builders.h"
@@ -15,42 +15,39 @@ namespace {
 int calculateDepthInsideRegion(Region &InputRegion) {
   int MaxDepthFound = 0;
 
-  for (Block &block : InputRegion) {
-    for (Operation &op : block.getOperations()) {
+  for (Block &BlockElement : InputRegion) {
+    for (Operation &Op : BlockElement.getOperations()) {
+      int CurrentOpNestingLevel = 0;
 
-      int currentOpNestingLevel = 0;
+      if (isa<scf::ForOp, scf::WhileOp, affine::AffineForOp, scf::IfOp,
+              affine::AffineIfOp>(&Op)) {
+        CurrentOpNestingLevel = 1;
 
-      bool isNestableStructure =
-          isa<scf::ForOp, scf::WhileOp, affine::AffineForOp, scf::IfOp,
-              affine::AffineIfOp>(&op);
-
-      if (isNestableStructure) {
-        currentOpNestingLevel = 1;
-
-        int maxDepthInSubRegions = 0;
-        for (Region &subRegion : op.getRegions()) {
-          int depthInThisSubRegion = calculateDepthInsideRegion(subRegion);
-          if (depthInThisSubRegion > maxDepthInSubRegions) {
-            maxDepthInSubRegions = depthInThisSubRegion;
+        int MaxDepthInOpSubRegions = 0;
+        for (Region &SubRegion : Op.getRegions()) {
+          int DepthInThisSubRegion = calculateDepthInsideRegion(SubRegion);
+          if (DepthInThisSubRegion > MaxDepthInOpSubRegions) {
+            MaxDepthInOpSubRegions = DepthInThisSubRegion;
           }
         }
-        currentOpNestingLevel += maxDepthInSubRegions;
+        CurrentOpNestingLevel += MaxDepthInOpSubRegions;
       }
 
-      if (currentOpNestingLevel > maxDepthFound) {
-        MaxDepthFound = currentOpNestingLevel;
+      if (CurrentOpNestingLevel > MaxDepthFound) {
+        MaxDepthFound = CurrentOpNestingLevel;
       }
     }
   }
-  return maxDepthFound;
+  return MaxDepthFound;
 }
 
 class MyLoopDepthPass
     : public PassWrapper<MyLoopDepthPass, OperationPass<func::FuncOp>> {
 public:
   StringRef getArgument() const final { return "my-loop-depth-pass"; }
+
   StringRef getDescription() const final {
-    return "Считает максимальную глубину вложенности регионов в циклах.";
+    return "РЎС‡РёС‚Р°РµС‚ РјР°РєСЃРёРјР°Р»СЊРЅСѓСЋ РіР»СѓР±РёРЅСѓ РІР»РѕР¶РµРЅРЅРѕСЃС‚Рё СЂРµРіРёРѕРЅРѕРІ РІ С†РёРєР»Р°С….";
   }
 
   void runOnOperation() override {
@@ -60,27 +57,17 @@ public:
     SmallVector<int64_t, 4> DepthsOfAllLoopsInFunction;
 
     CurrentFunction.walk([&](Operation *OpInFunction) {
-      bool IsLoopWeCareAbout = false;
-      if (isa<scf::ForOp>(OpInFunction) || isa<scf::WhileOp>(OpInFunction) ||
-          isa<affine::AffineForOp>(OpInFunction)) {
-        IsLoopWeCareAbout = true;
-      }
-
-      if (IsLoopWeCareAbout) {
+      if (isa<scf::ForOp, scf::WhileOp, affine::AffineForOp>(OpInFunction)) {
         int TotalDepthForThisLoop = 1;
-
         int MaxNestingInsideLoopBody = 0;
 
-        for (Region &loopRegion : OpInFunction->getRegions()) {
-          int depthInThisRegionOfLoop = calculateDepthInsideRegion(loopRegion);
-
-          if (depthInThisRegionOfLoop > maxNestingInsideLoopBody) {
-            MaxNestingInsideLoopBody = depthInThisRegionOfLoop;
+        for (Region &LoopRegion : OpInFunction->getRegions()) {
+          int DepthInThisRegionOfLoop = calculateDepthInsideRegion(LoopRegion);
+          if (DepthInThisRegionOfLoop > MaxNestingInsideLoopBody) {
+            MaxNestingInsideLoopBody = DepthInThisRegionOfLoop;
           }
         }
-
-        TotalDepthForThisLoop += maxNestingInsideLoopBody;
-
+        TotalDepthForThisLoop += MaxNestingInsideLoopBody;
         DepthsOfAllLoopsInFunction.push_back(TotalDepthForThisLoop);
       }
     });
@@ -88,17 +75,15 @@ public:
     if (!DepthsOfAllLoopsInFunction.empty()) {
       ArrayAttr DepthsAttribute =
           Builder.getI64ArrayAttr(DepthsOfAllLoopsInFunction);
-
       CurrentFunction->setAttr("my_loop_depths", DepthsAttribute);
 
-      llvm::outs() << "Функция '" << CurrentFunction.getName()
-                   << "': обработана. Найденные глубины циклов: ";
+      llvm::outs() << "Р¤СѓРЅРєС†РёСЏ '" << CurrentFunction.getName()
+                   << "': РѕР±СЂР°Р±РѕС‚Р°РЅР°. РќР°Р№РґРµРЅРЅС‹Рµ РіР»СѓР±РёРЅС‹ С†РёРєР»РѕРІ: ";
       llvm::interleaveComma(DepthsOfAllLoopsInFunction, llvm::outs());
       llvm::outs() << "\n";
     } else {
-      llvm::outs() << "Функция '" << CurrentFunction.getName()
-                   << "': не содержит отслеживаемых циклов (scf.for, "
-                      "scf.while, affine.for).\n";
+      llvm::outs() << "Р¤СѓРЅРєС†РёСЏ '" << CurrentFunction.getName()
+                   << "': РЅРµ СЃРѕРґРµСЂР¶РёС‚ РѕС‚СЃР»РµР¶РёРІР°РµРјС‹С… С†РёРєР»РѕРІ\n";
     }
   }
 };
@@ -107,7 +92,7 @@ public:
 MLIR_DECLARE_EXPLICIT_TYPE_ID(MyLoopDepthPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(MyLoopDepthPass)
 
-mlir::PassPluginLibraryInfo static getMyLoopDepthPassPluginInfo() {
+static mlir::PassPluginLibraryInfo getMyLoopDepthPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "MyLoopDepthPlugin", "1.0",
           []() { mlir::PassRegistration<MyLoopDepthPass>(); }};
 }
