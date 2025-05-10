@@ -137,4 +137,4 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
 } // namespace
 
 static RegisterPass<FMSubPass> X("fmsub_ivanov", "fused multiply–subtract pass",
-                                false, false);
+                                 false, false);
