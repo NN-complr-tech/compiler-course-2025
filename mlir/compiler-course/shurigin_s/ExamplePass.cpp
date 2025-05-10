@@ -107,7 +107,7 @@ public:
 MLIR_DECLARE_EXPLICIT_TYPE_ID(MyLoopDepthPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(MyLoopDepthPass)
 
-mlir::PassPluginLibraryInfo getMyLoopDepthPassPluginInfo() {
+mlir::PassPluginLibraryInfo static getMyLoopDepthPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "MyLoopDepthPlugin", "1.0",
           []() { mlir::PassRegistration<MyLoopDepthPass>(); }};
 }
