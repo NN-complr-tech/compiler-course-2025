@@ -30,9 +30,9 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
       MachineInstr &SubMI = *MII;
       unsigned SubOpc = SubMI.getOpcode();
       if (!(SubOpc == X86::SUBSDrr || SubOpc == X86::SUBSSrr ||
-          SubOpc == X86::SUBPSrr || SubOpc == X86::SUBPDrr ||
-          SubOpc == X86::VSUBPSYrr || SubOpc == X86::VSUBPDYrr ||
-          SubOpc == X86::VSUBSDrr || SubOpc == X86::VSUBSSrr)) {
+            SubOpc == X86::SUBPSrr || SubOpc == X86::SUBPDrr ||
+            SubOpc == X86::VSUBPSYrr || SubOpc == X86::VSUBPDYrr ||
+            SubOpc == X86::VSUBSDrr || SubOpc == X86::VSUBSSrr)) {
         continue;
       }
       // potential register - result of mul instruction
@@ -41,31 +41,32 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
       MachineInstr *TmpMI = nullptr;
       auto NextIt = std::make_reverse_iterator(std::next(MII));
       auto CurE = std::make_reverse_iterator(MBB.begin());
-      for(; NextIt != CurE; ++NextIt) {
+      for (; NextIt != CurE; ++NextIt) {
         MachineInstr &CurMI = *NextIt;
         unsigned CurOpc = CurMI.getOpcode();
         if (CurOpc == X86::MULSDrr || CurOpc == X86::MULSSrr ||
             CurOpc == X86::MULPSrr || CurOpc == X86::MULPDrr ||
             CurOpc == X86::VMULPSYrr || CurOpc == X86::VMULPDYrr ||
             CurOpc == X86::VMULSDrr || CurOpc == X86::VMULSSrr) {
-            if(CurMI.getOperand(0).isReg() && CurMI.getOperand(0).getReg() == TmpReg) {
-              TmpMI = &CurMI;
-              break;
-            }
+          if (CurMI.getOperand(0).isReg() &&
+              CurMI.getOperand(0).getReg() == TmpReg) {
+            TmpMI = &CurMI;
+            break;
+          }
         }
         // check if TmpReg is defined in non mul instruction
-        for(auto &Op : CurMI.operands()){
-          if(Op.isReg() && Op.getReg() == TmpReg && Op.isDef()) {
+        for (auto &Op : CurMI.operands()) {
+          if (Op.isReg() && Op.getReg() == TmpReg && Op.isDef()) {
             NextIt = CurE;
             break;
           }
         }
-        if(NextIt == CurE) {
+        if (NextIt == CurE) {
           break;
         }
       }
       // if mul instruction wasn't found or was changed
-      if(TmpMI == nullptr) {
+      if (TmpMI == nullptr) {
         continue;
       }
 
@@ -78,32 +79,32 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
 
       unsigned FmsubOpc;
       switch (SubOpc) {
-        case X86::SUBSDrr:
-          FmsubOpc = X86::VFMSUB213SDr;
-          break;
-        case X86::VSUBSDrr:
-          FmsubOpc = X86::VFMSUB213SDr;
-          break;
-        case X86::SUBSSrr:
-          FmsubOpc = X86::VFMSUB213SSr;
-          break;
-        case X86::VSUBSSrr:
-          FmsubOpc = X86::VFMSUB213SSr;
-          break;
-        case X86::SUBPSrr:
-          FmsubOpc = X86::VFMSUB213PSr;
-          break;
-        case X86::VSUBPSYrr:
-          FmsubOpc = X86::VFMSUB213PSr;
-          break;
-        case X86::VSUBPDYrr:
-          FmsubOpc = X86::VFMSUB213PDYr;
-          break;
-        case X86::SUBPDrr:
-          FmsubOpc = X86::VFMSUB213PDYr;
-          break;
-        default:
-          continue;
+      case X86::SUBSDrr:
+        FmsubOpc = X86::VFMSUB213SDr;
+        break;
+      case X86::VSUBSDrr:
+        FmsubOpc = X86::VFMSUB213SDr;
+        break;
+      case X86::SUBSSrr:
+        FmsubOpc = X86::VFMSUB213SSr;
+        break;
+      case X86::VSUBSSrr:
+        FmsubOpc = X86::VFMSUB213SSr;
+        break;
+      case X86::SUBPSrr:
+        FmsubOpc = X86::VFMSUB213PSr;
+        break;
+      case X86::VSUBPSYrr:
+        FmsubOpc = X86::VFMSUB213PSr;
+        break;
+      case X86::VSUBPDYrr:
+        FmsubOpc = X86::VFMSUB213PDYr;
+        break;
+      case X86::SUBPDrr:
+        FmsubOpc = X86::VFMSUB213PDYr;
+        break;
+      default:
+        continue;
       }
 
       BuildMI(MBB, SubMI, SubMI.getDebugLoc(), TII->get(FmsubOpc))
@@ -135,5 +136,5 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
 }
 } // namespace
 
-static RegisterPass<FMSubPass> X("fmsub_ivanov", "fused multiply–subtract pass", false,
-                                   false);
+static RegisterPass<FMSubPass> X("fmsub_ivanov", "fused multiply–subtract pass",
+                                false, false);
