@@ -12,10 +12,10 @@ using namespace mlir;
 
 namespace {
 
-int calculateDepthInsideRegion(Region &inputRegion) {
-  int maxDepthFound = 0;
+int calculateDepthInsideRegion(Region &InputRegion) {
+  int MaxDepthFound = 0;
 
-  for (Block &block : inputRegion) {
+  for (Block &block : InputRegion) {
     for (Operation &op : block.getOperations()) {
 
       int currentOpNestingLevel = 0;
@@ -38,7 +38,7 @@ int calculateDepthInsideRegion(Region &inputRegion) {
       }
 
       if (currentOpNestingLevel > maxDepthFound) {
-        maxDepthFound = currentOpNestingLevel;
+        MaxDepthFound = currentOpNestingLevel;
       }
     }
   }
@@ -54,49 +54,49 @@ public:
   }
 
   void runOnOperation() override {
-    func::FuncOp currentFunction = getOperation();
-    OpBuilder builder(currentFunction.getContext());
+    func::FuncOp CurrentFunction = getOperation();
+    OpBuilder Builder(CurrentFunction.getContext());
 
-    SmallVector<int64_t, 4> depthsOfAllLoopsInFunction;
+    SmallVector<int64_t, 4> DepthsOfAllLoopsInFunction;
 
-    currentFunction.walk([&](Operation *opInFunction) {
-      bool isLoopWeCareAbout = false;
-      if (isa<scf::ForOp>(opInFunction) || isa<scf::WhileOp>(opInFunction) ||
-          isa<affine::AffineForOp>(opInFunction)) {
-        isLoopWeCareAbout = true;
+    CurrentFunction.walk([&](Operation *OpInFunction) {
+      bool IsLoopWeCareAbout = false;
+      if (isa<scf::ForOp>(OpInFunction) || isa<scf::WhileOp>(OpInFunction) ||
+          isa<affine::AffineForOp>(OpInFunction)) {
+        IsLoopWeCareAbout = true;
       }
 
-      if (isLoopWeCareAbout) {
-        int totalDepthForThisLoop = 1;
+      if (IsLoopWeCareAbout) {
+        int TotalDepthForThisLoop = 1;
 
-        int maxNestingInsideLoopBody = 0;
+        int MaxNestingInsideLoopBody = 0;
 
-        for (Region &loopRegion : opInFunction->getRegions()) {
+        for (Region &loopRegion : OpInFunction->getRegions()) {
           int depthInThisRegionOfLoop = calculateDepthInsideRegion(loopRegion);
 
           if (depthInThisRegionOfLoop > maxNestingInsideLoopBody) {
-            maxNestingInsideLoopBody = depthInThisRegionOfLoop;
+            MaxNestingInsideLoopBody = depthInThisRegionOfLoop;
           }
         }
 
-        totalDepthForThisLoop += maxNestingInsideLoopBody;
+        TotalDepthForThisLoop += maxNestingInsideLoopBody;
 
-        depthsOfAllLoopsInFunction.push_back(totalDepthForThisLoop);
+        DepthsOfAllLoopsInFunction.push_back(TotalDepthForThisLoop);
       }
     });
 
-    if (!depthsOfAllLoopsInFunction.empty()) {
-      ArrayAttr depthsAttribute =
-          builder.getI64ArrayAttr(depthsOfAllLoopsInFunction);
+    if (!DepthsOfAllLoopsInFunction.empty()) {
+      ArrayAttr DepthsAttribute =
+          Builder.getI64ArrayAttr(DepthsOfAllLoopsInFunction);
 
-      currentFunction->setAttr("my_loop_depths", depthsAttribute);
+      CurrentFunction->setAttr("my_loop_depths", DepthsAttribute);
 
-      llvm::outs() << "Функция '" << currentFunction.getName()
+      llvm::outs() << "Функция '" << CurrentFunction.getName()
                    << "': обработана. Найденные глубины циклов: ";
-      llvm::interleaveComma(depthsOfAllLoopsInFunction, llvm::outs());
+      llvm::interleaveComma(DepthsOfAllLoopsInFunction, llvm::outs());
       llvm::outs() << "\n";
     } else {
-      llvm::outs() << "Функция '" << currentFunction.getName()
+      llvm::outs() << "Функция '" << CurrentFunction.getName()
                    << "': не содержит отслеживаемых циклов (scf.for, "
                       "scf.while, affine.for).\n";
     }
