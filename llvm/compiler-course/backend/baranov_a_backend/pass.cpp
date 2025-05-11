@@ -128,7 +128,11 @@ public:
           llvm::Register A = AndMI->getOperand(1).getReg();
           llvm::Register B = AndMI->getOperand(2).getReg();
           llvm::Register C = NextMI->getOperand(2).getReg();
-
+          if (auto *Def = MRI.getUniqueVRegDef(C)) {
+            unsigned DefOpc = Def->getOpcode();
+            if (DefOpc != llvm::TargetOpcode::COPY)
+              continue;
+          }
           BuildMI(MBB, *NextMI, NextMI->getDebugLoc(),
                   TII->get(llvm::X86::VPANDNrr), AndDest)
               .addReg(C)
