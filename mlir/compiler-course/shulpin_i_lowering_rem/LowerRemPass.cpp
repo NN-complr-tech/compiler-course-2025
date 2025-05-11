@@ -22,41 +22,24 @@ public:
   void runOnOperation() override {
     mlir::ModuleOp module = getOperation();
 
-    RemSILowering silower;
-    RemUILowering uilower;
+    module.walk([&](mlir::arith::RemSIOp remOp) {
+      RemLowering<mlir::arith::RemSIOp, mlir::arith::DivSIOp>().lower(remOp);
+    });
 
-    module.walk([&](mlir::arith::RemSIOp remOp) { silower.lower(remOp); });
-
-    module.walk([&](mlir::arith::RemUIOp remOp) { uilower.lower(remOp); });
+    module.walk([&](mlir::arith::RemUIOp remOp) {
+      RemLowering<mlir::arith::RemUIOp, mlir::arith::DivUIOp>().lower(remOp);
+    });
   }
 
 private:
-  struct RemSILowering {
-    void lower(mlir::arith::RemSIOp remOp) {
+  template <typename RemOp, typename DivOp>
+  struct RemLowering {
+    void lower(RemOp remOp) {
       mlir::OpBuilder builder(remOp);
       mlir::Value lhs = remOp.getLhs();
       mlir::Value rhs = remOp.getRhs();
 
-      mlir::Value div =
-          builder.create<mlir::arith::DivSIOp>(remOp.getLoc(), lhs, rhs);
-      mlir::Value mul =
-          builder.create<mlir::arith::MulIOp>(remOp.getLoc(), div, rhs);
-      mlir::Value result =
-          builder.create<mlir::arith::SubIOp>(remOp.getLoc(), lhs, mul);
-
-      remOp.replaceAllUsesWith(result);
-      remOp.erase();
-    }
-  };
-
-  struct RemUILowering {
-    void lower(mlir::arith::RemUIOp remOp) {
-      mlir::OpBuilder builder(remOp);
-      mlir::Value lhs = remOp.getLhs();
-      mlir::Value rhs = remOp.getRhs();
-
-      mlir::Value div =
-          builder.create<mlir::arith::DivUIOp>(remOp.getLoc(), lhs, rhs);
+      mlir::Value div = builder.create<DivOp>(remOp.getLoc(), lhs, rhs);
       mlir::Value mul =
           builder.create<mlir::arith::MulIOp>(remOp.getLoc(), div, rhs);
       mlir::Value result =
