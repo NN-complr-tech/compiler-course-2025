@@ -22,30 +22,29 @@ public:
     OpBuilder builder(moduleOp);
 
     moduleOp.walk([&](arith::RemSIOp op) {
-      auto lhs = op.getLhs();
-      auto rhs = op.getRhs();
-      auto loc = op.getLoc();
-      builder.setInsertionPoint(op);
-
-      auto div = builder.create<arith::DivSIOp>(loc, lhs, rhs);
-      auto mul = builder.create<arith::MulIOp>(loc, div, rhs);
-      auto sub = builder.create<arith::SubIOp>(loc, lhs, mul);
-      op->replaceAllUsesWith(sub);
-      op->erase();
+      expandRemainder(op, arith::DivSIOp(), builder);
     });
 
     moduleOp.walk([&](arith::RemUIOp op) {
-      auto lhs = op.getLhs();
-      auto rhs = op.getRhs();
-      auto loc = op.getLoc();
-      builder.setInsertionPoint(op);
-
-      auto div = builder.create<arith::DivUIOp>(loc, lhs, rhs);
-      auto mul = builder.create<arith::MulIOp>(loc, div, rhs);
-      auto sub = builder.create<arith::SubIOp>(loc, lhs, mul);
-      op->replaceAllUsesWith(sub);
-      op->erase();
+      expandRemainder(op, arith::DivUIOp(), builder);
     });
+  }
+
+private:
+  template <typename DivOp>
+  void expandRemainder(Operation *op, DivOp divOp, OpBuilder &builder) {
+    auto lhs = op->getOperand(0);
+    auto rhs = op->getOperand(1);
+    auto loc = op->getLoc();
+
+    builder.setInsertionPoint(op);
+
+    auto div = builder.create<DivOp>(loc, lhs, rhs);
+    auto mul = builder.create<arith::MulIOp>(loc, div, rhs);
+    auto sub = builder.create<arith::SubIOp>(loc, lhs, mul);
+
+    op->replaceAllUsesWith(sub);
+    op->erase();
   }
 };
 } // namespace
