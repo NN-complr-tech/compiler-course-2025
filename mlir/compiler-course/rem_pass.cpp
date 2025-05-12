@@ -15,12 +15,16 @@ private:
     Value rhs = op->getOperand(1);
     Location loc = op->getLoc();
 
-    Value div = isSigned ? builder.create<arith::DivSIOp>(loc, lhs, rhs)
-                         : builder.create<arith::DivUIOp>(loc, lhs, rhs);
-    Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
-    Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
+    Value div;
+    if (isSigned) {
+      div = builder.create<arith::DivSIOp>(loc, lhs, rhs).getResult();
+    } else {
+      div = builder.create<arith::DivUIOp>(loc, lhs, rhs).getResult();
+    }
 
-    // Правильный способ замены использования
+    Value mul = builder.create<arith::MulIOp>(loc, div, rhs).getResult();
+    Value result = builder.create<arith::SubIOp>(loc, lhs, mul).getResult();
+
     op->getResult(0).replaceAllUsesWith(result);
     op->erase();
   }
