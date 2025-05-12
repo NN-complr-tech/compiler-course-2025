@@ -7,27 +7,22 @@
 using namespace mlir;
 
 namespace {
-
 class MamaevaRemPass
-    : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
+    : public PassWrapper<MamaevaRemPass, OperationPass<func::FuncOp>> {
 private:
-  void expandRemainder(Operation *op, OpBuilder &builder, bool isSigned) {
+  void expandRemainder(Operation *op, PatternRewriter &rewriter,
+                       bool isSigned) {
     Value lhs = op->getOperand(0);
     Value rhs = op->getOperand(1);
     Location loc = op->getLoc();
 
-    Value div;
-    if (isSigned) {
-      div = builder.create<arith::DivSIOp>(loc, lhs, rhs).getResult();
-    } else {
-      div = builder.create<arith::DivUIOp>(loc, lhs, rhs).getResult();
-    }
+    Value div =
+        isSigned ? rewriter.create<arith::DivSIOp>(loc, lhs, rhs).getResult()
+                 : rewriter.create<arith::DivUIOp>(loc, lhs, rhs).getResult();
+    Value mul = rewriter.create<arith::MulIOp>(loc, div, rhs).getResult();
+    Value result = rewriter.create<arith::SubIOp>(loc, lhs, mul).getResult();
 
-    Value mul = builder.create<arith::MulIOp>(loc, div, rhs).getResult();
-    Value result = builder.create<arith::SubIOp>(loc, lhs, mul).getResult();
-
-    op->getResult(0).replaceAllUsesWith(result);
-    op->erase();
+    rewriter.replaceOp(op, result);
   }
 
 public:
@@ -40,32 +35,34 @@ public:
   }
 
   void runOnOperation() override {
-    ModuleOp module = getOperation();
-    OpBuilder builder(module);
-
-    module.walk([&](arith::RemSIOp op) {
-      expandRemainder(op, builder, /*isSigned=*/true);
+    RewritePatternSet patterns(&getContext());
+    patterns.add([&](Operation *op) {
+      if (auto remsi = dyn_cast<arith::RemSIOp>(op)) {
+        expandRemainder(remsi, PatternRewriter(op->getContext()), true);
+        return success();
+      }
+      if (auto remui = dyn_cast<arith::RemUIOp>(op)) {
+        expandRemainder(remui, PatternRewriter(op->getContext()), false);
+        return success();
+      }
+      return failure();
     });
 
-    module.walk([&](arith::RemUIOp op) {
-      expandRemainder(op, builder, /*isSigned=*/false);
-    });
+    if (failed(applyPatternsAndFoldGreedily(getOperation(),
+                                            std::move(patterns)))) {
+      signalPassFailure();
+    }
   }
 };
-
 } // namespace
 
 MLIR_DECLARE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 
-namespace {
-mlir::PassPluginLibraryInfo getMamaevaPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3", "1.0",
-          []() { mlir::PassRegistration<MamaevaRemPass>(); }};
-}
-} // namespace
-
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getMamaevaPluginInfo();
+  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3", "1.0",
+          [](PassRegistry &registry) {
+            registry.addPass(std::make_unique<MamaevaRemPass>());
+          }};
 }
