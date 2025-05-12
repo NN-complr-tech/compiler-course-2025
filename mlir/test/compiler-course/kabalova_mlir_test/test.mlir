@@ -5,11 +5,17 @@
 
 
 //CHECK: func.func @no_loops() attributes {"Max_loop_depths:" = []} {
+//CHECK-NEXT: %c0 = arith.constant 0 : index
+//CHECK-NEXT: affine.if #set(%c0) {
+//CHECK-NEXT: }
 //CHECK-NEXT: return
 //CHECK-NEXT: }
 
 
 func.func @no_loops() {
+  %c0 = arith.constant 0 : index
+  affine.if #set(%c0) {
+  }
   func.return
 }
 
