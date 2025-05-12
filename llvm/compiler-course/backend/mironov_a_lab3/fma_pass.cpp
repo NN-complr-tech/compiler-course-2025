@@ -84,8 +84,8 @@ public:
       operations.clear();
       for (MachineInstr &instraction : block) {
 
-        if (!is_fma(instraction) || op_is_reg(instraction) ||
-            instraction.getNumExplicitOperands() <= 3) {
+        if (!is_fma(instraction) || instraction.getNumExplicitOperands() <= 3 ||
+            op_is_reg(instraction)) {
           continue;
         }
         std::array<unsigned, 3> &order =
