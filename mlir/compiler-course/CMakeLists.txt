@@ -1,3 +1,16 @@
-list_subdirs(subdirs ${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirs(subdirs "COMPILER COURSE (MLIR)")
-set(MLIR_TEST_DEPENDS ${MLIR_TEST_DEPENDS} PARENT_SCOPE)
+set(Title "rem_pass")
+set(Student "Mamaeva_Olga")
+set(Group "FIIT3")
+set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
+
+file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
+
+add_llvm_pass_plugin(${TARGET_NAME}
+    ${SOURCES}
+    DEPENDS
+    intrinsics_gen
+    MLIRBuiltinLocationAttributesIncGen
+    BUILDTREE_ONLY
+)
+
+set(MLIR_TEST_DEPENDS ${TARGET_NAME} ${MLIR_TEST_DEPENDS} PARENT_SCOPE)
