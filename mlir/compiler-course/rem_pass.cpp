@@ -8,9 +8,10 @@ using namespace mlir;
 
 namespace {
 
-class MamaevaRemPass : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
+class MamaevaRemPass
+    : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
 private:
-  void expandRemainder(Operation* op, OpBuilder& builder, bool isSigned) {
+  void expandRemainder(Operation *op, OpBuilder &builder, bool isSigned) {
     Value lhs = op->getOperand(0);
     Value rhs = op->getOperand(1);
     Location loc = op->getLoc();
@@ -21,7 +22,7 @@ private:
     } else {
       div = builder.create<arith::DivUIOp>(loc, lhs, rhs).getResult();
     }
-    
+
     Value mul = builder.create<arith::MulIOp>(loc, div, rhs).getResult();
     Value result = builder.create<arith::SubIOp>(loc, lhs, mul).getResult();
 
@@ -30,8 +31,10 @@ private:
   }
 
 public:
-  StringRef getArgument() const final { return "rem_pass_Mamaeva_Olga_FIIT3_MLIR"; }
-  
+  StringRef getArgument() const final {
+    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
+  }
+
   StringRef getDescription() const final {
     return "Replace remainder ops with div+mul+sub sequence";
   }
@@ -57,12 +60,8 @@ MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 
 namespace {
 mlir::PassPluginLibraryInfo getMamaevaPluginInfo() {
-  return {
-    MLIR_PLUGIN_API_VERSION,
-    "rem_pass_Mamaeva_Olga_FIIT3",
-    "1.0",
-    []() { mlir::PassRegistration<MamaevaRemPass>(); }
-  };
+  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3", "1.0",
+          []() { mlir::PassRegistration<MamaevaRemPass>(); }};
 }
 } // namespace
 
