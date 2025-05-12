@@ -3,7 +3,7 @@ set(Student "Mamaeva_Olga")
 set(Group "FIIT3")
 set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
 
-file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
+set(SOURCES rem_pass.cpp)
 
 add_llvm_pass_plugin(${TARGET_NAME}
     ${SOURCES}
