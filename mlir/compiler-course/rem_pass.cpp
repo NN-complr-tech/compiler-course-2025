@@ -16,16 +16,16 @@ private:
     using OpRewritePattern::OpRewritePattern;
 
     LogicalResult matchAndRewrite(RemSIOp operation,
-                                  PatternRewriter &rw) const override {
+                                  PatternRewriter &rewriter) const override {
       Location location = operation.getLoc();
+      Value lhs = operation.getLhs();
+      Value rhs = operation.getRhs();
 
-      Value val1 = operation.getLhs();
-      Value val2 = operation.getRhs();
-      Value division = rw.create<DivSIOp>(location, val1, val2);
-      Value multiplication = rw.create<MulIOp>(location, division, val2);
-      Value substract = rw.create<SubIOp>(location, val1, multiplication);
+      Value div = rewriter.create<DivSIOp>(location, lhs, rhs);
+      Value mul = rewriter.create<MulIOp>(location, div, rhs);
+      Value sub = rewriter.create<SubIOp>(location, lhs, mul);
 
-      rw.replaceOp(operation, substract);
+      rewriter.replaceOp(operation, sub);
       return success();
     }
   };
@@ -34,39 +34,34 @@ private:
     using OpRewritePattern::OpRewritePattern;
 
     LogicalResult matchAndRewrite(RemUIOp operation,
-                                  PatternRewriter &rw) const override {
+                                  PatternRewriter &rewriter) const override {
       Location location = operation.getLoc();
+      Value lhs = operation.getLhs();
+      Value rhs = operation.getRhs();
 
-      Value val1 = operation.getLhs();
-      Value val2 = operation.getRhs();
-      Value division = rw.create<DivUIOp>(location, val1, val2);
-      Value multiplication = rw.create<MulIOp>(location, division, val2);
-      Value substract = rw.create<SubIOp>(location, val1, multiplication);
+      Value div = rewriter.create<DivUIOp>(location, lhs, rhs);
+      Value mul = rewriter.create<MulIOp>(location, div, rhs);
+      Value sub = rewriter.create<SubIOp>(location, lhs, mul);
 
-      rw.replaceOp(operation, substract);
+      rewriter.replaceOp(operation, sub);
       return success();
     }
   };
 
 public:
-  StringRef getArgument() const final {
-    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
-  }
+  StringRef getArgument() const final { return "rem-pass-mamaeva-olga-fiit3"; }
 
   StringRef getDescription() const final {
-    return "This pass breaks operations arith.remsi and arith.remui into "
-           "calculation following the rule:\n rem(a, b) = a - (a / b) * b";
+    return "Replace remui/remsi with equivalent operations using div+mul+sub";
   }
 
   void runOnOperation() override {
-    RewritePatternSet rewrite_patterns(&getContext());
-    rewrite_patterns.add<RemSIOpRewrite, RemUIOpRewrite>(&getContext());
-    LogicalResult result = applyPatternsAndFoldGreedily(
-        getOperation(), std::move(rewrite_patterns), GreedyRewriteConfig(),
-        nullptr);
+    RewritePatternSet patterns(&getContext());
+    patterns.add<RemSIOpRewrite, RemUIOpRewrite>(&getContext());
 
-    if (failed(result)) {
-      llvm::errs() << "Something went wrong.\n";
+    if (failed(applyPatternsAndFoldGreedily(getOperation(),
+                                            std::move(patterns)))) {
+      signalPassFailure();
     }
   }
 };
@@ -76,12 +71,12 @@ public:
 MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
 
-mlir::PassPluginLibraryInfo getFunctionCallCounterPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "rem_pass", "1.0",
+mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "RemPassMamaevaOlgaFIIT3", "1.0",
           []() { mlir::PassRegistration<RemPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getFunctionCallCounterPassPluginInfo();
+  return getRemPassPluginInfo();
 }
