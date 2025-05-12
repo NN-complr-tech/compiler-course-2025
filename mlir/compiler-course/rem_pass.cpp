@@ -3,85 +3,83 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-#include "llvm/Support/raw_ostream.h"
+
+#define PLUGIN_NAME "rem_pass_Mamaeva_Olga_FIIT3_MLIR"
 
 using namespace mlir;
 using namespace arith;
 
 namespace {
 
-class RemPass : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
+class MamaevaRemPass
+    : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
 private:
-  struct RemSIOpRewrite : public OpRewritePattern<RemSIOp> {
+  struct SignedRemRewriter : public OpRewritePattern<RemSIOp> {
     using OpRewritePattern::OpRewritePattern;
 
-    LogicalResult matchAndRewrite(RemSIOp operation,
-                                  PatternRewriter &rw) const override {
-      Location location = operation.getLoc();
+    LogicalResult matchAndRewrite(RemSIOp op,
+                                  PatternRewriter &rewriter) const override {
+      Value lhs = op.getLhs();
+      Value rhs = op.getRhs();
+      Location loc = op.getLoc();
 
-      Value val1 = operation.getLhs();
-      Value val2 = operation.getRhs();
-      Value division = rw.create<DivSIOp>(location, val1, val2);
-      Value multiplication = rw.create<MulIOp>(location, division, val2);
-      Value substract = rw.create<SubIOp>(location, val1, multiplication);
+      Value div = rewriter.create<DivSIOp>(loc, lhs, rhs);
+      Value mul = rewriter.create<MulIOp>(loc, div, rhs);
+      Value result = rewriter.create<SubIOp>(loc, lhs, mul);
 
-      rw.replaceOp(operation, substract);
+      rewriter.replaceOp(op, result);
       return success();
     }
   };
 
-  struct RemUIOpRewrite : public OpRewritePattern<RemUIOp> {
+  struct UnsignedRemRewriter : public OpRewritePattern<RemUIOp> {
     using OpRewritePattern::OpRewritePattern;
 
-    LogicalResult matchAndRewrite(RemUIOp operation,
-                                  PatternRewriter &rw) const override {
-      Location location = operation.getLoc();
+    LogicalResult matchAndRewrite(RemUIOp op,
+                                  PatternRewriter &rewriter) const override {
+      Value lhs = op.getLhs();
+      Value rhs = op.getRhs();
+      Location loc = op.getLoc();
 
-      Value val1 = operation.getLhs();
-      Value val2 = operation.getRhs();
-      Value division = rw.create<DivUIOp>(location, val1, val2);
-      Value multiplication = rw.create<MulIOp>(location, division, val2);
-      Value substract = rw.create<SubIOp>(location, val1, multiplication);
+      Value div = rewriter.create<DivUIOp>(loc, lhs, rhs);
+      Value mul = rewriter.create<MulIOp>(loc, div, rhs);
+      Value result = rewriter.create<SubIOp>(loc, lhs, mul);
 
-      rw.replaceOp(operation, substract);
+      rewriter.replaceOp(op, result);
       return success();
     }
   };
 
 public:
-  StringRef getArgument() const final {
-    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
-  }
+  StringRef getArgument() const final { return PLUGIN_NAME; }
 
   StringRef getDescription() const final {
-    return "This pass breaks operations arith.remsi and arith.remui into "
-           "calculation following the rule:\n rem(a, b) = a - (a / b) * b";
+    return "Replace remainder ops with equivalent arithmetic operations";
   }
 
   void runOnOperation() override {
-    RewritePatternSet rewrite_patterns(&getContext());
-    rewrite_patterns.add<RemSIOpRewrite, RemUIOpRewrite>(&getContext());
-    LogicalResult result = applyPatternsAndFoldGreedily(
-        getOperation(), std::move(rewrite_patterns), GreedyRewriteConfig(),
-        nullptr);
+    RewritePatternSet patterns(&getContext());
+    patterns.add<SignedRemRewriter, UnsignedRemRewriter>(&getContext());
 
-    if (failed(result)) {
-      llvm::errs() << "Something went wrong.\n";
+    if (failed(applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))) {
+      signalPassFailure();
     }
   }
 };
 
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
+MLIR_DECLARE_EXPLICIT_TYPE_ID(MamaevaRemPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 
-mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3", "1.0",
-          []() { mlir::PassRegistration<RemPass>(); }};
+namespace {
+mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, PLUGIN_NAME, "1.0",
+          []() { mlir::PassRegistration<MamaevaRemPass>(); }};
 }
+} // namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
+extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getRemPassPluginInfo();
+  return getMamaevaRemPassPluginInfo();
 }
