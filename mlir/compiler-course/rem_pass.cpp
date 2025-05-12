@@ -2,8 +2,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
-
-#define PLUGIN_NAME "rem_pass_Mamaeva_Olga_FIIT3_MLIR"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 using namespace mlir;
 
@@ -16,18 +15,20 @@ private:
     Value rhs = op->getOperand(1);
     Location loc = op->getLoc();
 
-    Value div = isSigned
-                    ? builder.create<arith::DivSIOp>(loc, lhs, rhs).getResult()
-                    : builder.create<arith::DivUIOp>(loc, lhs, rhs).getResult();
-    Value mul = builder.create<arith::MulIOp>(loc, div, rhs).getResult();
-    Value result = builder.create<arith::SubIOp>(loc, lhs, mul).getResult();
+    Value div = isSigned ? builder.create<arith::DivSIOp>(loc, lhs, rhs)
+                         : builder.create<arith::DivUIOp>(loc, lhs, rhs);
+    Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
+    Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
 
-    op->replaceAllUsesWith(result);
+    // Правильный способ замены использования
+    op->getResult(0).replaceAllUsesWith(result);
     op->erase();
   }
 
 public:
-  StringRef getArgument() const final { return PLUGIN_NAME; }
+  StringRef getArgument() const final {
+    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
+  }
 
   StringRef getDescription() const final {
     return "Replace remainder ops with div+mul+sub sequence";
@@ -51,14 +52,12 @@ public:
 MLIR_DECLARE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 
-namespace {
-mlir::PassPluginLibraryInfo getMamaevaPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, PLUGIN_NAME, "1.0",
+mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3", "1.0",
           []() { mlir::PassRegistration<MamaevaRemPass>(); }};
 }
-} // namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
+extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getMamaevaPluginInfo();
+  return getMamaevaRemPassPluginInfo();
 }
