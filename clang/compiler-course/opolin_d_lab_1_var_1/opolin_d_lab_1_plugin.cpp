@@ -5,36 +5,42 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
+std::string getAccessLevelStr(clang::AccessSpecifier access) {
+  switch (access) {
+  case clang::AS_public:
+    return "public";
+  case clang::AS_protected:
+    return "protected";
+  case clang::AS_private:
+    return "private";
+  default:
+    return "none";
+  }
+}
+
 class PrintUserTypeVisitor final
     : public clang::RecursiveASTVisitor<PrintUserTypeVisitor> {
 public:
   explicit PrintUserTypeVisitor(clang::ASTContext *context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *Record) {
-    if (!Record->isThisDeclarationADefinition() || Record->isImplicit()) {
-      return true;
-    }
-    if (Record->isLocalClass()) {
+    if (!Record->isThisDeclarationADefinition() || Record->isImplicit()
+        || Record->isLocalClass()) {
       return true;
     }
     llvm::raw_ostream &os = llvm::outs();
     os << Record->getNameAsString();
-    bool firstBase = true;
-    if (Record->getNumBases() > 0) {
+    if (!Record->bases().empty()) {
       os << " -> ";
-      for (const clang::CXXBaseSpecifier &BaseSpec : Record->bases()) {
-        if (!firstBase) {
-          os << ", ";
-        }
-        const clang::RecordDecl *BaseRecordDecl =
-            BaseSpec.getType()->getAsRecordDecl();
-        if (BaseRecordDecl) {
-          os << BaseRecordDecl->getNameAsString();
-        } else {
-          os << BaseSpec.getType().getAsString();
-        }
-        firstBase = false;
-      }
+      llvm::interleaveComma(
+          Record->bases(), os, [&](const clang::CXXBaseSpecifier &BaseSpec) {
+            const clang::RecordDecl *BaseRecordDecl = BaseSpec.getType()->getAsRecordDecl();
+            if (BaseRecordDecl) {
+              os << BaseRecordDecl->getNameAsString();
+            } else {
+              os << BaseSpec.getType().getAsString();
+            }
+          });
     }
     os << "\n";
     os << "|_Fields\n";
@@ -42,20 +48,7 @@ public:
       os << "| |_ ";
       os << Field->getNameAsString() << " (";
       os << Field->getType().getAsString() << "|";
-      switch (Field->getAccess()) {
-      case clang::AS_public:
-        os << "public";
-        break;
-      case clang::AS_protected:
-        os << "protected";
-        break;
-      case clang::AS_private:
-        os << "private";
-        break;
-      default:
-        os << "none";
-        break;
-      }
+      os << getAccessLevelStr(Field->getAccess());
       os << ")\n";
     }
     os << "|\n";
@@ -75,20 +68,7 @@ public:
         }
       }
       os << ")|";
-      switch (Method->getAccess()) {
-      case clang::AS_public:
-        os << "public";
-        break;
-      case clang::AS_protected:
-        os << "protected";
-        break;
-      case clang::AS_private:
-        os << "private";
-        break;
-      default:
-        os << "none";
-        break;
-      }
+      os << getAccessLevelStr(Method->getAccess());
       if (Method->isConst()) {
         os << "|const";
       }
