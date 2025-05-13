@@ -24,23 +24,24 @@ public:
   explicit PrintUserTypeVisitor(clang::ASTContext *context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *Record) {
-    if (!Record->isThisDeclarationADefinition() || Record->isImplicit()
-        || Record->isLocalClass()) {
+    if (!Record->isThisDeclarationADefinition() || Record->isImplicit() ||
+        Record->isLocalClass()) {
       return true;
     }
     llvm::raw_ostream &os = llvm::outs();
     os << Record->getNameAsString();
     if (!Record->bases().empty()) {
       os << " -> ";
-      llvm::interleaveComma(
-          Record->bases(), os, [&](const clang::CXXBaseSpecifier &BaseSpec) {
-            const clang::RecordDecl *BaseRecordDecl = BaseSpec.getType()->getAsRecordDecl();
-            if (BaseRecordDecl) {
-              os << BaseRecordDecl->getNameAsString();
-            } else {
-              os << BaseSpec.getType().getAsString();
-            }
-          });
+      llvm::interleaveComma(Record->bases(), os,
+                            [&](const clang::CXXBaseSpecifier &BaseSpec) {
+                              const clang::RecordDecl *BaseRecordDecl =
+                                  BaseSpec.getType()->getAsRecordDecl();
+                              if (BaseRecordDecl) {
+                                os << BaseRecordDecl->getNameAsString();
+                              } else {
+                                os << BaseSpec.getType().getAsString();
+                              }
+                            });
     }
     os << "\n";
     os << "|_Fields\n";
