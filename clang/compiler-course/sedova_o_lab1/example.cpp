@@ -25,17 +25,33 @@ protected:
     return true;
   }
 
-  void PrintHelp(llvm::raw_ostream &ros) { ros << "Help for Lab1 plugin\n"; }
+  void PrintHelp(llvm::raw_ostream &ros) {
+    ros << "Lab1 plugin: This pass analyzes the source code to identify and "
+           "count implicit type casts "
+           "within functions. It helps developers understand where and how "
+           "often implicit conversions "
+           "occur, which can be useful for debugging, optimization, and code "
+           "quality improvements.\n";
+  }
 
 private:
   class ImplicitCastVisitor : public RecursiveASTVisitor<ImplicitCastVisitor> {
   public:
     explicit ImplicitCastVisitor(ASTContext *Context)
-        : Context(Context), CurrentFunction(nullptr) {}
+        : Context(Context), CurrentFunction(nullptr), ImplicitCastCount(0),
+          TotalImplicitCastCount(0) {}
 
     bool VisitFunctionDecl(FunctionDecl *FD) {
       if (FD->hasBody()) {
-        FD->dump();
+        CurrentFunction = FD;
+        ImplicitCastCount = 0;
+        TraverseStmt(FD->getBody());
+        llvm::outs() << "Function '"
+                     << FD->getNameInfo().getName().getAsString()
+                     << "' contains " << ImplicitCastCount
+                     << " implicit casts.\n";
+        TotalImplicitCastCount += ImplicitCastCount;
+        CurrentFunction = nullptr;
       }
       return true;
     }
@@ -60,12 +76,25 @@ private:
       std::string key = srcTypeStr + " -> " + dstTypeStr;
       CastCounts[key]++;
 
+      ++ImplicitCastCount;
       return true;
+    }
+
+    void PrintTotalStatistics() const {
+      llvm::outs() << "Total implicit casts in translation unit: "
+                   << TotalImplicitCastCount << "\n";
+
+      llvm::outs() << "Implicit cast breakdown by type:\n";
+      for (const auto &pair : CastCounts) {
+        llvm::outs() << "  " << pair.first << ": " << pair.second << "\n";
+      }
     }
 
   private:
     ASTContext *Context;
     FunctionDecl *CurrentFunction;
+    unsigned ImplicitCastCount;
+    unsigned TotalImplicitCastCount;
     std::map<std::string, unsigned> CastCounts;
 
     std::string castKindToString(CastKind kind) {
@@ -90,8 +119,9 @@ private:
   public:
     explicit ImplicitCastConsumer(ASTContext *Context) : Visitor(Context) {}
 
-    virtual void HandleTranslationUnit(ASTContext &Context) override {
+    void HandleTranslationUnit(ASTContext &Context) override {
       Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+      Visitor.PrintTotalStatistics();
     }
 
   private:
