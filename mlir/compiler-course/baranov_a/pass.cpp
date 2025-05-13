@@ -1,0 +1,86 @@
+#include "mlir/Pass/Pass.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/Tools/Plugins/PassPlugin.h"
+#include "llvm/ADT/TypeSwitch.h"
+using namespace mlir;
+
+namespace {
+class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
+  template <typename LoopOp>
+  void processLoop(LoopOp op, Block &body, ValueRange indVars,
+                   OpBuilder &builder) {
+    Location loc = op.getLoc();
+
+    std::string beginName =
+        "trace_loop_iter_begin_" + std::to_string(indVars.size());
+    std::string endName =
+        "trace_loop_iter_end_" + std::to_string(indVars.size());
+
+    llvm::errs() << "beginName = " << beginName << "\n";
+    llvm::errs() << "endName = " << endName << "\n";
+
+    builder.setInsertionPointToStart(&body);
+    builder.create<func::CallOp>(loc, beginName, TypeRange{}, indVars);
+
+    builder.setInsertionPoint(body.getTerminator());
+    builder.create<func::CallOp>(loc, endName, TypeRange{}, indVars);
+  }
+
+  template <typename OpTy>
+  void processFor(OpTy op, OpBuilder &builder) {
+    processLoop(op, *op.getBody(), op.getInductionVar(), builder);
+  }
+
+  template <>
+  void processFor(affine::AffineParallelOp op, OpBuilder &builder) {
+    processLoop(op, *op.getBody(), op.getIVs(), builder);
+  }
+
+  template <typename OpTy>
+  void processWhile(OpTy op, OpBuilder &builder) {
+    Block &body = op.getAfter().front();
+    processLoop(op, body, body.getArgument(0), builder);
+  }
+
+public:
+  StringRef getArgument() const final {
+    return "MlirPassLoopIterBeginEnd_Baranov_Aleksey_FIIT1_MLIR";
+  }
+  StringRef getDescription() const final {
+    return "Inserts a `@trace_loop_iter_begin_1_2` fuction call on each loop "
+           "interation begin (loops: affine.for, scf.for, scf.while, ...), "
+           "`@trace_loop_iter_end` fuction call at the end ";
+  }
+  void runOnOperation() override {
+    ModuleOp moduleOp = getOperation();
+    OpBuilder builder(moduleOp);
+    moduleOp.walk([&](Operation *op) {
+      TypeSwitch<Operation *>(op)
+          .Case<affine::AffineForOp>([&](auto op) { processFor(op, builder); })
+          .Case<affine::AffineParallelOp>(
+              [&](auto op) { processFor(op, builder); })
+          .Case<scf::ForOp>([&](auto op) { processFor(op, builder); })
+          .Case<scf::WhileOp>([&](auto op) { processWhile(op, builder); })
+          .Default([](auto) {});
+    });
+  }
+};
+} // namespace
+
+MLIR_DECLARE_EXPLICIT_TYPE_ID(ExamplePass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(ExamplePass)
+
+mlir::PassPluginLibraryInfo getFunctionCallCounterPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION,
+          "MlirPassLoopIterBeginEnd_Baranov_Aleksey_FIIT1_MLIR", "1.0",
+          []() { mlir::PassRegistration<ExamplePass>(); }};
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
+mlirGetPassPluginInfo() {
+  return getFunctionCallCounterPassPluginInfo();
+}
