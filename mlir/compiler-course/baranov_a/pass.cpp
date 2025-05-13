@@ -34,12 +34,6 @@ class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
   void processFor(OpTy op, OpBuilder &builder) {
     processLoop(op, *op.getBody(), op.getInductionVar(), builder);
   }
-
-  template <>
-  void processFor(affine::AffineParallelOp op, OpBuilder &builder) {
-    processLoop(op, *op.getBody(), op.getIVs(), builder);
-  }
-
   template <typename OpTy>
   void processWhile(OpTy op, OpBuilder &builder) {
     Block &body = op.getAfter().front();
@@ -69,6 +63,10 @@ public:
     });
   }
 };
+template <>
+void ExamplePass::processFor(affine::AffineParallelOp op, OpBuilder &builder) {
+  processLoop(op, *op.getBody(), op.getIVs(), builder);
+}
 } // namespace
 
 MLIR_DECLARE_EXPLICIT_TYPE_ID(ExamplePass)

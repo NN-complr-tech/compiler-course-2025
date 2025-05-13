@@ -76,8 +76,6 @@ module {
 
 
 module {
-  func.func private @trace_loop_iter_begin_1(index) -> ()
-  func.func private @trace_loop_iter_end_1(index) -> ()
   func.func private @trace_loop_iter_begin_2(index, index) -> ()
   func.func private @trace_loop_iter_end_2(index, index) -> ()
 
