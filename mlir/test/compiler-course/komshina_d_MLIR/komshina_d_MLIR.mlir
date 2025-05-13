@@ -45,3 +45,14 @@ module {
     return %res : f32
   }
 }
+
+  // Test 4: ceil on vector of floats
+  // CHECK-LABEL: func.func @test_vector
+  // CHECK-NEXT:   %[[NEG:.*]] = arith.negf %arg0 : vector<4xf32>
+  // CHECK-NEXT:   %[[FLOOR:.*]] = math.floor %[[NEG]] : vector<4xf32>
+  // CHECK-NEXT:   %[[RES:.*]] = arith.negf %[[FLOOR]] : vector<4xf32>
+  // CHECK-NEXT:   return %[[RES]] : vector<4xf32>
+  func.func @test_vector(%arg0: vector<4xf32>) -> vector<4xf32> {
+    %0 = math.ceil %arg0 : vector<4xf32>
+    return %0 : vector<4xf32>
+  }
