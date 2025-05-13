@@ -10,8 +10,8 @@
 using namespace mlir;
 
 namespace {
-class IterCounterPass :
-    public PassWrapper<IterCounterPass, OperationPass<ModuleOp>> {
+class IterCounterPass
+    : public PassWrapper<IterCounterPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
     return "IterCounterPass_Ivanov_Mikhail_FIIT1_MLIR";
