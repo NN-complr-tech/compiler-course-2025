@@ -10,13 +10,15 @@
 using namespace mlir;
 
 namespace {
-class IterCounterPass : public PassWrapper<IterCounterPass, OperationPass<ModuleOp>> {
+class IterCounterPass :
+    public PassWrapper<IterCounterPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
     return "IterCounterPass_Ivanov_Mikhail_FIIT1_MLIR";
   }
   StringRef getDescription() const final {
-    return "Annotate scf.for loops with a 'trip_count' attribute if the number of "
+    return "Annotate scf.for loops with a 'trip_count' attribute if the number "
+           "of "
            "iterations is statically known.";
   }
 
@@ -40,7 +42,7 @@ public:
       auto lbCstIdx = lowerBound.getDefiningOp<arith::ConstantIndexOp>();
       auto ubCstIdx = upperBound.getDefiningOp<arith::ConstantIndexOp>();
       auto stCstIdx = step.getDefiningOp<arith::ConstantIndexOp>();
-      
+
       if (!lbCstIdx || !ubCstIdx || !stCstIdx || stCstIdx.value() == 0) {
         return;
       }
@@ -58,7 +60,7 @@ public:
       }
 
       forOp->setAttr("trip_count",
-        IntegerAttr::get(IndexType::get(ctx), tripCount));
+                     IntegerAttr::get(IndexType::get(ctx), tripCount));
     });
   }
 };
