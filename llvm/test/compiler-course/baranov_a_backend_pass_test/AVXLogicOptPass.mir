@@ -6,14 +6,44 @@
   target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
   target triple = "x86_64-pc-linux-gnu"
 
-  define void @test_and_or_chain() { ret void }
-  define void @test_simple_and() { ret void }
-  define void @test_xor_self_change() { ret void }
-  define void @test_and_self() { ret void }
-  define void @test_zero_and() { ret void }
-  define <4 x float> @test_and_or_and(<4 x float> %a, <4 x float> %b, <4 x float> %c, <4 x float> %d) {
+  define <4 x i32> @test_and_or_chain(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c) {
   entry:
-    ret <4 x float> undef
+    %and = and <4 x i32> %a, %b
+    %or = or <4 x i32> %and, %c
+    ret <4 x i32> %or
+  }
+
+  define <4 x i32> @test_simple_and(<4 x i32> %a, <4 x i32> %b) {
+  entry:
+    %and = and <4 x i32> %a, %b
+    ret <4 x i32> %and
+  }
+
+  define <4 x i32> @test_xor_self_change(<4 x i32> %a) {
+  entry:
+    %xor = xor <4 x i32> %a, %a
+    ret <4 x i32> %xor
+  }
+
+  define <4 x i32> @test_and_self(<4 x i32> %a) {
+  entry:
+    %and = and <4 x i32> %a, %a
+    ret <4 x i32> %and
+  }
+
+  define <4 x i32> @test_zero_and(<4 x i32> %a) {
+  entry:
+    %zero = xor <4 x i32> %a, %a
+    %and = and <4 x i32> %a, %zero
+    ret <4 x i32> %and
+  }
+
+  define <4 x i32> @test_and_or_and(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c, <4 x i32> %d) {
+  entry:
+    %and1 = and <4 x i32> %a, %b
+    %and2 = and <4 x i32> %c, %d
+    %or = or <4 x i32> %and1, %and2
+    ret <4 x i32> %or
   }
 ---
 # Test AND -> OR chain
