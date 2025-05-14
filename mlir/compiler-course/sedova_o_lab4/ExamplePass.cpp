@@ -6,6 +6,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassManager.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
