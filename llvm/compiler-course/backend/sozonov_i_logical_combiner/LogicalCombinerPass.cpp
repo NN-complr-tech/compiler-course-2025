@@ -18,8 +18,6 @@ public:
 char LogicalCombinerPass::ID = 0;
 
 bool LogicalCombinerPass::runOnMachineFunction(MachineFunction &MF) {
-  llvm::outs() << MF.getName() << '\n';
-
   const X86Subtarget &STI = MF.getSubtarget<X86Subtarget>();
   const X86InstrInfo *TII = STI.getInstrInfo();
   MachineRegisterInfo &MRI = MF.getRegInfo();
@@ -68,11 +66,20 @@ bool LogicalCombinerPass::runOnMachineFunction(MachineFunction &MF) {
 
       DebugLoc DL = AndInstr.getDebugLoc();
 
-      const TargetRegisterClass *RC = MRI.getRegClass(AndOp1);
-      if (!RC)
-        RC = MRI.getRegClass(AndOp2);
-      if (!RC)
+      const TargetRegisterClass *RC1 = MRI.getRegClass(AndOp1);
+      const TargetRegisterClass *RC2 = MRI.getRegClass(AndOp2);
+
+      if (!RC1 && !RC2)
         continue;
+
+      if (RC1 && RC2 && RC1 != RC2)
+        continue;
+
+      const TargetRegisterClass *RC = nullptr;
+      if (RC1)
+        RC = RC1;
+      else
+        RC = RC2;
 
       Register TmpReg = MRI.createVirtualRegister(RC);
 
