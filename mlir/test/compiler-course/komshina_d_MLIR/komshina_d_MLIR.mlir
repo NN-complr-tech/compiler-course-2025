@@ -46,7 +46,7 @@ module {
   }
 }
 
-  // Test 4: ceil on vector of floats
+  // Test 4: ceil on vector floats
   // CHECK-LABEL: func.func @test_vector
   // CHECK-NEXT:   %[[NEG:.*]] = arith.negf %arg0 : vector<4xf32>
   // CHECK-NEXT:   %[[FLOOR:.*]] = math.floor %[[NEG]] : vector<4xf32>
