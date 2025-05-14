@@ -39,15 +39,14 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
       Register TmpReg = SubMI.getOperand(2).getReg();
       // try to find mul instruction
       MachineInstr *TmpMI = MF.getRegInfo().getUniqueVRegDef(TmpReg);
-      if(!TmpMI ||
-        !(TmpMI->getOpcode() == X86::MULSDrr   ||
-        TmpMI->getOpcode() == X86::MULSSrr   ||
-        TmpMI->getOpcode() == X86::MULPSrr   ||
-        TmpMI->getOpcode() == X86::MULPDrr   ||
-        TmpMI->getOpcode() == X86::VMULPSYrr ||
-        TmpMI->getOpcode() == X86::VMULPDYrr ||
-        TmpMI->getOpcode() == X86::VMULSDrr  ||
-        TmpMI->getOpcode() == X86::VMULSSrr)) {
+      if (!TmpMI || !(TmpMI->getOpcode() == X86::MULSDrr ||
+                      TmpMI->getOpcode() == X86::MULSSrr ||
+                      TmpMI->getOpcode() == X86::MULPSrr ||
+                      TmpMI->getOpcode() == X86::MULPDrr ||
+                      TmpMI->getOpcode() == X86::VMULPSYrr ||
+                      TmpMI->getOpcode() == X86::VMULPDYrr ||
+                      TmpMI->getOpcode() == X86::VMULSDrr ||
+                      TmpMI->getOpcode() == X86::VMULSSrr)) {
           continue;
         }
 
