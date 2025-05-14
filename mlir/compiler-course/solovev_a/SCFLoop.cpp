@@ -49,7 +49,7 @@ MLIR_DEFINE_EXPLICIT_TYPE_ID(ScfForLoopsPass)
 
 mlir::PassPluginLibraryInfo getFunctionCallCounterPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "ScfForLoopsPass", "1.0",
-          []() { mlir::PassRegistration<ScfForLoopsPass>(); } };
+          []() { mlir::PassRegistration<ScfForLoopsPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
