@@ -12,18 +12,8 @@ namespace {
 
 class RemPass : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
 private:
-  template <typename RemOpType>
+  template <typename RemOpType, typename DivOp>
   struct RemXIOpRewrite : public OpRewritePattern<RemOpType> {
-
-    template <typename RemXIOp>
-    struct DivOpType {
-      using Type = DivSIOp;
-    };
-
-    template <>
-    struct DivOpType<RemUIOp> {
-      using Type = DivUIOp;
-    };
 
     using OpRewritePattern<RemOpType>::OpRewritePattern;
     LogicalResult matchAndRewrite(RemOpType operation,
@@ -32,7 +22,6 @@ private:
       Value val1 = operation.getLhs();
       Value val2 = operation.getRhs();
 
-      using DivOp = typename DivOpType<RemOpType>::Type;
       Value division = rw.create<DivOp>(location, val1, val2);
       Value multiplication = rw.create<MulIOp>(location, division, val2);
       Value substract = rw.create<SubIOp>(location, val1, multiplication);
@@ -53,8 +42,8 @@ public:
   }
 
   void runOnOperation() override {
-    using RemSIRewritePattern = RemXIOpRewrite<RemSIOp>;
-    using RemUIRewritePattern = RemXIOpRewrite<RemUIOp>;
+    using RemSIRewritePattern = RemXIOpRewrite<RemSIOp, DivSIOp>;
+    using RemUIRewritePattern = RemXIOpRewrite<RemUIOp, DivUIOp>;
     RewritePatternSet rewrite_patterns(&getContext());
     rewrite_patterns.add<RemSIRewritePattern>(&getContext());
     rewrite_patterns.add<RemUIRewritePattern>(&getContext());
