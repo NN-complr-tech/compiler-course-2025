@@ -17,7 +17,6 @@ void replaceCeilWithNegFloor(ModuleOp module) {
   for (auto func : module.getOps<mlir::func::FuncOp>()) {
 
     func.walk([&](Operation *op) {
-
       if (auto ceilOp = dyn_cast<math::CeilOp>(op)) {
         Location loc = ceilOp->getLoc();
         Value input = ceilOp->getOperand(0);
@@ -47,7 +46,9 @@ void replaceCeilWithNegFloor(ModuleOp module) {
   }
 }
 
-class ReplaceCeilWithFloorNegPlugin : public PassWrapper<ReplaceCeilWithFloorNegPlugin, OperationPass<ModuleOp>> {
+class ReplaceCeilWithFloorNegPlugin
+    : public PassWrapper<ReplaceCeilWithFloorNegPlugin,
+                         OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
     return "ReplaceCeilWithFloorNegPlugin_KolodkinGrigorii_FIIT3_MLIR";
