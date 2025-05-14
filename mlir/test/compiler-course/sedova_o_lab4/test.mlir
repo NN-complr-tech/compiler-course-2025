@@ -2,14 +2,6 @@
 // RUN: --pass-pipeline="builtin.module(ExamplePass_Sedova_Olga_FIIT1_MLIR)" %s | FileCheck %s
 
 
-// CHECK-LABEL: func @test_affine
-// CHECK: func.call @trace_loop_iter_begin()
-// CHECK: func.call @trace_loop_iter_end()
-
-// CHECK-LABEL: func @test_scf_for
-// CHECK: func.call @trace_loop_iter_begin()
-// CHECK: func.call @trace_loop_iter_end()
-
 func.func @trace_loop_iter_begin() {
   return
 }
@@ -20,9 +12,9 @@ func.func @trace_loop_iter_end() {
 
 func.func @test_affine(%arg0: memref<10xf32>) {
   affine.for %i = 0 to 10 {
-    // trace_loop_iter_begin should be inserted here by the pass
+    // CHECK: func.call @trace_loop_iter_begin()
     %val = affine.load %arg0[%i] : memref<10xf32>
-    // trace_loop_iter_end should be inserted here by the pass
+    // CHECK: func.call @trace_loop_iter_end()
   }
   return
 }
@@ -32,9 +24,9 @@ func.func @test_scf_for(%arg0: memref<10xf32>) {
 %c10 = arith.constant 10 : index
 %c1 = arith.constant 1 : index
   scf.for %i = %c0 to %c10 step %c1  {
-    // trace_loop_iter_begin should be inserted here by the pass
+    // CHECK: func.call @trace_loop_iter_begin()
     %val = memref.load %arg0[%i] : memref<10xf32>
-    // trace_loop_iter_end should be inserted here by the pass
+    // CHECK: func.call @trace_loop_iter_end()
   }
   return
 }
