@@ -76,8 +76,8 @@ bool LogicOpsPass::runOnMachineFunction(llvm::MachineFunction &MF) {
         MI.eraseFromParent();
         Changed = true;
       } else {
-        Changed = optimizeLogicOpWithConstant(MBB, MI, MIOp0, MIOp1, MIOp2);
-        Changed = optimizeLogicOpWithConstant(MBB, MI, MIOp0, MIOp2, MIOp1);
+        Changed = optimizeLogicOpWithConstant(MBB, MI, MIOp0, MIOp1, MIOp2) ||
+                  optimizeLogicOpWithConstant(MBB, MI, MIOp0, MIOp2, MIOp1);
       }
     }
   }
