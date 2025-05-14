@@ -51,8 +51,6 @@ struct ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
         insertTraceCalls(affineFor, traceBeginFunc, traceEndFunc);
       } else if (auto scfFor = dyn_cast<scf::ForOp>(op)) {
         insertTraceCalls(scfFor, traceBeginFunc, traceEndFunc);
-      } else if (auto scfWhile = dyn_cast<scf::WhileOp>(op)) {
-        insertTraceCalls(scfWhile, traceBeginFunc, traceEndFunc);
       }
     });
   }
