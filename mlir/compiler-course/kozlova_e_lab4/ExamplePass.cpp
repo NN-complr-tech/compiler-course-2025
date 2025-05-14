@@ -18,7 +18,7 @@ int computeRegionDepth(mlir::Region &region) {
       int currentDepth = 0;
 
       if (llvm::isa<mlir::scf::ForOp, mlir::scf::WhileOp, mlir::scf::IfOp,
-          mlir::affine::AffineForOp, mlir::affine::AffineIfOp>(op)) {
+                    mlir::affine::AffineForOp, mlir::affine::AffineIfOp>(op)) {
         currentDepth = 1;
 
         int nestedDepth = 0;
