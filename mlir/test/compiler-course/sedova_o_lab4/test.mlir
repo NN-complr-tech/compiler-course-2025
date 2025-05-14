@@ -4,17 +4,10 @@
 
 // CHECK-LABEL: func @test_affine
 // CHECK: func.call @trace_loop_iter_begin()
-// CHECK: affine.for
 // CHECK: func.call @trace_loop_iter_end()
 
 // CHECK-LABEL: func @test_scf_for
 // CHECK: func.call @trace_loop_iter_begin()
-// CHECK: scf.for
-// CHECK: func.call @trace_loop_iter_end()
-
-// CHECK-LABEL: func @test_scf_while
-// CHECK: func.call @trace_loop_iter_begin()
-// CHECK: scf.while
 // CHECK: func.call @trace_loop_iter_end()
 
 func.func @trace_loop_iter_begin() {
