@@ -1,4 +1,4 @@
-set(Title "Lab4")
+set(Title "ExamplePass")
 set(Student "Sedova_Olga")
 set(Group "FIIT1")
 set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
@@ -12,5 +12,6 @@ add_llvm_pass_plugin(${TARGET_NAME}
     MLIRBuiltinLocationAttributesIncGen
     BUILDTREE_ONLY
 )
+
 
 set(MLIR_TEST_DEPENDS ${TARGET_NAME} ${MLIR_TEST_DEPENDS} PARENT_SCOPE)
