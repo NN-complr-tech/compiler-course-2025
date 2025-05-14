@@ -32,9 +32,8 @@ private:
       Value val1 = operation.getLhs();
       Value val2 = operation.getRhs();
 
-      // Use the appropriate division operation based on the type
-      Value division =
-          rw.create<typename DivOpType<RemOpType>::Type>(location, val1, val2);
+      using DivOp = typename DivOpType<RemOpType>::Type;
+      Value division = rw.create<DivOp>(location, val1, val2);
       Value multiplication = rw.create<MulIOp>(location, division, val2);
       Value substract = rw.create<SubIOp>(location, val1, multiplication);
 
