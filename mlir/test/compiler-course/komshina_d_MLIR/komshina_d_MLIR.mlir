@@ -56,3 +56,14 @@ module {
     %0 = math.ceil %arg0 : vector<4xf32>
     return %0 : vector<4xf32>
   }
+
+  // Test 5: Ceil on f64 input
+  // CHECK-LABEL: func.func @test_f64
+  // CHECK-NEXT:   %[[NEG:.*]] = arith.negf %arg0 : f64
+  // CHECK-NEXT:   %[[FLOOR:.*]] = math.floor %[[NEG]] : f64
+  // CHECK-NEXT:   %[[RES:.*]] = arith.negf %[[FLOOR]] : f64
+  // CHECK-NEXT:   return %[[RES]] : f64
+  func.func @test_f64(%arg0: f64) -> f64 {
+    %0 = math.ceil %arg0 : f64
+    return %0 : f64
+  }
