@@ -37,6 +37,25 @@ func.func @affine_2depth() {
   func.return
 } 
 
+//CHECK: func.func @suggested_test() attributes {"Max_loop_depths:" = [1]} { 
+//CHECK-NEXT:  %c0 = arith.constant 0 : index
+//CHECK-NEXT:  affine.if #set(%c0) {
+//CHECK-NEXT:     affine.for %arg0 = 0 to 2 {
+//CHECK-NEXT:     }
+//CHECK-NEXT:  }
+//CHECK-NEXT: return
+//CHECK-NEXT:}
+
+
+func.func @suggested_test() {
+  %c0 = arith.constant 0 : index
+  affine.if #set(%c0) {
+     affine.for %arg0 = 0 to 2 {
+     }
+  }
+  func.return
+}
+
 
 //CHECK: func.func @scf_more_loops() attributes {"Max_loop_depths:" = [3, 2]} { 
 //CHECK-NEXT:  %c0 = arith.constant 0 : index

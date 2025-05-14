@@ -29,6 +29,7 @@ protected:
     Operation *operation;
     size_t currentDepth;
   };
+  std::vector<size_t> maxDepths;
 
 public:
   StringRef getArgument() const final {
@@ -46,13 +47,15 @@ public:
 
   void runOnOperation() override {
     func::FuncOp func = getOperation();
-    std::vector<size_t> maxDepths;
 
     for (Operation &op : func.getBody().front()) {
       if (isa<affine::AffineForOp, scf::ForOp, scf::WhileOp, scf::ForallOp,
               spirv::LoopOp>(op)) {
         size_t maxDepth = getMaxDepth(&op);
         maxDepths.push_back(maxDepth);
+      } else if (isa<spirv::LoopOp, affine::AffineIfOp, scf::IfOp,
+                     spirv::SelectionOp>(op)) {
+        findLoops(&op);
       }
     }
 
@@ -61,8 +64,26 @@ public:
       depthAttributes.push_back(
           IntegerAttr::get(IntegerType::get(func.getContext(), 64), i));
     }
+    maxDepths.clear();
     func->setAttr("Max_loop_depths:",
                   ArrayAttr::get(func.getContext(), depthAttributes));
+  }
+
+  void findLoops(Operation *root) {
+    for (Region &region : root->getRegions()) {
+      for (Block &block : region) {
+        for (Operation &op : block) {
+          if (isa<affine::AffineForOp, scf::ForOp, scf::WhileOp, scf::ForallOp,
+                  spirv::LoopOp>(op)) {
+            size_t maxDepth = getMaxDepth(&op);
+            maxDepths.push_back(maxDepth);
+          } else if (isa<affine::AffineIfOp, scf::IfOp, spirv::SelectionOp>(
+                         op)) {
+            findLoops(&op);
+          }
+        }
+      }
+    }
   }
 
   size_t getMaxDepth(Operation *root) {
