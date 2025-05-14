@@ -13,7 +13,7 @@ public:
   StringRef getArgument() const final {
     return "RemsiuiPass_Khovansky_Dmitry_FIIT2_MLIR";
   }
-  StringRef getDescription() const final { 
+  StringRef getDescription() const final {
     return "Decomposes arith.remsi and arith.remui operations into equivalent "
            "expressions using division and multiplication: a - (a // b) * b";
   }
