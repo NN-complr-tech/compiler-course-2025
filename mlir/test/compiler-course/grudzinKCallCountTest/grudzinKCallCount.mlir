@@ -1,6 +1,6 @@
 // RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/CallCountPass_Grudzin_Konstantin_FIIT1_MLIR%shlibext \
 // RUN:   --pass-pipeline="builtin.module(CallCountPass_Grudzin_Konstantin_FIIT1_MLIR)" %s \
-// RUN: | FileCheck %s
+// RUN: | FileCheck --implicit-check-not="call @unused() {call_count =" %s
 
 module {
   func.func @callee1() -> () {
