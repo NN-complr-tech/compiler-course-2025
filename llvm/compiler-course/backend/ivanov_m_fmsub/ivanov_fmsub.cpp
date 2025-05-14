@@ -47,8 +47,8 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
                       TmpMI->getOpcode() == X86::VMULPDYrr ||
                       TmpMI->getOpcode() == X86::VMULSDrr ||
                       TmpMI->getOpcode() == X86::VMULSSrr)) {
-          continue;
-        }
+        continue;
+      }
 
       MachineInstr &MulMI = *TmpMI;
 
