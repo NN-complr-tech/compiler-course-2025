@@ -12,34 +12,29 @@ namespace {
 
 class RemPass : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
 private:
-  struct RemSIOpRewrite : public OpRewritePattern<RemSIOp> {
-    using OpRewritePattern::OpRewritePattern;
+  template <typename RemOpType>
+  struct RemXIOpRewrite : public OpRewritePattern<RemOpType> {
 
-    LogicalResult matchAndRewrite(RemSIOp operation,
+    template <typename RemXIOp>
+    struct DivOpType {
+      using Type = DivSIOp;
+    };
+
+    template <>
+    struct DivOpType<RemUIOp> {
+      using Type = DivUIOp;
+    };
+
+    using OpRewritePattern<RemOpType>::OpRewritePattern;
+    LogicalResult matchAndRewrite(RemOpType operation,
                                   PatternRewriter &rw) const override {
       Location location = operation.getLoc();
-
       Value val1 = operation.getLhs();
       Value val2 = operation.getRhs();
-      Value division = rw.create<DivSIOp>(location, val1, val2);
-      Value multiplication = rw.create<MulIOp>(location, division, val2);
-      Value substract = rw.create<SubIOp>(location, val1, multiplication);
 
-      rw.replaceOp(operation, substract);
-      return success();
-    }
-  };
-
-  struct RemUIOpRewrite : public OpRewritePattern<RemUIOp> {
-    using OpRewritePattern::OpRewritePattern;
-
-    LogicalResult matchAndRewrite(RemUIOp operation,
-                                  PatternRewriter &rw) const override {
-      Location location = operation.getLoc();
-
-      Value val1 = operation.getLhs();
-      Value val2 = operation.getRhs();
-      Value division = rw.create<DivUIOp>(location, val1, val2);
+      // Use the appropriate division operation based on the type
+      Value division =
+          rw.create<typename DivOpType<RemOpType>::Type>(location, val1, val2);
       Value multiplication = rw.create<MulIOp>(location, division, val2);
       Value substract = rw.create<SubIOp>(location, val1, multiplication);
 
@@ -59,12 +54,14 @@ public:
   }
 
   void runOnOperation() override {
+    using RemSIRewritePattern = RemXIOpRewrite<RemSIOp>;
+    using RemUIRewritePattern = RemXIOpRewrite<RemUIOp>;
     RewritePatternSet rewrite_patterns(&getContext());
-    rewrite_patterns.add<RemSIOpRewrite, RemUIOpRewrite>(&getContext());
+    rewrite_patterns.add<RemSIRewritePattern>(&getContext());
+    rewrite_patterns.add<RemUIRewritePattern>(&getContext());
     LogicalResult result = applyPatternsAndFoldGreedily(
         getOperation(), std::move(rewrite_patterns), GreedyRewriteConfig(),
         nullptr);
-
     if (failed(result)) {
       llvm::errs() << "Something went wrong.\n";
     }
