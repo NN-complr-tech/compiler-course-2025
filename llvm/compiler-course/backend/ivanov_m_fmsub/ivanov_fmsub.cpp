@@ -38,37 +38,18 @@ bool FMSubPass::runOnMachineFunction(MachineFunction &MF) {
       // potential register - result of mul instruction
       Register TmpReg = SubMI.getOperand(2).getReg();
       // try to find mul instruction
-      MachineInstr *TmpMI = nullptr;
-      auto NextIt = std::make_reverse_iterator(std::next(MII));
-      auto CurE = std::make_reverse_iterator(MBB.begin());
-      for (; NextIt != CurE; ++NextIt) {
-        MachineInstr &CurMI = *NextIt;
-        unsigned CurOpc = CurMI.getOpcode();
-        if (CurOpc == X86::MULSDrr || CurOpc == X86::MULSSrr ||
-            CurOpc == X86::MULPSrr || CurOpc == X86::MULPDrr ||
-            CurOpc == X86::VMULPSYrr || CurOpc == X86::VMULPDYrr ||
-            CurOpc == X86::VMULSDrr || CurOpc == X86::VMULSSrr) {
-          if (CurMI.getOperand(0).isReg() &&
-              CurMI.getOperand(0).getReg() == TmpReg) {
-            TmpMI = &CurMI;
-            break;
-          }
+      MachineInstr *TmpMI = MF.getRegInfo().getUniqueVRegDef(TmpReg);
+      if(!TmpMI ||
+        !(TmpMI->getOpcode() == X86::MULSDrr   ||
+        TmpMI->getOpcode() == X86::MULSSrr   ||
+        TmpMI->getOpcode() == X86::MULPSrr   ||
+        TmpMI->getOpcode() == X86::MULPDrr   ||
+        TmpMI->getOpcode() == X86::VMULPSYrr ||
+        TmpMI->getOpcode() == X86::VMULPDYrr ||
+        TmpMI->getOpcode() == X86::VMULSDrr  ||
+        TmpMI->getOpcode() == X86::VMULSSrr)) {
+          continue;
         }
-        // check if TmpReg is defined in non mul instruction
-        for (auto &Op : CurMI.operands()) {
-          if (Op.isReg() && Op.getReg() == TmpReg && Op.isDef()) {
-            NextIt = CurE;
-            break;
-          }
-        }
-        if (NextIt == CurE) {
-          break;
-        }
-      }
-      // if mul instruction wasn't found or was changed
-      if (TmpMI == nullptr) {
-        continue;
-      }
 
       MachineInstr &MulMI = *TmpMI;
 

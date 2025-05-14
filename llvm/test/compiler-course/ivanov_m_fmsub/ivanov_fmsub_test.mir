@@ -49,7 +49,6 @@
 
 ---
 # CHECK-LABEL: name: fmsub_ss
-# CHECK: VFMSUB213SSr
 name:            fmsub_ss
 alignment:       16
 exposesReturnsTwice: false
@@ -106,16 +105,18 @@ machineFunctionInfo:
 body:             |
   bb.0.entry:
     liveins: $xmm0, $xmm1, $xmm2
-  
-    renamable $xmm0 = nofpexcept MULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
-    renamable $xmm2 = nofpexcept SUBSSrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
-    $xmm0 = MOVAPSrr killed $xmm2
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    ; CHECK: VFMSUB213SSr
+    renamable %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    renamable %4:fr32 = nofpexcept VSUBSSrr %2, %3, implicit $mxcsr
+    $xmm0 = COPY %4
     RET64 $xmm0
 
 
 ---
 # CHECK-LABEL: fmsub_sd
-# CHECK:       VFMSUB213SDr
 name:            fmsub_sd
 alignment:       16
 exposesReturnsTwice: false
@@ -172,16 +173,18 @@ machineFunctionInfo:
 body:             |
   bb.0 (%ir-block.0):
     liveins: $xmm0, $xmm1, $xmm2
-  
-    renamable $xmm0 = nofpexcept MULSDrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
-    renamable $xmm2 = nofpexcept SUBSDrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
-    $xmm0 = MOVAPDrr killed $xmm2
+    %0:fr64 = COPY $xmm0
+    %1:fr64 = COPY $xmm1
+    %2:fr64 = COPY $xmm2
+    ; CHECK:       VFMSUB213SDr
+    renamable %3:fr64 = nofpexcept MULSDrr %0, %1, implicit $mxcsr
+    renamable %4:fr64 = nofpexcept SUBSDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
     RET64 $xmm0
 
 
 ---
 # CHECK-LABEL: fmsub_ps
-# CHECK:       VFMSUB213PSr
 name:            fmsub_ps
 alignment:       16
 exposesReturnsTwice: false
@@ -238,16 +241,18 @@ machineFunctionInfo:
 body:             |
   bb.0 (%ir-block.0):
     liveins: $xmm0, $xmm1, $xmm2
-  
-    renamable $xmm0 = nofpexcept MULPSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
-    renamable $xmm2 = nofpexcept SUBPSrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
-    $xmm0 = MOVAPSrr killed $xmm2
+    %0:vr128 = COPY $xmm0
+    %1:vr128 = COPY $xmm1
+    %2:vr128 = COPY $xmm2
+    ; CHECK:       VFMSUB213PSr
+    renamable %3:vr128 = nofpexcept MULPSrr %0, %1, implicit $mxcsr
+    renamable %4:vr128 = nofpexcept SUBPSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
     RET64 $xmm0
 
 
 ---
 # CHECK-LABEL: fmsub_pd
-# CHECK:       VFMSUB213PDYr
 name:            fmsub_pd
 alignment:       16
 exposesReturnsTwice: false
@@ -304,16 +309,18 @@ machineFunctionInfo:
 body:             |
   bb.0 (%ir-block.0):
     liveins: $xmm0, $xmm1, $xmm2
-  
-    renamable $xmm0 = nofpexcept MULPDrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
-    renamable $xmm2 = nofpexcept SUBPDrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
-    $xmm0 = MOVAPDrr killed $xmm2
+    %0:vr128 = COPY $xmm0
+    %1:vr128 = COPY $xmm1
+    %2:vr128 = COPY $xmm2
+    ; CHECK:       VFMSUB213PDYr
+    renamable %3:vr128 = nofpexcept MULPDrr %0, %1, implicit $mxcsr
+    renamable %4:vr128 = nofpexcept SUBPDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
     RET64 $xmm0
 
 
 ---
 # CHECK-LABEL: wrong_op
-# CHECK-NOT:   VFMSUB
 name:            wrong_op
 alignment:       16
 exposesReturnsTwice: false
@@ -370,15 +377,18 @@ machineFunctionInfo:
 body:             |
   bb.0 (%ir-block.0):
     liveins: $xmm0, $xmm1, $xmm2
-  
-    renamable $xmm0 = nofpexcept MULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
-    renamable $xmm0 = nofpexcept ADDSSrr killed renamable $xmm0, killed renamable $xmm2, implicit $mxcsr
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    ; CHECK-NOT:   VFMSUB
+    renamable %3:fr32 = nofpexcept MULSSrr %0, %1, implicit $mxcsr
+    renamable %4:fr32 = nofpexcept ADDSSrr %3, killed %2, implicit $mxcsr
+    $xmm0 = COPY %4
     RET64 $xmm0
 
 
 ---
 # CHECK-LABEL: fmsub_with_add_between
-# CHECK-NOT:   VFMSUB
 name:            fmsub_with_add_between
 alignment:       16
 exposesReturnsTwice: false
@@ -439,10 +449,14 @@ machineFunctionInfo:
 body:             |
   bb.0 (%ir-block.0):
     liveins: $xmm0, $xmm1, $xmm2
-  
-    renamable $xmm0 = nofpexcept MULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
-    renamable $xmm0 = nofpexcept ADDSSrm killed renamable $xmm0, $rip, 1, $noreg, %const.0, $noreg, implicit $mxcsr :: (load (s32) from constant-pool)
-    renamable $xmm2 = nofpexcept SUBSSrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    ; CHECK-NOT:   VFMSUB
+    renamable %3:fr32 = nofpexcept MULSSrr %0, %1, implicit $mxcsr
+    renamable %4:fr32 = nofpexcept ADDSSrm %3, $rip, 1, $noreg, %const.0, $noreg, implicit $mxcsr :: (load (s32) from constant-pool)
+    renamable %5:fr32 = nofpexcept SUBSSrr %2, killed %4, implicit $mxcsr
+    $xmm0 = COPY %5
     $xmm0 = MOVAPSrr killed $xmm2
     RET64 $xmm0
     
