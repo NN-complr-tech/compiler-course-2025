@@ -17,9 +17,8 @@ int computeRegionDepth(mlir::Region &region) {
     for (mlir::Operation &op : block.getOperations()) {
       int currentDepth = 0;
 
-      if (llvm::isa<mlir::scf::ForOp, mlir::scf::WhileOp,
-                    mlir::scf::IfOp, mlir::affine::AffineForOp,
-                    mlir::affine::AffineIfOp>(op)) {
+      if (llvm::isa<mlir::scf::ForOp, mlir::scf::WhileOp, mlir::scf::IfOp,
+          mlir::affine::AffineForOp, mlir::affine::AffineIfOp>(op)) {
         currentDepth = 1;
 
         int nestedDepth = 0;
@@ -42,7 +41,7 @@ int getLoopDepth(mlir::Operation *loopOp) {
   for (mlir::Region &region : loopOp->getRegions()) {
     nestedDepth = std::max(nestedDepth, computeRegionDepth(region));
   }
-  return 1 + nestedDepth;  
+  return 1 + nestedDepth;
 }
 
 class ExamplePass
@@ -55,9 +54,7 @@ public:
     return "ExamplePass_Kozlova_Ekaterina_FIIT3_MLIR";
   }
 
-  mlir::StringRef getDescription() const override {
-    return "Pass";
-  }
+  mlir::StringRef getDescription() const override { return "Pass"; }
 
   void runOnOperation() override {
     mlir::ModuleOp moduleOp = getOperation();
@@ -75,8 +72,8 @@ public:
       });
 
       if (!loopDepths.empty()) {
-          mlir::ArrayAttr depthAttr = builder.getI64ArrayAttr(loopDepths);
-          funcOp->setAttr("my_loop_depths", depthAttr);
+        mlir::ArrayAttr depthAttr = builder.getI64ArrayAttr(loopDepths);
+        funcOp->setAttr("my_loop_depths", depthAttr);
       }
     });
   }
