@@ -1,5 +1,5 @@
 // RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/mlir_Shurigin_S_FIIT1_MLIR%shlibext \
-// RUN: --pass-pipeline="builtin.module(func.func(my-loop-depth-pass))" %s | FileCheck %s
+// RUN: --pass-pipeline="builtin.module(my-loop-depth-pass)" %s | FileCheck %s
 
 // CHECK: module {
 
@@ -175,7 +175,7 @@ func.func @loop_if_loop() {
 // CHECK-NEXT:     return
 // CHECK-NEXT:   }
 
-// CHECK-LABEL:  func.func @another_func_with_loop() {
+// CHECK-LABEL: func.func @another_func_with_loop() attributes {my_loop_depths = [1]} {
 // CHECK-NOT:      my_loop_depths 
 // CHECK-NEXT:     affine.for %arg0 = 0 to 1 {
 // CHECK-NEXT:     }
