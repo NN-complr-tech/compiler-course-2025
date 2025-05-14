@@ -34,7 +34,9 @@ public:
         int64_t st = step.value();
         if (st != 0) {
           int64_t tripCount = (ub - lb + st - 1) / st;
-          forOp->setAttr("trip_count", IntegerAttr::get(IndexType::get(forOp.getContext()), tripCount));
+          forOp->setAttr(
+              "trip_count",
+              IntegerAttr::get(IndexType::get(forOp.getContext()), tripCount));
         }
       }
     });
@@ -46,8 +48,8 @@ MLIR_DECLARE_EXPLICIT_TYPE_ID(ScfForLoopsPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(ScfForLoopsPass)
 
 mlir::PassPluginLibraryInfo getFunctionCallCounterPassPluginInfo() {
-  return { MLIR_PLUGIN_API_VERSION, "ScfForLoopsPass", "1.0",
-           []() { mlir::PassRegistration<ScfForLoopsPass>(); } };
+  return {MLIR_PLUGIN_API_VERSION, "ScfForLoopsPass", "1.0",
+          []() { mlir::PassRegistration<ScfForLoopsPass>(); } };
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
