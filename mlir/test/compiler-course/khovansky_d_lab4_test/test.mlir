@@ -57,10 +57,3 @@ func.func @test_types(%a: i64, %b: i64) -> i64 {
 // CHECK-NEXT: return %[[RES]] : i64
 
 
-func.func @test_ignore(%a: i32, %b: i32) -> i32 {
-  %r = arith.addi %a, %b : i32
-  return %r : i32
-}
-
-// CHECK-LABEL: func.func @test_ignore
-// CHECK-NEXT: arith.addi

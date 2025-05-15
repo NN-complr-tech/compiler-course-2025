@@ -34,30 +34,27 @@ public:
       Location loc = op->getLoc();
 
       // rem(a, b) = a - (a // b) * b
-      Value a, b, div, mul, result;
+      Value a, b, div;
 
       if (auto remsi = dyn_cast<arith::RemSIOp>(op)) {
         a = remsi.getLhs();
         b = remsi.getRhs();
-
+        
         div = builder.create<arith::DivSIOp>(loc, a, b);
-        mul = builder.create<arith::MulIOp>(loc, div, b);
-        result = builder.create<arith::SubIOp>(loc, a, mul);
-
-        remsi.replaceAllUsesWith(result);
-        remsi.erase();
-
       } else if (auto remui = dyn_cast<arith::RemUIOp>(op)) {
         a = remui.getLhs();
         b = remui.getRhs();
 
         div = builder.create<arith::DivUIOp>(loc, a, b);
-        mul = builder.create<arith::MulIOp>(loc, div, b);
-        result = builder.create<arith::SubIOp>(loc, a, mul);
-
-        remui.replaceAllUsesWith(result);
-        remui.erase();
+      } else {
+        continue;
       }
+
+      Value mul = builder.create<arith::MulIOp>(loc, div, b);
+      Value result = builder.create<arith::SubIOp>(loc, a, mul);
+
+      op->getResult(0).replaceAllUsesWith(result);
+      op->erase();
     }
   }
 };
