@@ -14,8 +14,9 @@ module {
     %c10 = arith.constant 10 : index
 
     affine.for %i = %c0 to %c10 {
-      // CHECK: call @trace_loop_iter_begin_1
-      // CHECK: call @trace_loop_iter_end_1
+      // CHECK: func.call @trace_loop_iter_begin_1(%arg0) : (index) -> ()
+      // CHECK-NEXT: "test.op"
+      // CHECK-NEXT: func.call @trace_loop_iter_end_1(%arg0) : (index) -> ()
       "test.op"() : () -> ()
     }
     return
@@ -36,8 +37,9 @@ module {
     %c1 = arith.constant 1 : index
 
     scf.for %i = %c0 to %c10 step %c1 {
-      // CHECK: call @trace_loop_iter_begin_1
-      // CHECK: call @trace_loop_iter_end_1
+      // CHECK: func.call @trace_loop_iter_begin_1(%arg0) : (index) -> ()
+      // CHECK-NEXT: "test.op"
+      // CHECK-NEXT: func.call @trace_loop_iter_end_1(%arg0) : (index) -> ()
       "test.op"() : () -> ()
     }
     return
@@ -62,11 +64,13 @@ module {
       scf.condition(%cmp) %sum, %i : i32, i32
     } do {
     ^bb0(%sum_arg: i32, %i_arg: i32):
-      // CHECK: call @trace_loop_iter_begin_1
-      // CHECK: call @trace_loop_iter_end_1
+      // CHECK: func.call @trace_loop_iter_begin_1
+      // CHECK-NEXT: arith.addi
+      // CHECK: func.call @trace_loop_iter_end_1
       %new_sum = arith.addi %sum_arg, %i_arg : i32
       %one = arith.constant 1 : i32
       %new_i = arith.addi %i_arg, %one : i32
+      func.call @trace_loop_iter_end_1(%sum_arg) : (i32) -> ()
       scf.yield %new_sum, %new_i : i32, i32
     }
 
@@ -82,9 +86,10 @@ module {
   // CHECK-LABEL: func.func @parallel_loop
   func.func @parallel_loop() {
     affine.parallel (%i, %j) = (0, 0) to (10, 10) step (2, 2) {
-      // CHECK: func.call @trace_loop_iter_begin_2
+      // CHECK: func.call @trace_loop_iter_begin_2(%arg0, %arg1) : (index, index) -> ()
+      // CHECK-NEXT: "test.op"() : () -> ()
+      // CHECK-NEXT: func.call @trace_loop_iter_end_2(%arg0, %arg1) : (index, index) -> ()
       "test.op"() : () -> ()
-      // CHECK: func.call @trace_loop_iter_end_2
     }
     return
   }
