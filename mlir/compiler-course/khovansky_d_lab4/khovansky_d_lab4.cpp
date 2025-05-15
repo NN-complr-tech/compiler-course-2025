@@ -39,7 +39,7 @@ public:
       if (auto remsi = dyn_cast<arith::RemSIOp>(op)) {
         a = remsi.getLhs();
         b = remsi.getRhs();
-        
+
         div = builder.create<arith::DivSIOp>(loc, a, b);
       } else if (auto remui = dyn_cast<arith::RemUIOp>(op)) {
         a = remui.getLhs();
