@@ -94,7 +94,7 @@ module {
     // CHECK-NEXT:   %1 = arith.index_cast %arg0 : index to i32
     // CHECK-NEXT:   %2 = arith.addi %arg1, %1 : i32
     // CHECK-NEXT:   scf.yield %2 : i32
-    // CHECK-NEXT: } {trip_count = 0 : i64}
+    // CHECK-NEXT: } {trip_count = 10 : i64}
     // CHECK-NEXT: return %0 : i32
     // CHECK-NEXT: }
     %c9      = arith.constant 9   : index       // lower bound

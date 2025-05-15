@@ -54,11 +54,10 @@ struct TripCountPass
       int64_t ub = *ubOpt;
       int64_t step = *stepOpt;
 
-      // bot + and -
-      int64_t diff = ub - lb;
+      // both + and -
       int64_t stepAbs = step > 0 ? step : -step;
-      int64_t tripCnt =
-          diff <= 0 ? 0 : (diff + stepAbs - 1) / stepAbs; // negative diff => 0
+      int64_t diff = step > 0 ? (ub - lb) : (lb - ub);
+      int64_t tripCnt = diff <= 0 ? 0 : (diff + stepAbs - 1) / stepAbs;
 
       builder.setInsertionPoint(forOp);
       forOp->setAttr("trip_count", builder.getI64IntegerAttr(tripCnt));
