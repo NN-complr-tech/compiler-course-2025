@@ -9,19 +9,18 @@
 using namespace clang;
 
 namespace {
-
 class MaybeUnusedVisitor final
-    : public RecursiveASTVisitor<MaybeUnusedVisitor> {
+    : public clang::RecursiveASTVisitor<MaybeUnusedVisitor> {
 public:
-  explicit MaybeUnusedVisitor(ASTContext *Context, Rewriter &R)
-      : Context(Context), TheRewriter(R) {}
+  explicit MaybeUnusedVisitor(clang::ASTContext *context, Rewriter &Rewrite)
+      : m_context(context), TheRewriter(Rewrite) {}
 
   bool VisitFunctionDecl(FunctionDecl *FD) {
     if (!FD->hasBody() || FD->isImplicit())
       return true;
 
-    for (unsigned I = 0, N = FD->getNumParams(); I < N; ++I) {
-      ParmVarDecl *PVD = FD->getParamDecl(I);
+    for (unsigned i = 0, N = FD->getNumParams(); i < N; ++i) {
+      ParmVarDecl *PVD = FD->getParamDecl(i);
       if (PVD && PVD->getName() == "unused" && !PVD->hasAttr<UnusedAttr>()) {
         SourceLocation Loc = PVD->getBeginLoc();
         if (Loc.isValid())
@@ -31,15 +30,15 @@ public:
       }
     }
 
-    Stmt *Body = FD->getBody();
-    if (Body)
-      ProcessLocalVars(Body);
+    Stmt *FuncBody = FD->getBody();
+    if (FuncBody)
+      processLocalVars(FuncBody);
 
     return true;
   }
 
 private:
-  void ProcessLocalVars(Stmt *S) {
+  void processLocalVars(Stmt *S) {
     if (!S)
       return;
 
@@ -50,63 +49,57 @@ private:
               VD->getName() == "unused" && !VD->hasAttr<UnusedAttr>()) {
             SourceLocation Loc = VD->getBeginLoc();
             if (Loc.isValid())
-              TheRewriter.InsertText(Loc, "[[maybe_unused]] ",
-                                     /*InsertBefore=*/true,
-                                     /*IndentNewLines=*/false);
+              TheRewriter.InsertText(Loc, "[[maybe_unused]] ", true, true);
           }
         }
       }
     }
-
-    for (Stmt *Child : S->children())
-      ProcessLocalVars(Child);
+    for (Stmt *Child : S->children()) {
+      processLocalVars(Child);
+    }
   }
 
-  ASTContext *Context;
-  Rewriter &TheRewriter;
+  clang::ASTContext *m_context;
+  clang::Rewriter &TheRewriter;
 };
 
-class MaybeUnusedConsumer final : public ASTConsumer {
+class MaybeUnusedConsumer final : public clang::ASTConsumer {
 public:
-  explicit MaybeUnusedConsumer(ASTContext *Context, Rewriter &R)
-      : Visitor(Context, R) {}
+  explicit MaybeUnusedConsumer(clang::ASTContext *context, Rewriter &Rewrite)
+      : Visitor(context, Rewrite) {}
 
-  void HandleTranslationUnit(ASTContext &Context) override {
-    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+  void HandleTranslationUnit(clang::ASTContext &context) override {
+    Visitor.TraverseDecl(context.getTranslationUnitDecl());
   }
 
 private:
   MaybeUnusedVisitor Visitor;
 };
 
-class MaybeUnusedAction final : public PluginASTAction {
+class MaybeUnusedAction final : public clang::PluginASTAction {
 public:
-  std::unique_ptr<ASTConsumer>
-  CreateASTConsumer(CompilerInstance &CI,
-                    llvm::StringRef) override {
-    TheRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-    return std::make_unique<MaybeUnusedConsumer>(&CI.getASTContext(),
-                                                TheRewriter);
+  std::unique_ptr<clang::ASTConsumer>
+  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+    TheRewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
+    return std::make_unique<MaybeUnusedConsumer>(&ci.getASTContext(),
+                                                 TheRewriter);
   }
 
-  bool ParseArgs(const CompilerInstance &CI,
-                 const std::vector<std::string> &Args) override {
+  bool ParseArgs(const clang::CompilerInstance &ci,
+                 const std::vector<std::string> &args) override {
     return true;
   }
 
   void EndSourceFileAction() override {
-    const auto &SM = TheRewriter.getSourceMgr();
-    TheRewriter.getEditBuffer(SM.getMainFileID())
-        .write(llvm::outs());
+    auto &SM = TheRewriter.getSourceMgr();
+    TheRewriter.getEditBuffer(SM.getMainFileID()).write(llvm::outs());
   }
 
 private:
   Rewriter TheRewriter;
 };
-
 } // namespace
 
-static FrontendPluginRegistry::Add<MaybeUnusedAction>
+static clang::FrontendPluginRegistry::Add<MaybeUnusedAction>
     X("koshkin_n_MaybeUnused_plugin",
       "Marks unused parameters/variables with [[maybe_unused]] attribute");
-
