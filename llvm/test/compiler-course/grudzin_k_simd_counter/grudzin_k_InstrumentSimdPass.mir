@@ -1,0 +1,345 @@
+#  RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+#  RUN:     --load=%llvmshlibdir/InstrumentSimdPass_KonstantinGrudzin_FIIT1_BACKEND%shlibext \
+#  RUN:     -run-pass=instrument-simd-x86 %s -o - | FileCheck %s
+
+# test_simd.cpp
+#
+# #include <immintrin.h>
+# 
+# // simple float add using 128-bit SSE
+# extern "C"
+# void simd_add_ps(__m128 a, __m128 b, __m128 *out) {
+#     // this maps to vaddps xmm*, xmm*, xmm*
+#     __m128 c = _mm_add_ps(a, b);
+#     *out = c;
+# }
+# 
+# // simple double add using 128-bit SSE2
+# extern "C"
+# void simd_add_pd(__m128d a, __m128d b, __m128d *out) {
+#     // this maps to vaddpd xmm*, xmm*, xmm*
+#     __m128d c = _mm_add_pd(a, b);
+#     *out = c;
+# }
+# 
+# // float add using 256-bit AVX
+# extern "C"
+# void simd256_add_ps(__m256 a, __m256 b, __m256 *out) {
+#     // this maps to vaddps ymm*, ymm*, ymm*
+#     __m256 c = _mm256_add_ps(a, b);
+#     *out = c;
+# }
+
+--- |
+  ; ModuleID = 'test_simd.ll'
+  source_filename = "test_simd.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: write) uwtable
+  define dso_local void @simd_add_ps(<4 x float> noundef %0, <4 x float> noundef %1, ptr nocapture noundef writeonly %2) local_unnamed_addr #0 {
+    %4 = fadd <4 x float> %0, %1
+    store <4 x float> %4, ptr %2, align 16, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: write) uwtable
+  define dso_local void @simd_add_pd(<2 x double> noundef %0, <2 x double> noundef %1, ptr nocapture noundef writeonly %2) local_unnamed_addr #0 {
+    %4 = fadd <2 x double> %0, %1
+    store <2 x double> %4, ptr %2, align 16, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: write) uwtable
+  define dso_local void @simd256_add_ps(<8 x float> noundef %0, <8 x float> noundef %1, ptr nocapture noundef writeonly %2) local_unnamed_addr #1 {
+    %4 = fadd <8 x float> %0, %1
+    store <8 x float> %4, ptr %2, align 32, !tbaa !5
+    ret void
+  }
+  
+  attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: write) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx" "tune-cpu"="generic" }
+  attributes #1 = { mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: write) uwtable "min-legal-vector-width"="256" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx" "tune-cpu"="generic" }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 2}
+  !4 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
+  !5 = !{!6, !6, i64 0}
+  !6 = !{!"omnipotent char", !7, i64 0}
+  !7 = !{!"Simple C++ TBAA"}
+
+...
+---
+# CHECK-LABEL: name:            simd_add_ps
+name:            simd_add_ps
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$rdi', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $rdi
+
+    ; CHECK: %2:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %4:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %4, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %5:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %5:gr64 = ADD64ri32 %5, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %5, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: %3:vr128 = nofpexcept VADDPSrr %0, %1, implicit $mxcsr
+    ; CHECK-NEXT: %6:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %6:gr64 = ADD64ri32 %6, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %6, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: VMOVAPSmr %2, 1, $noreg, 0, $noreg, killed %3 :: (store (s128) into %ir.2, !tbaa !5)
+    ; CHECK-NEXT: %7:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %7:gr64 = ADD64ri32 %7, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %7, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: RET 0
+  
+    %2:gr64 = COPY $rdi
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = nofpexcept VADDPSrr %0, %1, implicit $mxcsr
+    VMOVAPSmr %2, 1, $noreg, 0, $noreg, killed %3 :: (store (s128) into %ir.2, !tbaa !5)
+    RET 0
+
+...
+---
+# CHECK-LABEL: name:            simd_add_pd
+name:            simd_add_pd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$rdi', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $rdi
+
+    ; CHECK: %2:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %4:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %4, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %5:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %5:gr64 = ADD64ri32 %5, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %5, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: %3:vr128 = nofpexcept VADDPDrr %0, %1, implicit $mxcsr
+    ; CHECK-NEXT: %6:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %6:gr64 = ADD64ri32 %6, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %6, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: VMOVAPDmr %2, 1, $noreg, 0, $noreg, killed %3 :: (store (s128) into %ir.2, !tbaa !5)
+    ; CHECK-NEXT: %7:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %7:gr64 = ADD64ri32 %7, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %7, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: RET 0
+  
+    %2:gr64 = COPY $rdi
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = nofpexcept VADDPDrr %0, %1, implicit $mxcsr
+    VMOVAPDmr %2, 1, $noreg, 0, $noreg, killed %3 :: (store (s128) into %ir.2, !tbaa !5)
+    RET 0
+
+...
+---
+# CHECK-LABEL: name:            simd256_add_ps
+name:            simd256_add_ps
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr256, preferred-register: '' }
+  - { id: 1, class: vr256, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr256, preferred-register: '' }
+liveins:
+  - { reg: '$ymm0', virtual-reg: '%0' }
+  - { reg: '$ymm1', virtual-reg: '%1' }
+  - { reg: '$rdi', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $ymm0, $ymm1, $rdi
+
+    ; CHECK: %2:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:vr256 = COPY $ymm1
+    ; CHECK-NEXT: %4:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %4, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: %0:vr256 = COPY $ymm0
+    ; CHECK-NEXT: %5:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %5:gr64 = ADD64ri32 %5, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %5, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: %3:vr256 = nofpexcept VADDPSYrr %0, %1, implicit $mxcsr
+    ; CHECK-NEXT: %6:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %6:gr64 = ADD64ri32 %6, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %6, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: VMOVAPSYmr %2, 1, $noreg, 0, $noreg, killed %3 :: (store (s256) into %ir.2, !tbaa !5)
+    ; CHECK-NEXT: %7:gr64 = MOV64rm 1, @simd_counter, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: %7:gr64 = ADD64ri32 %7, 1, implicit-def $eflags
+    ; CHECK-NEXT: MOV64mr 1, @simd_counter, %7, implicit $rip, implicit $noreg
+    ; CHECK-NEXT: RET 0
+  
+    %2:gr64 = COPY $rdi
+    %1:vr256 = COPY $ymm1
+    %0:vr256 = COPY $ymm0
+    %3:vr256 = nofpexcept VADDPSYrr %0, %1, implicit $mxcsr
+    VMOVAPSYmr %2, 1, $noreg, 0, $noreg, killed %3 :: (store (s256) into %ir.2, !tbaa !5)
+    RET 0
+
+...

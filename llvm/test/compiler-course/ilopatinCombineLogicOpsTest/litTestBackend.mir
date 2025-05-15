@@ -1,0 +1,955 @@
+#  RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+#  RUN:     --load=%llvmshlibdir/CombineLogicOpsPass_IlyaLopatin_FIIT3_BACKEND%shlibext \
+#  RUN:     -run-pass=combine-logic-ops-x86 %s -o - | FileCheck %s
+
+#  this lit test contains the unoptimised machine IR produced with
+#      clang -O1 -msse2 -S -emit-llvm | for .ll file
+#      llc   -O0 -mattr=-avx -stop-after=finalize-isel -mtriple=x86_64-pc-linux-gnu | for .mir file
+#  and checks my custom pass
+
+# source files
+
+# test.cpp
+#
+# #include <emmintrin.h> // SSE2 intrinsics: and, or, xor, andnot
+# #include <xmmintrin.h> // SSE intrinsics for __m128
+# 
+# // 1) Chain: AND -> OR
+# //    expected: VPANDrr, VPORrr
+# __m128 test_and_or(__m128 a, __m128 b, __m128 c) {
+#     __m128 t = _mm_and_ps(a, b);
+#     return _mm_or_ps(t, c);
+# }
+# 
+# // 2) Simple logical ops upgrade to AVX
+# //    expected: VPANDrr
+# __m128 test_simple_and(__m128 a, __m128 b) {
+#     return _mm_and_ps(a, b);
+# }
+# 
+# //    expected: VPORrr
+# __m128 test_simple_or(__m128 a, __m128 b) {
+#     return _mm_or_ps(a, b);
+# }
+# 
+# //    expected: VPXORrr
+# __m128 test_simple_xor(__m128 a, __m128 b) {
+#     return _mm_xor_ps(a, b);
+# }
+# 
+# //    expected: VPANDNrr (~b & a)
+# __m128 test_simple_andnot(__m128 a, __m128 b) {
+#     // _mm_andnot_ps(x, y) computes (~x) & y, so swap args to get (~b)&a
+#     return _mm_andnot_ps(b, a);
+# }
+# 
+# // 3) Idioms on self
+# //    XOR(x, x) -> zero via VPXORrr
+# __m128 test_xor_self(__m128 a) {
+#     return _mm_xor_ps(a, a);
+# }
+# 
+# // OR(x, x) -> COPY
+# __m128 test_or_self(__m128 a) {
+#     return _mm_or_ps(a, a);
+# }
+# 
+# // AND(x, x) -> COPY
+# __m128 test_and_self(__m128 a) {
+#     return _mm_and_ps(a, a);
+# }
+# 
+# // 4) Special idiom: AND(x, 0) via XOR self -> VPXORrr
+# __m128 test_and_zero(__m128 a) {
+#     __m128 zero = _mm_xor_ps(a, a);
+#     return _mm_and_ps(a, zero);
+# }
+
+# not including .ll 'cause it's like 100 lines long
+
+
+
+--- |
+  ; ModuleID = 'tests.ll'
+  source_filename = "test.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z11test_and_orDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) #0 {
+    %4 = bitcast <4 x float> %0 to <4 x i32>
+    %5 = bitcast <4 x float> %1 to <4 x i32>
+    %6 = and <4 x i32> %5, %4
+    %7 = bitcast <4 x float> %2 to <4 x i32>
+    %8 = or <4 x i32> %6, %7
+    %9 = bitcast <4 x i32> %8 to <4 x float>
+    ret <4 x float> %9
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z15test_simple_andDv4_fS_(<4 x float> noundef %0, <4 x float> noundef %1) #0 {
+    %3 = bitcast <4 x float> %0 to <4 x i32>
+    %4 = bitcast <4 x float> %1 to <4 x i32>
+    %5 = and <4 x i32> %4, %3
+    %6 = bitcast <4 x i32> %5 to <4 x float>
+    ret <4 x float> %6
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z14test_simple_orDv4_fS_(<4 x float> noundef %0, <4 x float> noundef %1) #0 {
+    %3 = bitcast <4 x float> %0 to <4 x i32>
+    %4 = bitcast <4 x float> %1 to <4 x i32>
+    %5 = or <4 x i32> %4, %3
+    %6 = bitcast <4 x i32> %5 to <4 x float>
+    ret <4 x float> %6
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z15test_simple_xorDv4_fS_(<4 x float> noundef %0, <4 x float> noundef %1) #0 {
+    %3 = bitcast <4 x float> %0 to <4 x i32>
+    %4 = bitcast <4 x float> %1 to <4 x i32>
+    %5 = xor <4 x i32> %4, %3
+    %6 = bitcast <4 x i32> %5 to <4 x float>
+    ret <4 x float> %6
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z18test_simple_andnotDv4_fS_(<4 x float> noundef %0, <4 x float> noundef %1) #0 {
+    %3 = bitcast <4 x float> %1 to <4 x i32>
+    %4 = xor <4 x i32> %3, <i32 -1, i32 -1, i32 -1, i32 -1>
+    %5 = bitcast <4 x float> %0 to <4 x i32>
+    %6 = and <4 x i32> %4, %5
+    %7 = bitcast <4 x i32> %6 to <4 x float>
+    ret <4 x float> %7
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z13test_xor_selfDv4_f(<4 x float> noundef %0) #0 {
+    %2 = bitcast <4 x float> %0 to <4 x i32>
+    %3 = xor <4 x i32> %2, %2
+    %4 = bitcast <4 x i32> %3 to <4 x float>
+    ret <4 x float> %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z12test_or_selfDv4_f(<4 x float> noundef %0) #0 {
+    %2 = bitcast <4 x float> %0 to <4 x i32>
+    %3 = or <4 x i32> %2, %2
+    %4 = bitcast <4 x i32> %3 to <4 x float>
+    ret <4 x float> %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z13test_and_selfDv4_f(<4 x float> noundef %0) #0 {
+    %2 = bitcast <4 x float> %0 to <4 x i32>
+    %3 = and <4 x i32> %2, %2
+    %4 = bitcast <4 x i32> %3 to <4 x float>
+    ret <4 x float> %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z13test_and_zeroDv4_f(<4 x float> noundef %0) #0 {
+    %2 = bitcast <4 x float> %0 to <4 x i32>
+    %3 = xor <4 x i32> %2, %2
+    %4 = and <4 x i32> %2, %3
+    %5 = bitcast <4 x i32> %4 to <4 x float>
+    ret <4 x float> %5
+  }
+  
+  attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87,-avx" "tune-cpu"="generic" }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 2}
+  !4 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
+
+...
+---
+# CHECK-LABEL: name:            _Z11test_and_orDv4_fS_S_
+name:            _Z11test_and_orDv4_fS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+  - { id: 9, class: vr128, preferred-register: '' }
+  - { id: 10, class: vr128, preferred-register: '' }
+  - { id: 11, class: vr128, preferred-register: '' }
+  - { id: 12, class: vr128, preferred-register: '' }
+  - { id: 13, class: vr128, preferred-register: '' }
+  - { id: 14, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %14:vr128 = COPY %0
+    ; CHECK-NEXT: %13:vr128 = COPY %1
+    ; CHECK-NEXT: %12:vr128 = VPANDrr %13, %14
+    ; CHECK-NEXT: %9:vr128 = COPY %2
+    ; CHECK-NEXT: %8:vr128 = VPORrr %12, %9
+    ; CHECK-NEXT: %5:vr128 = COPY %8
+    ; CHECK-NEXT: $xmm0 = COPY %5
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: PANDrr
+    ; CHECK-NOT: PORrr
+  
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %14:vr128 = COPY %0
+    %13:vr128 = COPY %1
+    %12:vr128 = PANDrr %13, %14
+    %9:vr128 = COPY %2
+    %8:vr128 = PORrr %12, %9
+    %5:vr128 = COPY %8
+    $xmm0 = COPY %5
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z15test_simple_andDv4_fS_
+name:            _Z15test_simple_andDv4_fS_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+  - { id: 9, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.2):
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %0
+    ; CHECK-NEXT: %8:vr128 = COPY %1
+    ; CHECK-NEXT: %7:vr128 = VPANDrr %8, %9
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: PANDrr
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %9:vr128 = COPY %0
+    %8:vr128 = COPY %1
+    %7:vr128 = PANDrr %8, %9
+    %4:vr128 = COPY %7
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z14test_simple_orDv4_fS_
+name:            _Z14test_simple_orDv4_fS_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+  - { id: 9, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.2):
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %0
+    ; CHECK-NEXT: %8:vr128 = COPY %1
+    ; CHECK-NEXT: %7:vr128 = VPORrr %8, %9
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: PORrr
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %9:vr128 = COPY %0
+    %8:vr128 = COPY %1
+    %7:vr128 = PORrr %8, %9
+    %4:vr128 = COPY %7
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z15test_simple_xorDv4_fS_
+name:            _Z15test_simple_xorDv4_fS_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+  - { id: 9, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.2):
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %0
+    ; CHECK-NEXT: %8:vr128 = COPY %1
+    ; CHECK-NEXT: %7:vr128 = VPXORrr %8, %9
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: PXORrr
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %9:vr128 = COPY %0
+    %8:vr128 = COPY %1
+    %7:vr128 = PXORrr %8, %9
+    %4:vr128 = COPY %7
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z18test_simple_andnotDv4_fS_
+name:            _Z18test_simple_andnotDv4_fS_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+  - { id: 9, class: vr128, preferred-register: '' }
+  - { id: 10, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.2):
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %9:vr128 = COPY %1
+    ; CHECK-NEXT: %10:vr128 = V_SETALLONES
+    ; CHECK-NEXT: %5:vr128 = VPXORrr %1, %10
+    ; CHECK-NEXT: %8:vr128 = COPY %0
+    ; CHECK-NEXT: %7:vr128 = VPANDrr %5, %8
+    ; CHECK-NEXT: %4:vr128 = COPY %7
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: PXORrr
+    ; CHECK-NOT: PANDrr
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %9:vr128 = COPY %1
+    %10:vr128 = V_SETALLONES
+    %5:vr128 = PXORrr %1, killed %10
+    %8:vr128 = COPY %0
+    %7:vr128 = PANDrr %5, %8
+    %4:vr128 = COPY %7
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z13test_xor_selfDv4_f
+name:            _Z13test_xor_selfDv4_f
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.1):
+    liveins: $xmm0
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %6:vr128 = COPY %0
+    ; CHECK-NEXT: %5:vr128 = VPXORrr %6, %6
+    ; CHECK-NEXT: %3:vr128 = COPY %5
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: PXORrr
+  
+    %0:vr128 = COPY $xmm0
+    %6:vr128 = COPY %0
+    %5:vr128 = PXORrr %6, %6
+    %3:vr128 = COPY %5
+    $xmm0 = COPY %3
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z12test_or_selfDv4_f
+name:            _Z12test_or_selfDv4_f
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.1):
+    liveins: $xmm0
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %6:vr128 = COPY %0
+    ; CHECK-NEXT: %5:vr128 = COPY %6
+    ; CHECK-NEXT: %3:vr128 = COPY %5
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: VPORrr
+    ; CHECK-NOT: PORrr
+  
+    %0:vr128 = COPY $xmm0
+    %6:vr128 = COPY %0
+    %5:vr128 = PORrr %6, %6
+    %3:vr128 = COPY %5
+    $xmm0 = COPY %3
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z13test_and_selfDv4_f
+name:            _Z13test_and_selfDv4_f
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.1):
+    liveins: $xmm0
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %6:vr128 = COPY %0
+    ; CHECK-NEXT: %5:vr128 = COPY %6
+    ; CHECK-NEXT: %3:vr128 = COPY %5
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: VPANDrr
+    ; CHECK-NOT: PANDrr
+  
+    %0:vr128 = COPY $xmm0
+    %6:vr128 = COPY %0
+    %5:vr128 = PANDrr %6, %6
+    %3:vr128 = COPY %5
+    $xmm0 = COPY %3
+    RET64 implicit $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z13test_and_zeroDv4_f
+name:            _Z13test_and_zeroDv4_f
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.1):
+    liveins: $xmm0
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %8:vr128 = COPY %0
+    ; CHECK-NEXT: %6:vr128 = VPXORrr %6, %6
+    ; CHECK-NEXT: %3:vr128 = COPY %6
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET64 implicit $xmm0
+    ; CHECK-NOT: PXORrr
+    ; CHECK-NOT: PANDrr
+  
+    %0:vr128 = COPY $xmm0
+    %8:vr128 = COPY %0
+    %7:vr128 = PXORrr %8, %8
+    %6:vr128 = PANDrr %8, %7
+    %3:vr128 = COPY %6
+    $xmm0 = COPY %3
+    RET64 implicit $xmm0
+
+...
