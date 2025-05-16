@@ -22,17 +22,17 @@ public:
     OpBuilder builder(moduleOp);
 
     moduleOp.walk([&](arith::RemSIOp op) {
-      expandRemainder(op, arith::DivSIOp(), builder);
+      expandRemainder<arith::DivSIOp>(op, builder);
     });
 
     moduleOp.walk([&](arith::RemUIOp op) {
-      expandRemainder(op, arith::DivUIOp(), builder);
+      expandRemainder<arith::DivUIOp>(op, builder);
     });
   }
 
 private:
   template <typename DivOp>
-  void expandRemainder(Operation *op, DivOp divOp, OpBuilder &builder) {
+  void expandRemainder(Operation *op, OpBuilder &builder) {
     auto lhs = op->getOperand(0);
     auto rhs = op->getOperand(1);
     auto loc = op->getLoc();
