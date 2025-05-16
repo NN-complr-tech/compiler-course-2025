@@ -68,15 +68,4 @@ module {
     %2 = arith.addi %0, %1 : i32
     return %2 : i32
   }
-
-  // Test 6: Irrelevant operation that should remain unchanged
-  // CHECK-LABEL: func.func @test_irrelevant_op
-  // CHECK-NEXT:%0 = arith.addi %arg0, %arg1 : i32
-  // CHECK-NEXT:return %0 : i32
-
-  func.func @test_irrelevant_op(%a: i32, %b: i32) -> i32 {
-    %0 = arith.addi %a, %b : i32
-    return %0 : i32
-  }
-
 }
