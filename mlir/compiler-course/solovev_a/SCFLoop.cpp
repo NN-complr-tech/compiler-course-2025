@@ -32,12 +32,15 @@ public:
         int64_t lb = lowerBound.value();
         int64_t ub = upperBound.value();
         int64_t st = step.value();
-        if (st != 0) {
-          int64_t tripCount = (ub - lb + st - 1) / st;
-          forOp->setAttr(
-              "trip_count",
-              IntegerAttr::get(IndexType::get(forOp.getContext()), tripCount));
+        if (st == 0)
+          return;
+        int64_t tripCount = 0;
+        if ((st > 0 && lb < ub) || (st < 0 && lb > ub)) {
+          tripCount = (std::abs(ub - lb) + std::abs(st) - 1) / std::abs(st);
         }
+        forOp->setAttr(
+            "trip_count",
+            IntegerAttr::get(IndexType::get(forOp.getContext()), tripCount));
       }
     });
   }
