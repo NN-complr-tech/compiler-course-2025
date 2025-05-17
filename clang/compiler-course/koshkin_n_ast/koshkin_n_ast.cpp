@@ -12,7 +12,8 @@ namespace {
 class MaybeUnusedVisitor final
     : public clang::RecursiveASTVisitor<MaybeUnusedVisitor> {
 public:
-  explicit MaybeUnusedVisitor(clang::ASTContext *context, Rewriter &Rewrite)
+  explicit MaybeUnusedVisitor(clang::ASTContext *context,
+                              clang::Rewriter &Rewrite)
       : m_context(context), TheRewriter(Rewrite) {}
 
   bool VisitParmVarDecl(ParmVarDecl *pvd) {
@@ -25,8 +26,9 @@ public:
   }
 
   bool VisitVarDecl(VarDecl *vd) {
-    if (vd->isLocalVarDecl() && !vd->isImplicit() &&
-        !vd->isUsed(/*CheckUsedAttr=*/true)) {
+    if (isa<ParmVarDecl>(vd))
+      return true;
+    if (!vd->isImplicit() && !vd->isUsed(/*CheckUsedAttr=*/true)) {
       SourceLocation sc = vd->getBeginLoc();
       if (sc.isValid())
         TheRewriter.InsertText(sc, "[[maybe_unused]] ", true, true);
@@ -68,11 +70,12 @@ public:
 
   void EndSourceFileAction() override {
     auto &SM = TheRewriter.getSourceMgr();
-    TheRewriter.getEditBuffer(SM.getMainFileID()).write(llvm::outs());
+    auto FID = SM.getMainFileID();
+    TheRewriter.getEditBuffer(FID).write(llvm::outs());
   }
 
 private:
-  Rewriter TheRewriter;
+  clang::Rewriter TheRewriter;
 };
 } // namespace
 
