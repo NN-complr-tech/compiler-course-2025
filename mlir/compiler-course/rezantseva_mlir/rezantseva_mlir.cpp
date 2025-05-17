@@ -52,7 +52,8 @@ public:
     return "MaxDepthPass_RezantsevaAnastasia_FIIT1_MLIR";
   }
 
-  StringRef getDescription() const final { return "Pass "; }
+  StringRef getDescription() const final { return "It's a pass, that counts the max depth of region nests in each loop."; 
+  }
 
   void runOnOperation() override {
     func::FuncOp func = getOperation();
