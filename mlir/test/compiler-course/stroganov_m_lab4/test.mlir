@@ -75,3 +75,24 @@ func.func @while_loop(%arg0: index) {
   return
 }
 
+// CHECK-LABEL: func.func @nested_loops()
+// CHECK: scf.for
+// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
+// CHECK-NEXT: scf.for
+// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
+// CHECK-NEXT: %{{.*}} = arith.addi
+// CHECK-NEXT: func.call @trace_loop_iter_end() : () -> ()
+// CHECK func.call @trace_loop_iter_end() : () -> ()
+
+func.func @nested_loops() {
+  %c0 = arith.constant 0 : index
+  %c5 = arith.constant 5 : index
+  %c1 = arith.constant 1 : index
+  scf.for %i = %c0 to %c5 step %c1 {
+    scf.for %j = %c0 to %c5 step %c1 {
+      %sum = arith.addi %i, %j : index
+    }
+  }
+  return
+}
+
