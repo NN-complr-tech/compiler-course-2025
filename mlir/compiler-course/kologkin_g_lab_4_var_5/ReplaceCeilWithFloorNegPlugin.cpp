@@ -30,7 +30,6 @@ void replaceCeilWithNegFloor(ModuleOp module) {
         }
 
         OpBuilder builder(ceilOp);
-        builder.setInsertionPoint(ceilOp);
 
         auto neg1 = builder.create<arith::NegFOp>(loc, type, input);
 
