@@ -15,50 +15,26 @@ public:
   explicit MaybeUnusedVisitor(clang::ASTContext *context, Rewriter &Rewrite)
       : m_context(context), TheRewriter(Rewrite) {}
 
-  bool VisitFunctionDecl(FunctionDecl *FD) {
-    if (!FD->hasBody() || FD->isImplicit())
-      return true;
-
-    for (unsigned i = 0, N = FD->getNumParams(); i < N; ++i) {
-      ParmVarDecl *PVD = FD->getParamDecl(i);
-      if (PVD && PVD->getName() == "unused" && !PVD->hasAttr<UnusedAttr>()) {
-        SourceLocation Loc = PVD->getBeginLoc();
-        if (Loc.isValid())
-          TheRewriter.InsertText(Loc, "[[maybe_unused]] ",
-                                 /*InsertBefore=*/true,
-                                 /*IndentNewLines=*/true);
-      }
+  bool VisitParmVarDecl(ParmVarDecl *pvd) {
+    if (!pvd->isUsed(/*CheckUsedAttr=*/true)) {
+      SourceLocation sc = pvd->getBeginLoc();
+      if (sc.isValid())
+        TheRewriter.InsertText(sc, "[[maybe_unused]] ", true, true);
     }
+    return true;
+  }
 
-    Stmt *FuncBody = FD->getBody();
-    if (FuncBody)
-      processLocalVars(FuncBody);
-
+  bool VisitVarDecl(VarDecl *vd) {
+    if (vd->isLocalVarDecl() && !vd->isImplicit() &&
+        !vd->isUsed(/*CheckUsedAttr=*/true)) {
+      SourceLocation sc = vd->getBeginLoc();
+      if (sc.isValid())
+        TheRewriter.InsertText(sc, "[[maybe_unused]] ", true, true);
+    }
     return true;
   }
 
 private:
-  void processLocalVars(Stmt *S) {
-    if (!S)
-      return;
-
-    if (auto *DS = dyn_cast<DeclStmt>(S)) {
-      for (auto *D : DS->decls()) {
-        if (auto *VD = dyn_cast<VarDecl>(D)) {
-          if (VD->isLocalVarDecl() && !VD->isImplicit() &&
-              VD->getName() == "unused" && !VD->hasAttr<UnusedAttr>()) {
-            SourceLocation Loc = VD->getBeginLoc();
-            if (Loc.isValid())
-              TheRewriter.InsertText(Loc, "[[maybe_unused]] ", true, true);
-          }
-        }
-      }
-    }
-    for (Stmt *Child : S->children()) {
-      processLocalVars(Child);
-    }
-  }
-
   clang::ASTContext *m_context;
   clang::Rewriter &TheRewriter;
 };
