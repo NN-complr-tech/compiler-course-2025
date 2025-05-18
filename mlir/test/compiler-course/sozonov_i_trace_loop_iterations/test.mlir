@@ -26,13 +26,13 @@ func.func @test_scf_while() {
   %init = arith.constant 0 : i32
 
   // CHECK: scf.while
-  // CHECK-NEXT: func.call @trace_loop_iter_begin()
   // CHECK-NEXT: %[[COND:.*]] = arith.cmpi
-  // CHECK-NEXT: func.call @trace_loop_iter_end()
   // CHECK-NEXT: scf.condition(%[[COND]]) %{{.*}} : i32
   // CHECK-NEXT: } do {
   // CHECK-NEXT: ^bb0
+  // CHECK-NEXT: func.call @trace_loop_iter_begin()
   // CHECK-NEXT: %[[INC:.*]] = arith.addi
+  // CHECK-NEXT: func.call @trace_loop_iter_end()
   // CHECK-NEXT: scf.yield %[[INC]] : i32
 
   scf.while (%x = %init) : (i32) -> (i32) {

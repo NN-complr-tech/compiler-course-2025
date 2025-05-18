@@ -39,25 +39,35 @@ public:
     ensureFuncDecl("trace_loop_iter_end");
 
     moduleOp.walk([&](Operation *op) {
-      if (isa<scf::ForOp, scf::WhileOp, affine::AffineForOp>(op)) {
-        auto loc = op->getLoc();
-        OpBuilder builder(op->getContext());
+      if (auto whileOp = dyn_cast<scf::WhileOp>(op)) {
+        Region &afterRegion = whileOp.getAfter();
+        if (afterRegion.empty())
+          return;
 
+        Block &afterBlock = afterRegion.front();
+        OpBuilder builder(op->getContext());
+        builder.setInsertionPointToStart(&afterBlock);
+        builder.create<func::CallOp>(whileOp.getLoc(), "trace_loop_iter_begin",
+                                     TypeRange(), ValueRange());
+
+        builder.setInsertionPoint(afterBlock.getTerminator());
+        builder.create<func::CallOp>(whileOp.getLoc(), "trace_loop_iter_end",
+                                     TypeRange(), ValueRange());
+
+      } else if (isa<scf::ForOp, affine::AffineForOp>(op)) {
         Region &bodyRegion = op->getRegion(0);
         if (bodyRegion.empty())
           return;
 
         Block &entryBlock = bodyRegion.front();
+        OpBuilder builder(op->getContext());
         builder.setInsertionPointToStart(&entryBlock);
-        builder.create<func::CallOp>(loc, "trace_loop_iter_begin", TypeRange(),
-                                     ValueRange());
+        builder.create<func::CallOp>(op->getLoc(), "trace_loop_iter_begin",
+                                     TypeRange(), ValueRange());
 
-        for (Block &block : bodyRegion) {
-          Operation *terminator = block.getTerminator();
-          builder.setInsertionPoint(terminator);
-          builder.create<func::CallOp>(loc, "trace_loop_iter_end", TypeRange(),
-                                       ValueRange());
-        }
+        builder.setInsertionPoint(entryBlock.getTerminator());
+        builder.create<func::CallOp>(op->getLoc(), "trace_loop_iter_end",
+                                     TypeRange(), ValueRange());
       }
     });
   }
