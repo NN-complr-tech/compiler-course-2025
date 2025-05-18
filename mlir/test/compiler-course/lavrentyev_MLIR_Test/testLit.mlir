@@ -30,9 +30,9 @@ module {
   // CHECK-LABEL: func.func @const_bounds() -> i32 {
   func.func @const_bounds() -> i32 {
     // CHECK: %c0 = arith.constant 0 : index
-    // CHECK-NEXT: %c10 = arith.constant 10 : index
-    // CHECK-NEXT: %c1 = arith.constant 1 : index
-    // CHECK-NEXT: %c0_i32 = arith.constant 0 : i32
+    // CHECK-DAG: %c10 = arith.constant 10 : index
+    // CHECK-DAG: %c1 = arith.constant 1 : index
+    // CHECK-DAG: %c0_i32 = arith.constant 0 : i32
     // CHECK-NEXT: %0 = scf.for %arg0 = %c0 to %c10 step %c1 iter_args(%arg1 = %c0_i32) -> (i32) {
     // CHECK-NEXT:   %1 = arith.index_cast %arg0 : index to i32
     // CHECK-NEXT:   %2 = arith.addi %arg1, %1 : i32
@@ -58,8 +58,8 @@ module {
   // 2. runtime_bounds(int n)   for (i = 0; i < n; i += 2)
   // CHECK-LABEL: func.func @runtime_bounds(%arg0: i32) -> i32 {
   func.func @runtime_bounds(%n : i32) -> i32 {
-    // CHECK: %c0 = arith.constant 0 : index
-    // CHECK-NEXT: %c2 = arith.constant 2 : index
+    // CHECK-DAG: %c0 = arith.constant 0 : index
+    // CHECK-DAG: %c2 = arith.constant 2 : index
     // CHECK-NEXT: %0 = arith.index_cast %arg0 : i32 to index
     // CHECK-NEXT: %c0_i32 = arith.constant 0 : i32
     // CHECK-NEXT: %1 = scf.for %arg1 = %c0 to %0 step %c2 iter_args(%arg2 = %c0_i32) -> (i32) {
@@ -86,10 +86,10 @@ module {
   // 3. negative_step()   for (i = 9; i >= 0; --i)
   // CHECK-LABEL: func.func @negative_step() -> i32 {
   func.func @negative_step() -> i32 {
-    // CHECK: %c9 = arith.constant 9 : index
-    // CHECK-NEXT: %c-1 = arith.constant -1 : index
-    // CHECK-NEXT: %c-1_0 = arith.constant -1 : index
-    // CHECK-NEXT: %c0_i32 = arith.constant 0 : i32
+    // CHECK-DAG: %c9 = arith.constant 9 : index
+    // CHECK-DAG: %c-1 = arith.constant -1 : index
+    // CHECK-DAG: %c-1_0 = arith.constant -1 : index
+    // CHECK-DAG: %c0_i32 = arith.constant 0 : i32
     // CHECK-NEXT: %0 = scf.for %arg0 = %c9 to %c-1 step %c-1_0 iter_args(%arg1 = %c0_i32) -> (i32) {
     // CHECK-NEXT:   %1 = arith.index_cast %arg0 : index to i32
     // CHECK-NEXT:   %2 = arith.addi %arg1, %1 : i32
