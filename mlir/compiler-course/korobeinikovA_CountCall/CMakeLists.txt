@@ -1,4 +1,4 @@
-set(Title "FunctionCallAnalyzerPass")
+set(Title "FunctionCallTracker")
 set(Student "Korobeinikov_Arseny")
 set(Group "FIIT1")
 set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")

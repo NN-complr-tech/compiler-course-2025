@@ -1,40 +1,62 @@
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/IR/PatternMatch.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
+#include "llvm/ADT/StringMap.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
 
 namespace {
-class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
+class FunctionCallTrackerPass
+    : public PassWrapper<FunctionCallTrackerPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
-    return "ExamplePass_Ivanov_Ivan_FIIT0_MLIR";
+    return "FunctionCallTracker_Korobeinikov_Arseny_FIIT1_MLIR";
   }
-  StringRef getDescription() const final { return "Description pass"; }
+
+  StringRef getDescription() const final {
+    return "Counts total number of calls to each function in the module";
+  }
 
   void runOnOperation() override {
-    ModuleOp moduleOp = getOperation();
-    OpBuilder builder(moduleOp);
+    ModuleOp module = getOperation();
+    OpBuilder builder(module.getContext());
 
-    auto countOp = 0;
-    moduleOp.walk([&](Operation *op) { ++countOp; });
+    llvm::StringMap<int64_t> globalCallCounts;
+    llvm::SmallVector<func::CallOp> callOpsCache;
 
-    llvm::outs() << "Count operations: " << countOp << '\n';
+    // Single walk to collect data and verify functions
+    module.walk([&](func::CallOp callOp) {
+      StringRef callee = callOp.getCallee();
+
+      globalCallCounts[callee]++;
+      callOpsCache.push_back(callOp); // Change 1: Cache call operations
+    });
+
+    // Annotate cached calls
+    for (func::CallOp callOp : callOpsCache) {
+      StringRef callee = callOp.getCallee();
+      int64_t totalCalls = globalCallCounts.lookup(callee);
+      callOp->setAttr(
+          "invoke_total",
+          builder.getI64IntegerAttr(totalCalls)); // Changed attribute name
+    }
   }
 };
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(ExamplePass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(ExamplePass)
+MLIR_DECLARE_EXPLICIT_TYPE_ID(FunctionCallTrackerPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(FunctionCallTrackerPass)
 
-mlir::PassPluginLibraryInfo getFunctionCallCounterPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "ExamplePass", "1.0",
-          []() { mlir::PassRegistration<ExamplePass>(); }};
+mlir::PassPluginLibraryInfo getFunctionCallTrackerPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "FunctionCallTracker", "1.0",
+          []() { mlir::PassRegistration<FunctionCallTrackerPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getFunctionCallCounterPassPluginInfo();
+  return getFunctionCallTrackerPluginInfo();
 }
