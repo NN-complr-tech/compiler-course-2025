@@ -22,7 +22,7 @@ int computeRegionDepth(mlir::Region &region) {
         currentDepth = 1;
 
         int nestedDepth = 0;
-        for(mlir::Region &subRegion : op.getRegions()) {
+        for (mlir::Region &subRegion : op.getRegions()) {
           nestedDepth = std::max(nestedDepth, computeRegionDepth(subRegion));
         }
 
@@ -64,7 +64,7 @@ public:
     moduleOp.walk([&](mlir::func::FuncOp funcOp) {
       llvm::SmallVector<int64_t, 4> loopDepths;
       mlir::Block &entryBlock = funcOp.getBody().front();
-      for(mlir::Operation &op : entryBlock) {
+      for (mlir::Operation &op : entryBlock) {
         if (llvm::isa<mlir::scf::ForOp, mlir::scf::WhileOp, mlir::scf::IfOp,
                       mlir::affine::AffineForOp, mlir::affine::AffineIfOp>(
                 op)) {
