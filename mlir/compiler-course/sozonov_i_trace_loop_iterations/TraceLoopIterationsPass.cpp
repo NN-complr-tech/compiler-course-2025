@@ -49,14 +49,14 @@ public:
 
         Block &entryBlock = bodyRegion.front();
         builder.setInsertionPointToStart(&entryBlock);
-        builder.create<func::CallOp>(loc, "trace_loop_iter_begin",
-                                     TypeRange(), ValueRange());
+        builder.create<func::CallOp>(loc, "trace_loop_iter_begin", TypeRange(),
+                                     ValueRange());
 
         for (Block &block : bodyRegion) {
           Operation *terminator = block.getTerminator();
           builder.setInsertionPoint(terminator);
-          builder.create<func::CallOp>(loc, "trace_loop_iter_end",
-                                       TypeRange(), ValueRange());
+          builder.create<func::CallOp>(loc, "trace_loop_iter_end", TypeRange(),
+                                       ValueRange());
         }
       }
     });

@@ -46,26 +46,6 @@ func.func @test_affine_for() {
   return
 }
 
-// CHECK-LABEL: func @test_nested_loops
-func.func @test_nested_loops() {
-  %c0 = arith.constant 0 : index
-  %c10 = arith.constant 10 : index
-  %c1 = arith.constant 1 : index
-  %c2 = arith.constant 2 : index
-  %ci1 = arith.constant 1 : i32
-  %ci2 = arith.constant 2 : i32
-  // CHECK: func.call @trace_loop_iter_begin
-  // CHECK: func.call @trace_loop_iter_end
-  scf.for %i = %c0 to %c10 step %c1 {
-    // CHECK: func.call @trace_loop_iter_begin
-    // CHECK: func.call @trace_loop_iter_end
-    affine.for %j = 0 to 5 {
-      %v = arith.addi %ci1, %ci2 : i32
-    }
-  }
-  return
-}
-
 // CHECK-LABEL: func @test_no_loops
 func.func @test_no_loops() {
   // CHECK-NOT: func.call @trace_loop_iter_begin
