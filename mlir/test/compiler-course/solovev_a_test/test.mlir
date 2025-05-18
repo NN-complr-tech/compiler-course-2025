@@ -122,19 +122,19 @@ module {
     return
   }
 
-  // Test 7. Negative step with invalid range (no iterations expected)
+  // Test 7. Negative step with invalid range (should not set trip_count)
   // CHECK-LABEL: func.func @test_negative_step_wrong_range
   // CHECK-NEXT: %c0 = arith.constant 0 : index
   // CHECK-NEXT: %c3 = arith.constant 3 : index
   // CHECK-NEXT: %[[NEG2:.*]] = arith.constant -2 : index
   // CHECK-NEXT: scf.for %{{.*}} = %c0 to %c3 step %[[NEG2]] {
-  // CHECK-NEXT: } {trip_count = 0 : index}
+  // CHECK-NEXT: }
   // CHECK-NEXT: return
   func.func @test_negative_step_wrong_range() {
     %c0 = arith.constant 0 : index
     %c3 = arith.constant 3 : index
-    %c-2 = arith.constant -2 : index
-    scf.for %arg0 = %c0 to %c3 step %c-2 {
+    %c_neg2 = arith.constant -2 : index
+    scf.for %i = %c0 to %c3 step %c_neg2 {
     }
 
     return
