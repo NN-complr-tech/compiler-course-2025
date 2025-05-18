@@ -27,7 +27,6 @@ struct ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
   void runOnOperation() override {
     ModuleOp module = getOperation();
     OpBuilder builder(module.getContext());
-
     auto traceBeginFunc = module.lookupSymbol<FuncOp>("trace_loop_iter_begin");
     auto traceEndFunc = module.lookupSymbol<FuncOp>("trace_loop_iter_end");
 
@@ -46,12 +45,13 @@ struct ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
       module.push_back(traceEndFunc);
       traceEndFunc.setPrivate();
     }
-
     module.walk([&](Operation *op) {
       if (auto affineFor = dyn_cast<affine::AffineForOp>(op)) {
         insertTraceCalls(affineFor, traceBeginFunc, traceEndFunc);
       } else if (auto scfFor = dyn_cast<scf::ForOp>(op)) {
         insertTraceCalls(scfFor, traceBeginFunc, traceEndFunc);
+      } else if (auto scfWhile = dyn_cast<scf::WhileOp>(op)) {
+        insertTraceCalls(scfWhile, traceBeginFunc, traceEndFunc);
       }
     });
   }
@@ -60,29 +60,52 @@ private:
   template <typename LoopOp>
   void insertTraceCalls(LoopOp loopOp, FuncOp traceBeginFunc,
                         FuncOp traceEndFunc) {
-    Block *bodyBlock = loopOp.getBody();
     OpBuilder builder(loopOp.getContext());
 
-    builder.setInsertionPointToStart(bodyBlock);
-    builder.create<func::CallOp>(loopOp.getLoc(), traceBeginFunc,
-                                 ArrayRef<Value>{});
+    if constexpr (std::is_same_v<LoopOp, affine::AffineForOp> ||
+                  std::is_same_v<LoopOp, scf::ForOp>) {
+      Block *bodyBlock = loopOp.getBody();
 
-    builder.setInsertionPoint(bodyBlock->getTerminator());
-    builder.create<func::CallOp>(loopOp.getLoc(), traceEndFunc,
-                                 ArrayRef<Value>{});
+      builder.setInsertionPointToStart(bodyBlock);
+      builder.create<func::CallOp>(loopOp.getLoc(), traceBeginFunc,
+                                   ArrayRef<Value>{});
+
+      builder.setInsertionPoint(bodyBlock->getTerminator());
+      builder.create<func::CallOp>(loopOp.getLoc(), traceEndFunc,
+                                   ArrayRef<Value>{});
+
+    } else if constexpr (std::is_same_v<LoopOp, scf::WhileOp>) {
+      Region &afterRegion = loopOp.getAfter();
+      assert(!afterRegion.empty() && "After region should not be empty");
+      Block &bodyBlockRef = afterRegion.front();
+      Block *bodyBlock = &bodyBlockRef;
+
+      OpBuilder builder(loopOp.getContext());
+
+      builder.setInsertionPointToStart(bodyBlock);
+      builder.create<func::CallOp>(loopOp.getLoc(), traceBeginFunc,
+                                   ArrayRef<Value>{});
+
+      builder.setInsertionPoint(bodyBlock->getTerminator());
+      builder.create<func::CallOp>(loopOp.getLoc(), traceEndFunc,
+                                   ArrayRef<Value>{});
+    }
   }
 };
 
 } // namespace
 
+
 MLIR_DECLARE_EXPLICIT_TYPE_ID(ExamplePass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(ExamplePass)
+
 
 static mlir::PassPipelineRegistration<>
     pipeline("ExamplePass_Sedova_Olga_FIIT1_MLIR",
              "Pipeline that runs ExamplePass", [](mlir::OpPassManager &pm) {
                pm.addPass(std::make_unique<ExamplePass>());
              });
+
 
 mlir::PassPluginLibraryInfo getTraceLoopIterPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "ExamplePass_Sedova_Olga_FIIT1_MLIR", "1.0",
