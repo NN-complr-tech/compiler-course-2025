@@ -70,3 +70,21 @@ entry:
   %add2 = fadd contract float %mul2, %F
   ret float %add2
 }
+; CHECK-LABEL: @differentArduments
+; CHECK: fmul contract float %A, %B
+; CHECK: fadd contract float %B, %D
+define float @differentArduments(float %A, float %B, float %D) {
+entry:
+  %mul = fmul contract float %A, %B
+  %add = fadd contract float %B, %D
+  ret float %add
+}
+; CHECK-LABEL: @differentInstructions
+; CHECK: fadd contract float %A, %B
+; CHECK: fadd contract float %add1, %D
+define float @differentInstructions(float %A, float %B, float %D) {
+entry:
+  %add1 = fadd contract float %A, %B
+  %add = fadd contract float %add1, %D
+  ret float %add
+}
