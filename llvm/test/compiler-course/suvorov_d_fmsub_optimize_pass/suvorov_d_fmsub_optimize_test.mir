@@ -1,0 +1,692 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/FmsubOptPass_Suvorov_Dmitrii_FIIT1_BACKEND%shlibext \
+# RUN: -run-pass=fmsub_pass  %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'fmsub_test.ll"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-unknown-linux-gnu"
+  
+  define float @fmsub_ss(float %a, float %b, float %c) #0 {
+    %tmp = fmul float %a, %b
+    %res = fsub float %c, %tmp
+    ret float %res
+  }
+  
+  define double @fmsub_sd(double %a, double %b, double %c) #0 {
+    %tmp = fmul double %a, %b
+    %res = fsub double %c, %tmp
+    ret double %res
+  }
+  
+  define <4 x float> @fmsub_ps(<4 x float> %a, <4 x float> %b, <4 x float> %c) #0 {
+  entry:
+    %tmp = fmul <4 x float> %a, %b
+    %res = fsub <4 x float> %c, %tmp
+    ret <4 x float> %res
+  }
+  
+  define <2 x double> @fmsub_pd(<2 x double> %a, <2 x double> %b, <2 x double> %c) #0 {
+  entry:
+    %tmp = fmul <2 x double> %a, %b
+    %res = fsub <2 x double> %c, %tmp
+    ret <2 x double> %res
+  }
+
+  @dummy = global float 0.0
+
+  define float @wrong_sub_order(float %a, float %b, float %c) #0 {
+  entry:
+    %mul = fmul float %a, %b
+    %sub = fsub float %mul, %c
+    ret float %sub
+  }
+  
+  define float @intervening_instr(float %a, float %b, float %c) #0 {
+  entry:
+    %mul = fmul float %a, %b
+    %tmp = fadd float %a, 1.000000e+00
+    store volatile float %tmp, ptr @dummy, align 4
+    %sub = fsub float %c, %mul
+    ret float %sub
+  }
+  
+  define float @independent_registers(float %a, float %b, float %c, float %d) #0 {
+  entry:
+    %tmp1 = fmul float %a, %b
+    %tmp2 = fsub float %c, %d
+    store volatile float %tmp1, ptr @dummy, align 4
+    ret float %tmp2
+  }
+  
+  define float @no_kill_flag(float %a, float %b, float %c) #0 {
+  entry:
+    %mul = fmul float %a, %b
+    %sub = fsub float %c, %mul
+    store volatile float %mul, ptr @dummy, align 4
+    ret float %sub
+  }
+
+  @val = global float 1.0
+  
+  define float @mem_operand(float %a, float %b, float %c) #0 {
+  entry:
+    %ptr = load float, ptr @val, align 4
+    %mul = fmul float %a, %b
+    %sub = fsub float %c, %ptr
+    store volatile float %mul, ptr @dummy, align 4
+    ret float %sub
+  }
+  
+  attributes #0 = { "target-features"="+fma" }
+
+# CHECK-LABEL: name: fmsub_ss
+# CHECK:       VFNMADD213SSr
+...
+---
+name:            fmsub_ss
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $xmm0 = nofpexcept VMULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBSSrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
+    RET64 $xmm0
+
+# CHECK-LABEL: name: fmsub_sd
+# CHECK:       VFNMADD213SDr
+...
+---
+name:            fmsub_sd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $xmm0 = nofpexcept VMULSDrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBSDrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
+    RET64 $xmm0
+
+# CHECK-LABEL: name: fmsub_ps
+# CHECK:       VFNMADD213PSr
+...
+---
+name:            fmsub_ps
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $xmm0 = nofpexcept VMULPSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBPSrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
+    RET64 $xmm0
+
+# CHECK-LABEL: name: fmsub_pd
+# CHECK:       VFNMADD213PDr
+...
+---
+name:            fmsub_pd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $xmm0 = nofpexcept VMULPDrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBPDrr killed renamable $xmm2, killed renamable $xmm0, implicit $mxcsr
+    RET64 $xmm0
+
+# CHECK-LABEL: name: wrong_sub_order
+# CHECK-NOT:       VFNMADD
+# CHECK: VMULSSrr
+# CHECK: VSUBSSrr
+...
+---
+name:            wrong_sub_order
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $xmm0 = nofpexcept VMULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBSSrr killed renamable $xmm0, killed renamable $xmm2, implicit $mxcsr
+    RET64 $xmm0
+
+# CHECK-LABEL: name: intervening_instr
+# CHECK-NOT:       VFNMADD
+# CHECK: VMULSSrr
+# CHECK: VSUBSSrr
+...
+---
+name:            intervening_instr
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:
+  - id:              0
+    value:           'float 1.000000e+00'
+    alignment:       4
+    isTargetSpecific: false
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $xmm1 = nofpexcept VMULSSrr renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VADDSSrm killed renamable $xmm0, $rip, 1, $noreg, %const.0, $noreg, implicit $mxcsr :: (load (s32) from constant-pool)
+    renamable $rax = MOV64rm $rip, 1, $noreg, target-flags(x86-gotpcrel) @dummy, $noreg :: (load (s64) from got)
+    VMOVSSmr killed renamable $rax, 1, $noreg, 0, $noreg, killed renamable $xmm0 :: (volatile store (s32) into @dummy)
+    renamable $xmm0 = nofpexcept VSUBSSrr killed renamable $xmm2, killed renamable $xmm1, implicit $mxcsr
+    RET64 $xmm0
+
+# CHECK-LABEL: name: independent_registers
+# CHECK-NOT:       VFNMADD
+# CHECK: VMULSSrr
+# CHECK: VSUBSSrr
+...
+---
+name:            independent_registers
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+  - { reg: '$xmm3', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2, $xmm3
+  
+    renamable $xmm1 = nofpexcept VMULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBSSrr killed renamable $xmm2, killed renamable $xmm3, implicit $mxcsr
+    renamable $rax = MOV64rm $rip, 1, $noreg, target-flags(x86-gotpcrel) @dummy, $noreg :: (load (s64) from got)
+    VMOVSSmr killed renamable $rax, 1, $noreg, 0, $noreg, killed renamable $xmm1 :: (volatile store (s32) into @dummy)
+    RET64 $xmm0
+
+# CHECK-LABEL: name: no_kill_flag
+# CHECK-NOT:       VFNMADD
+# CHECK: VMULSSrr
+# CHECK: VSUBSSrr
+...
+---
+name:            no_kill_flag
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $xmm1 = nofpexcept VMULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBSSrr killed renamable $xmm2, renamable $xmm1, implicit $mxcsr
+    renamable $rax = MOV64rm $rip, 1, $noreg, target-flags(x86-gotpcrel) @dummy, $noreg :: (load (s64) from got)
+    VMOVSSmr killed renamable $rax, 1, $noreg, 0, $noreg, killed renamable $xmm1 :: (volatile store (s32) into @dummy)
+    RET64 $xmm0
+
+# CHECK-LABEL: name: mem_operand
+# CHECK-NOT:       VFNMADD
+# CHECK: VMULSSrr
+# CHECK: VSUBSSrm
+...
+---
+name:            mem_operand
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+  
+    renamable $rax = MOV64rm $rip, 1, $noreg, target-flags(x86-gotpcrel) @val, $noreg :: (load (s64) from got)
+    renamable $xmm1 = nofpexcept VMULSSrr killed renamable $xmm0, killed renamable $xmm1, implicit $mxcsr
+    renamable $xmm0 = nofpexcept VSUBSSrm killed renamable $xmm2, killed renamable $rax, 1, $noreg, 0, $noreg, implicit $mxcsr :: (dereferenceable load (s32) from @val)
+    renamable $rax = MOV64rm $rip, 1, $noreg, target-flags(x86-gotpcrel) @dummy, $noreg :: (load (s64) from got)
+    VMOVSSmr killed renamable $rax, 1, $noreg, 0, $noreg, killed renamable $xmm1 :: (volatile store (s32) into @dummy)
+    RET64 $xmm0
+
+...
