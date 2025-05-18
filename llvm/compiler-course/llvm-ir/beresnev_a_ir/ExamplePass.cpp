@@ -26,9 +26,6 @@ struct PureFunctionPass : llvm::PassInfoMixin<PureFunctionPass> {
                               llvm::FunctionAnalysisManager &) {
     if (isPureFunction(F)) {
       F.addFnAttr("pure");
-      llvm::outs() << "Function " << F.getName() << " marked as pure\n";
-    } else {
-      llvm::outs() << "Function " << F.getName() << " NOT pure\n";
     }
     return llvm::PreservedAnalyses::all();
   }

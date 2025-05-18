@@ -1,11 +1,9 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/UserPass_Beresnev_Anton_FIIT1_LLVM_IR%pluginext\
 ; RUN: -passes=pure_fn -S %s | FileCheck %s
 
-; CHECK: Function _Z3addii marked as pure
-; CHECK: Function _Z3foof NOT pure
-
 @global_value = dso_local global float 0.000000e+00, align 4
 
+; CHECK: define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) #0 {
 define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) {
 entry:
   %a.addr = alloca i32, align 4
@@ -18,6 +16,7 @@ entry:
   ret i32 %add
 }
 
+; CHECK: define dso_local noundef float @_Z3foof(float noundef %a) {
 define dso_local noundef float @_Z3foof(float noundef %a) {
 entry:
   %a.addr = alloca float, align 4
@@ -27,3 +26,6 @@ entry:
   %mul = fmul float %0, %1
   ret float %mul
 }
+
+; CHECK: attributes #0 = { "pure" }
+
