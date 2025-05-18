@@ -54,7 +54,9 @@ public:
     return "ExamplePass_Kozlova_Ekaterina_FIIT3_MLIR";
   }
 
-  mlir::StringRef getDescription() const override { return "Calculates the maximum nesting depth of regions"; }
+  mlir::StringRef getDescription() const override {
+    return "Calculates the maximum nesting depth of regions";
+  }
 
   void runOnOperation() override {
     mlir::ModuleOp moduleOp = getOperation();
@@ -62,10 +64,11 @@ public:
     moduleOp.walk([&](mlir::func::FuncOp funcOp) {
       
       llvm::SmallVector<int64_t, 4> loopDepths;
-      mlir::Block& entryBlock = funcOp.getBody().front();
-      for(mlir::Operation & op : entryBlock) {
+      mlir::Block &entryBlock = funcOp.getBody().front();
+      for(mlir::Operation &op : entryBlock) {
         if (llvm::isa<mlir::scf::ForOp, mlir::scf::WhileOp, mlir::scf::IfOp,
-                      mlir::affine::AffineForOp, mlir::affine::AffineIfOp>(op)) {
+                      mlir::affine::AffineForOp, mlir::affine::AffineIfOp>(
+                op)) {
           int depth = getLoopDepth(&op);
           loopDepths.push_back(depth);
         }
