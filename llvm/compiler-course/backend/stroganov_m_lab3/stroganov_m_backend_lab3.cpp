@@ -34,49 +34,17 @@ public:
         MachineInstr &MI = *MII;
         unsigned Opc = MI.getOpcode();
 
-        bool Combined = false;
+        auto AVXIter = AVXOpcodeMap.find(Opc);
+        if (AVXIter != AVXOpcodeMap.end()) {
+          BuildMI(MBB, MII, MI.getDebugLoc(), TII->get(AVXIter->second),
+                  MI.getOperand(0).getReg())
+              .addReg(MI.getOperand(1).getReg())
+              .addReg(MI.getOperand(2).getReg());
 
-        if (MI.getNumOperands() >= 3 && MI.getOperand(1).isReg()) {
-          Register Op1 = MI.getOperand(1).getReg();
-          MachineInstr *DefMI = MRI.getUniqueVRegDef(Op1);
-
-          if (DefMI && MRI.hasOneUse(Op1) && DefMI->getNumOperands() >= 3 &&
-              AVXOpcodeMap.count(DefMI->getOpcode()) &&
-              AVXOpcodeMap.count(Opc)) {
-
-            unsigned AVXOpc1 = AVXOpcodeMap.lookup(DefMI->getOpcode());
-            unsigned AVXOpc2 = AVXOpcodeMap.lookup(Opc);
-
-            Register TmpReg = MRI.createVirtualRegister(MRI.getRegClass(Op1));
-
-            BuildMI(MBB, MII, DefMI->getDebugLoc(), TII->get(AVXOpc1), TmpReg)
-                .addReg(DefMI->getOperand(1).getReg())
-                .addReg(DefMI->getOperand(2).getReg());
-
-            BuildMI(MBB, MII, MI.getDebugLoc(), TII->get(AVXOpc2),
-                    MI.getOperand(0).getReg())
-                .addReg(TmpReg)
-                .addReg(MI.getOperand(2).getReg());
-
-            MBB.erase(DefMI);
-            MII = MBB.erase(MII);
-            Changed = true;
-            Combined = true;
-          }
-        }
-
-        if (!Combined) {
-          if (AVXOpcodeMap.count(Opc) && MI.getNumOperands() >= 3) {
-            unsigned NewOpc = AVXOpcodeMap.lookup(Opc);
-            BuildMI(MBB, MII, MI.getDebugLoc(), TII->get(NewOpc),
-                    MI.getOperand(0).getReg())
-                .addReg(MI.getOperand(1).getReg())
-                .addReg(MI.getOperand(2).getReg());
-            MII = MBB.erase(MII);
-            Changed = true;
-          } else {
-            ++MII;
-          }
+          MII = MBB.erase(MII);
+          Changed = true;
+        } else {
+          ++MII;
         }
       }
     }
