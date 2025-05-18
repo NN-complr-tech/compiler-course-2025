@@ -95,17 +95,14 @@ private:
 
 } // namespace
 
-
 MLIR_DECLARE_EXPLICIT_TYPE_ID(ExamplePass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(ExamplePass)
-
 
 static mlir::PassPipelineRegistration<>
     pipeline("ExamplePass_Sedova_Olga_FIIT1_MLIR",
              "Pipeline that runs ExamplePass", [](mlir::OpPassManager &pm) {
                pm.addPass(std::make_unique<ExamplePass>());
              });
-
 
 mlir::PassPluginLibraryInfo getTraceLoopIterPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "ExamplePass_Sedova_Olga_FIIT1_MLIR", "1.0",
