@@ -13,7 +13,7 @@ struct TraceLoopPass
     : public mlir::PassWrapper<TraceLoopPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
   void insertTraceLoop(mlir::Block &blockBefore, mlir::Block &blockAfter,
-                   mlir::Location loc, mlir::OpBuilder &opBuilder) {
+                       mlir::Location loc, mlir::OpBuilder &opBuilder) {
     opBuilder.setInsertionPointToStart(&blockBefore);
     opBuilder.create<mlir::func::CallOp>(loc, "trace_loop_iter_begin",
                                          mlir::TypeRange(), mlir::ValueRange());
@@ -58,13 +58,13 @@ public:
     module.walk([&](mlir::Operation *op) {
       if (auto affineForOp = mlir::dyn_cast<mlir::affine::AffineForOp>(op)) {
         insertTraceLoop(*affineForOp.getBody(), *affineForOp.getBody(),
-                    affineForOp->getLoc(), opBuilder);
+                        affineForOp->getLoc(), opBuilder);
       } else if (auto forOp = mlir::dyn_cast<mlir::scf::ForOp>(op)) {
         insertTraceLoop(*forOp.getBody(), *forOp.getBody(), forOp->getLoc(),
-                    opBuilder);
+                        opBuilder);
       } else if (auto whileOp = mlir::dyn_cast<mlir::scf::WhileOp>(op)) {
         insertTraceLoop(whileOp.getBefore().front(), whileOp.getAfter().front(),
-                    whileOp->getLoc(), opBuilder);
+                        whileOp->getLoc(), opBuilder);
       }
     });
   }
