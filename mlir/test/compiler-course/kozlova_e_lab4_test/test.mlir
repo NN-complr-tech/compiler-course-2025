@@ -78,7 +78,7 @@ func.func @test3() {
   return
 }
 
-// CHECK-LABEL:  func.func @test4() attributes {my_loop_depths = [1, 2]} {
+// CHECK-LABEL:  func.func @test4() attributes {my_loop_depths = [2]} {
 // CHECK-NEXT:     %c0 = arith.constant 0 : index
 // CHECK-NEXT:     %c20 = arith.constant 20 : index
 // CHECK-NEXT:     %c7 = arith.constant 7 : index
@@ -101,31 +101,28 @@ func.func @test4() {
   return
 }
 
-// CHECK-LABEL:  func.func @test5() attributes {my_loop_depths = [4]} {
+// CHECK-LABEL:  func.func @test5() attributes {my_loop_depths = [3]} {
 // CHECK-NEXT:     %c0 = arith.constant 0 : index
 // CHECK-NEXT:     %c7 = arith.constant 7 : index
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
 // CHECK-NEXT:     %true = arith.constant true
-// CHECK-NEXT:     scf.for %arg0 = %c0 to %c7 step %c1 {
-// CHECK-NEXT:       scf.if %true {
+// CHECK-NEXT:     scf.if %true {
+// CHECK-NEXT:       scf.for %arg0 = %c0 to %c7 step %c1 {
 // CHECK-NEXT:         scf.if %true {
-// CHECK-NEXT:           scf.if %true {
-// CHECK-NEXT:           }
 // CHECK-NEXT:         }
 // CHECK-NEXT:       }
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return
 // CHECK-NEXT:   }
+
 func.func @test5() {
   %c0 = arith.constant 0 : index
   %c7 = arith.constant 7 : index
   %c1 = arith.constant 1 : index
   %cond = arith.constant true
-  scf.for %i = %c0 to %c7 step %c1 {
-    scf.if %cond {
+  scf.if %cond {
+    scf.for %i = %c0 to %c7 step %c1 {
       scf.if %cond {
-        scf.if %cond {
-        }
       }
     }
   }
