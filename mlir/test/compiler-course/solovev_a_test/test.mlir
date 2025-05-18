@@ -128,6 +128,7 @@ module {
   // CHECK-NEXT: %c3 = arith.constant 3 : index
   // CHECK-NEXT: %[[NEG2:.*]] = arith.constant -2 : index
   // CHECK-NEXT: scf.for %{{.*}} = %c0 to %c3 step %[[NEG2]] {
+  // CHECK-NOT: trip_count
   // CHECK-NEXT: }
   // CHECK-NEXT: return
   func.func @test_negative_step_wrong_range() {
