@@ -18,13 +18,13 @@ public:
     auto rhs = remOp.getRhs();
 
     if (auto rhsConst = llvm::dyn_cast_or_null<mlir::arith::ConstantIntOp>(
-        rhs.getDefiningOp())) {
-  if (rhsConst.value() == 0) {
-    llvm::outs() << "RemSIOp: division by zero (constant)\n";
-    return rewriter.notifyMatchFailure(remOp,
-                                       "division by zero (constant)");
-  }
-}
+            rhs.getDefiningOp())) {
+      if (rhsConst.value() == 0) {
+        llvm::outs() << "RemSIOp: division by zero (constant)\n";
+        return rewriter.notifyMatchFailure(remOp,
+                                           "division by zero (constant)");
+      }
+    }
 
     auto div = rewriter.create<DivOp>(loc, lhs, rhs);
     auto mul = rewriter.create<mlir::arith::MulIOp>(loc, div, rhs);
