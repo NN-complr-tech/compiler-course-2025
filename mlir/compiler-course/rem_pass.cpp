@@ -10,11 +10,11 @@ class MamaevaRemPass
     : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
-    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR"; // Сохраняем ваше имя pass
+    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
   }
 
   StringRef getDescription() const final {
-    return "Replace remainder ops with div+mul+sub sequence"; // Ваше описание
+    return "Replace remainder ops with div+mul+sub sequence";
   }
 
   void runOnOperation() override {
@@ -43,7 +43,8 @@ private:
     Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
     Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
 
-    op->replaceAllUsesWith(result);
+    // Исправленная строка - используем getResult(0) для замены
+    op->getResult(0).replaceAllUsesWith(result);
     op->erase();
   }
 };
@@ -54,9 +55,8 @@ MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 
 namespace {
 mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION,
-          "rem_pass_Mamaeva_Olga_FIIT3_MLIR", // Сохраняем ваше имя плагина
-          "1.0", []() { mlir::PassRegistration<MamaevaRemPass>(); }};
+  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3_MLIR", "1.0",
+          []() { mlir::PassRegistration<MamaevaRemPass>(); }};
 }
 } // namespace
 
