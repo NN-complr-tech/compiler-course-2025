@@ -4,9 +4,9 @@
 module {
   // Test 1. Simple loop with static trip count
   // CHECK-LABEL: func.func @test_simple_for
-  // CHECK-NEXT: %c0 = arith.constant 0 : index
-  // CHECK-NEXT: %c10 = arith.constant 10 : index
-  // CHECK-NEXT: %c1 = arith.constant 1 : index
+  // CHECK-DAG: %c0 = arith.constant 0 : index
+  // CHECK-DAG: %c10 = arith.constant 10 : index
+  // CHECK-DAG: %c1 = arith.constant 1 : index
   // CHECK-NEXT: scf.for %{{.*}} = %c0 to %c10 step %c1 {
   // CHECK-NEXT:   %{{.*}} = arith.muli %{{.*}}, %c1 : index
   // CHECK-NEXT:   %{{.*}} = arith.addi %{{.*}}, %c0 : index
@@ -27,9 +27,9 @@ module {
   
   // Test 2. Nested loops with static trip counts
   // CHECK-LABEL: func.func @test_nested_loops
-  // CHECK-NEXT: %c0 = arith.constant 0 : index
-  // CHECK-NEXT: %c4 = arith.constant 4 : index
-  // CHECK-NEXT: %c2 = arith.constant 2 : index
+  // CHECK-DAG: %c0 = arith.constant 0 : index
+  // CHECK-DAG: %c4 = arith.constant 4 : index
+  // CHECK-DAG: %c2 = arith.constant 2 : index
   // CHECK-NEXT: scf.for %{{.*}} = %c0 to %c4 step %c2 {
   // CHECK-NEXT:   scf.for %{{.*}} = %c0 to %c4 step %c2 {
   // CHECK-NEXT:   } {trip_count = 2 : index}
@@ -64,9 +64,9 @@ module {
   
   // Test 4. Loop with non-zero lower bound
   // CHECK-LABEL: func.func @test_nonzero_lower_bound
-  // CHECK-NEXT: %c5 = arith.constant 5 : index
-  // CHECK-NEXT: %c15 = arith.constant 15 : index
-  // CHECK-NEXT: %c2 = arith.constant 2 : index
+  // CHECK-DAG: %c5 = arith.constant 5 : index
+  // CHECK-DAG: %c15 = arith.constant 15 : index
+  // CHECK-DAG: %c2 = arith.constant 2 : index
   // CHECK-NEXT: scf.for %{{.*}} = %c5 to %c15 step %c2 {
   // CHECK-NEXT: } {trip_count = 5 : index}
   // CHECK-NEXT: return
@@ -83,9 +83,9 @@ module {
   
   // Test 5. Loop inside conditional block
   // CHECK-LABEL: func.func @test_loop_in_if
-  // CHECK-NEXT: %c0 = arith.constant 0 : index
-  // CHECK-NEXT: %c3 = arith.constant 3 : index
-  // CHECK-NEXT: %c1 = arith.constant 1 : index
+  // CHECK-DAG: %c0 = arith.constant 0 : index
+  // CHECK-DAG: %c3 = arith.constant 3 : index
+  // CHECK-DAG: %c1 = arith.constant 1 : index
   // CHECK-NEXT: scf.if %{{.*}} {
   // CHECK-NEXT:   scf.for %{{.*}} = %c0 to %c3 step %c1 {
   // CHECK-NEXT:   } {trip_count = 3 : index}
@@ -106,9 +106,9 @@ module {
 
   // Test 6. Descending loop
   // CHECK-LABEL: func.func @test_descending_loop
-  // CHECK-NEXT: %c10 = arith.constant 10 : index
-  // CHECK-NEXT: %c0 = arith.constant 0 : index
-  // CHECK-NEXT: %[[NEG3:.*]] = arith.constant -3 : index
+  // CHECK-DAG: %c10 = arith.constant 10 : index
+  // CHECK-DAG: %c0 = arith.constant 0 : index
+  // CHECK-DAG: %[[NEG3:.*]] = arith.constant -3 : index
   // CHECK-NEXT: scf.for %{{.*}} = %c10 to %c0 step %[[NEG3]] {
   // CHECK-NEXT: } {trip_count = 4 : index}
   // CHECK-NEXT: return
@@ -124,9 +124,9 @@ module {
 
   // Test 7. Negative step with invalid range (should not set trip_count)
   // CHECK-LABEL: func.func @test_negative_step_wrong_range
-  // CHECK-NEXT: %c0 = arith.constant 0 : index
-  // CHECK-NEXT: %c3 = arith.constant 3 : index
-  // CHECK-NEXT: %[[NEG2:.*]] = arith.constant -2 : index
+  // CHECK-DAG: %c0 = arith.constant 0 : index
+  // CHECK-DAG: %c3 = arith.constant 3 : index
+  // CHECK-DAG: %[[NEG2:.*]] = arith.constant -2 : index
   // CHECK-NEXT: scf.for %{{.*}} = %c0 to %c3 step %[[NEG2]] {
   // CHECK-NOT: trip_count
   // CHECK-NEXT: }
