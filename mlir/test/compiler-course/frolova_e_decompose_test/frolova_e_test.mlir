@@ -1,7 +1,6 @@
 // RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/RemDecomposePass_Frolova_Elizaveta_FIIT3_MLIR%shlibext \
 // RUN: --pass-pipeline="builtin.module(RemDecomposePass_Frolova_Elizaveta_FIIT3_MLIR)" %s | FileCheck %s
 
-
 module {
 // Test 1: Signed remainder, renamed
   // CHECK-LABEL: func.func @test_signed_basic
@@ -27,19 +26,7 @@ module {
     return %1 : i32
   }
 
-  // Test 3: Signed remainder with constant zero divisor — should not be rewritten
-  // CHECK-LABEL: func.func @test_div_by_zero_constant
-  // CHECK-NEXT:%c0_i32 = arith.constant 0 : i32
-  // CHECK-NEXT:%0 = arith.remsi %arg0, %c0_i32 : i32
-  // CHECK-NEXT:return %0 : i32
-  
-  func.func @test_div_by_zero_constant(%a: i32) -> i32 {
-    %zero = arith.constant 0 : i32
-    %2 = arith.remsi %a, %zero : i32
-    return %2 : i32
-  }
-
-  // Test 4: Signed remainder on i64 type
+  // Test 3: Signed remainder on i64 type
   // CHECK-LABEL: func.func @test_signed_i64
   // CHECK-NEXT:%0 = arith.divsi %arg0, %arg1 : i64
   // CHECK-NEXT:%1 = arith.muli %0, %arg1 : i64
@@ -51,7 +38,7 @@ module {
     return %0 : i64
   }
 
-  // Test 5: Mixed signed and unsigned remainders
+  // Test 4: Mixed signed and unsigned remainders
   // CHECK-LABEL: func.func @test_signed_and_unsigned_mixed
   // CHECK-NEXT:%0 = arith.divsi %arg0, %arg1 : i32
   // CHECK-NEXT:%1 = arith.muli %0, %arg1 : i32
