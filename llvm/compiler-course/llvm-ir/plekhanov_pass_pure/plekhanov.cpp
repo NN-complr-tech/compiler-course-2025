@@ -25,12 +25,13 @@ llvmGetPassPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "PureFunctionPass", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-              if (Name == "pure-func-pass") {
-                FPM.addPass(PureFunctionPass{});
-                return true;
-              }
-              return false;
-            });
+                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                  if (Name == "pure-func-pass") {
+                    FPM.addPass(PureFunctionPass{});
+                    return true;
+                  }
+                  return false;
+                });
           }};
 }
