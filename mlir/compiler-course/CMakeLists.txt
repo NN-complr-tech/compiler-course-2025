@@ -1,4 +1,3 @@
-cmake
 set(Title "rem_pass")
 set(Student "Mamaeva_Olga")
 set(Group "FIIT3")
