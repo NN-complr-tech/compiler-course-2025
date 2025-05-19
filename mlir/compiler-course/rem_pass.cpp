@@ -1,10 +1,8 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
-#include "llvm/Support/raw_ostream.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 using namespace mlir;
 
@@ -12,6 +10,8 @@ namespace {
 class MamaevaRemPass
     : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
 public:
+  MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
+
   StringRef getArgument() const final {
     return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
   }
@@ -57,5 +57,7 @@ void registerMamaevaRemPass() { PassRegistration<MamaevaRemPass>(); }
 extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3_MLIR", "1.0",
-          &registerMamaevaRemPass};
+          [](PassRegistry &registry) {
+            registry.addPass(std::make_unique<MamaevaRemPass>());
+          }};
 }
