@@ -7,68 +7,56 @@
 using namespace mlir;
 
 namespace {
-
 class MamaevaRemPass
     : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
-private:
-  void expandRemainder(Operation *op, OpBuilder &builder, bool isSigned) {
-    Value lhs = op->getOperand(0);
-    Value rhs = op->getOperand(1);
-    Location loc = op->getLoc();
-
-    Value div;
-    if (isSigned) {
-      div = builder.create<arith::DivSIOp>(loc, lhs, rhs).getResult();
-    } else {
-      div = builder.create<arith::DivUIOp>(loc, lhs, rhs).getResult();
-    }
-
-    Value mul = builder.create<arith::MulIOp>(loc, div, rhs).getResult();
-    Value result = builder.create<arith::SubIOp>(loc, lhs, mul).getResult();
-
-    op->getResult(0).replaceAllUsesWith(result);
-    op->erase();
-  }
-
 public:
-  // Имя pass, которое должно совпадать с тестовым файлом
-  StringRef getArgument() const final { return "mamaeva-rem-pass"; }
-
-  StringRef getDescription() const final {
-    return "Replace remainder ops with div+mul+sub sequence";
+  // Используйте полное имя для совместимости с тестами
+  StringRef getArgument() const final {
+    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
   }
+  StringRef getDescription() const final { return "Replace remainder ops"; }
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
     OpBuilder builder(module);
 
     module.walk([&](arith::RemSIOp op) {
-      expandRemainder(op, builder, /*isSigned=*/true);
+      Value lhs = op->getOperand(0);
+      Value rhs = op->getOperand(1);
+      Location loc = op->getLoc();
+
+      Value div = builder.create<arith::DivSIOp>(loc, lhs, rhs);
+      Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
+      Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
+
+      op->getResult(0).replaceAllUsesWith(result);
+      op->erase();
     });
 
     module.walk([&](arith::RemUIOp op) {
-      expandRemainder(op, builder, /*isSigned=*/false);
+      Value lhs = op->getOperand(0);
+      Value rhs = op->getOperand(1);
+      Location loc = op->getLoc();
+
+      Value div = builder.create<arith::DivUIOp>(loc, lhs, rhs);
+      Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
+      Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
+
+      op->getResult(0).replaceAllUsesWith(result);
+      op->erase();
     });
   }
 };
-
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(MamaevaRemPass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
+// Явная регистрация pass
+void registerMamaevaRemPass() { PassRegistration<MamaevaRemPass>(); }
 
-namespace {
-mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION,
-          "mamaeva-rem-pass-plugin", // Может отличаться от имени pass
-          "1.0", []() {
-            PassRegistration<MamaevaRemPass>(
-                []() { return std::make_unique<MamaevaRemPass>(); });
-          }};
-}
-} // namespace
-
-extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
+// Plugin initialization
+extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getMamaevaRemPassPluginInfo();
+  return {MLIR_PLUGIN_API_VERSION,
+          "rem_pass_Mamaeva_Olga_FIIT3_MLIR", 
+                                              
+          "1.0", &registerMamaevaRemPass};
 }
