@@ -1,10 +1,11 @@
+cmake
 set(Title "rem_pass")
 set(Student "Mamaeva_Olga")
 set(Group "FIIT3")
 set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
 
 set(SOURCES 
-    rem_pass.cpp  
+    "${CMAKE_CURRENT_SOURCE_DIR}/rem_pass.cpp"
 )
 
 add_llvm_pass_plugin(${TARGET_NAME}
