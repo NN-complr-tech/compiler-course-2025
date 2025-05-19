@@ -20,7 +20,6 @@ public:
     if (auto rhsConst = llvm::dyn_cast_or_null<mlir::arith::ConstantIntOp>(
             rhs.getDefiningOp())) {
       if (rhsConst.value() == 0) {
-        llvm::outs() << "RemSIOp: division by zero (constant)\n";
         return rewriter.notifyMatchFailure(remOp,
                                            "division by zero (constant)");
       }
