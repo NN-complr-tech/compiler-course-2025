@@ -1,4 +1,4 @@
-// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/librem_pass_Mamaeva_Olga_FIIT3_MLIR%shlibext \
+// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/rem_pass_Mamaeva_Olga_FIIT3_MLIR%shlibext \
 // RUN: --pass-pipeline="builtin.module(rem_pass_Mamaeva_Olga_FIIT3_MLIR)" %s | FileCheck %s
 
 // ==================================================
