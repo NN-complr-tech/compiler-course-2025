@@ -6,7 +6,7 @@
 namespace {
 struct PureFunctionPass : llvm::PassInfoMixin<PureFunctionPass> {
   llvm::PreservedAnalyses run(llvm::Function &F,
-				llvm::FunctionAnalysisManager &) {
+                              llvm::FunctionAnalysisManager &) {
     for (auto &BB : F)
       for (auto &I : BB)
         if (I.mayReadOrWriteMemory())
@@ -25,13 +25,12 @@ llvmGetPassPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "PureFunctionPass", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
-                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                  if (Name == "pure-func-pass") {
-                    FPM.addPass(PureFunctionPass{});
-                    return true;
-                  }
-                  return false;
-                });
+                llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+              if (Name == "pure-func-pass") {
+                FPM.addPass(PureFunctionPass{});
+                return true;
+              }
+              return false;
+            });
           }};
 }
