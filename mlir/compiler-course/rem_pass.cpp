@@ -7,53 +7,64 @@
 using namespace mlir;
 
 namespace {
-class MamaevaRemPass
-    : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
+
+template <typename RemOp, typename DivOp>
+class RemReplacementPattern : public OpRewritePattern<RemOp> {
 public:
-  StringRef getArgument() const final {
-    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
-  }
-  StringRef getDescription() const final { return "Replace remainder ops"; }
+  using OpRewritePattern<RemOp>::OpRewritePattern;
 
-  void runOnOperation() override {
-    ModuleOp module = getOperation();
-    OpBuilder builder(module);
+  LogicalResult matchAndRewrite(RemOp remOp,
+                                PatternRewriter &rewriter) const override {
+    Location loc = remOp.getLoc();
+    Value lhs = remOp.getLhs();
+    Value rhs = remOp.getRhs();
 
-    module.walk([&](arith::RemSIOp op) {
-      builder.setInsertionPoint(op);
-      Value lhs = op.getLhs();
-      Value rhs = op.getRhs();
-      Location loc = op.getLoc();
+    // Проверка деления на ноль для констант
+    if (auto rhsConst =
+            dyn_cast_or_null<arith::ConstantIntOp>(rhs.getDefiningOp())) {
+      if (rhsConst.value() == 0) {
+        return rewriter.notifyMatchFailure(remOp,
+                                           "division by zero (constant)");
+      }
+    }
 
-      Value div = builder.create<arith::DivSIOp>(loc, lhs, rhs);
-      Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
-      Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
+    Value div = rewriter.create<DivOp>(loc, lhs, rhs);
+    Value mul = rewriter.create<arith::MulIOp>(loc, div, rhs);
+    Value sub = rewriter.create<arith::SubIOp>(loc, lhs, mul);
 
-      op.getResult().replaceAllUsesWith(result);
-      op.erase();
-    });
-
-    module.walk([&](arith::RemUIOp op) {
-      builder.setInsertionPoint(op);
-      Value lhs = op.getLhs();
-      Value rhs = op.getRhs();
-      Location loc = op.getLoc();
-
-      Value div = builder.create<arith::DivUIOp>(loc, lhs, rhs);
-      Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
-      Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
-
-      op.getResult().replaceAllUsesWith(result);
-      op.erase();
-    });
+    rewriter.replaceOp(remOp, sub);
+    return success();
   }
 };
+
+class RemPass : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
+public:
+  StringRef getArgument() const final { return "rem-pass"; }
+  StringRef getDescription() const final {
+    return "Replace remainder operations with div+mul+sub";
+  }
+
+  void runOnOperation() override {
+    RewritePatternSet patterns(&getContext());
+    patterns.add<RemReplacementPattern<arith::RemSIOp, arith::DivSIOp>,
+                 RemReplacementPattern<arith::RemUIOp, arith::DivUIOp>>(
+        &getContext());
+
+    if (failed(applyPatternsAndFoldGreedily(getOperation(),
+                                            std::move(patterns)))) {
+      signalPassFailure();
+    }
+  }
+};
+
 } // namespace
 
-void registerMamaevaRemPass() { PassRegistration<MamaevaRemPass>(); }
-
+// Регистрация плагина
 extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3_MLIR", "1.0",
-          []() { PassRegistration<MamaevaRemPass>(); }};
+  return {MLIR_PLUGIN_API_VERSION,
+          "RemPass", // Имя плагина
+          "1.0", [](PassRegistry &registry) {
+            registry.addPass(std::make_unique<RemPass>());
+          }};
 }
