@@ -20,6 +20,7 @@ public:
     OpBuilder builder(module);
 
     module.walk([&](arith::RemSIOp op) {
+      builder.setInsertionPoint(op);
       Value lhs = op.getLhs();
       Value rhs = op.getRhs();
       Location loc = op.getLoc();
@@ -33,6 +34,7 @@ public:
     });
 
     module.walk([&](arith::RemUIOp op) {
+      builder.setInsertionPoint(op);
       Value lhs = op.getLhs();
       Value rhs = op.getRhs();
       Location loc = op.getLoc();
