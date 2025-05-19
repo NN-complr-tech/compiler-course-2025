@@ -5,6 +5,8 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 
+using namespace mlir;
+
 namespace {
 class TripCountPass
     : public PassWrapper<TripCountPass, OperationPass<ModuleOp>> {
