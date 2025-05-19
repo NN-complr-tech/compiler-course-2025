@@ -53,7 +53,7 @@ public:
   }
 
   StringRef getDescription() const final {
-    return "It's a pass, that counts the max depth of region nests in each "
+    return "The pass counts the max depth of control flow operations nests in each "
            "loop.";
   }
 
