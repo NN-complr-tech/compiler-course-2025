@@ -10,8 +10,6 @@ namespace {
 class MamaevaRemPass
     : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
 public:
-  MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
-
   StringRef getArgument() const final {
     return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
   }
@@ -57,7 +55,5 @@ void registerMamaevaRemPass() { PassRegistration<MamaevaRemPass>(); }
 extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3_MLIR", "1.0",
-          [](PassRegistry &registry) {
-            registry.addPass(std::make_unique<MamaevaRemPass>());
-          }};
+          []() { PassRegistration<MamaevaRemPass>(); }};
 }
