@@ -2,6 +2,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 using namespace mlir;
 
@@ -12,55 +13,45 @@ public:
   StringRef getArgument() const final {
     return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
   }
-
-  StringRef getDescription() const final {
-    return "Replace remainder ops with div+mul+sub sequence";
-  }
+  StringRef getDescription() const final { return "Replace remainder ops"; }
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
     OpBuilder builder(module);
 
     module.walk([&](arith::RemSIOp op) {
-      expandRemainder<arith::DivSIOp>(op, builder);
+      Value lhs = op.getLhs();
+      Value rhs = op.getRhs();
+      Location loc = op.getLoc();
+
+      Value div = builder.create<arith::DivSIOp>(loc, lhs, rhs);
+      Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
+      Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
+
+      op.getResult().replaceAllUsesWith(result);
+      op.erase();
     });
 
     module.walk([&](arith::RemUIOp op) {
-      expandRemainder<arith::DivUIOp>(op, builder);
+      Value lhs = op.getLhs();
+      Value rhs = op.getRhs();
+      Location loc = op.getLoc();
+
+      Value div = builder.create<arith::DivUIOp>(loc, lhs, rhs);
+      Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
+      Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
+
+      op.getResult().replaceAllUsesWith(result);
+      op.erase();
     });
-  }
-
-private:
-  template <typename DivOp>
-  void expandRemainder(Operation *op, OpBuilder &builder) {
-    Value lhs = op->getOperand(0);
-    Value rhs = op->getOperand(1);
-    Location loc = op->getLoc();
-
-    builder.setInsertionPoint(op);
-
-    Value div = builder.create<DivOp>(loc, lhs, rhs);
-    Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
-    Value result = builder.create<arith::SubIOp>(loc, lhs, mul);
-
-    // Исправленная строка - используем getResult(0) для замены
-    op->getResult(0).replaceAllUsesWith(result);
-    op->erase();
   }
 };
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(MamaevaRemPass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
+void registerMamaevaRemPass() { PassRegistration<MamaevaRemPass>(); }
 
-namespace {
-mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3_MLIR", "1.0",
-          []() { mlir::PassRegistration<MamaevaRemPass>(); }};
-}
-} // namespace
-
-extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
+extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getMamaevaRemPassPluginInfo();
+  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3_MLIR", "1.0",
+          &registerMamaevaRemPass};
 }
