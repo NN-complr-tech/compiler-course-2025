@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST%pluginext -plugin PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s
+// RUN: %clang_cc1 -load %llvmshlibdir/PrefixVarPlugin_Korobeinikov_Arseny_FIIT1_ClangAST%pluginext -plugin PrefixVarPlugin_Korobeinikov_Arseny_FIIT1_ClangAST -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s
 
 // CHECK: int global_var1 = 0;
 // CHECK-NEXT: int foo(int param_a, int param_b) {
@@ -18,6 +18,6 @@ int foo(int a, int b) {
 }
 int static var4 = 0;
 
-// RUN: %clang_cc1 -load %llvmshlibdir/PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST%pluginext -plugin PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST -plugin-arg-PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST --help -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s --check-prefix=CHECK-HELP
+// RUN: %clang_cc1 -load %llvmshlibdir/PrefixVarPlugin_Korobeinikov_Arseny_FIIT1_ClangAST%pluginext -plugin PrefixVarPlugin_Korobeinikov_Arseny_FIIT1_ClangAST -plugin-arg-PrefixVarPlugin_Korobeinikov_Arseny_FIIT1_ClangAST --help -fsyntax-only %s 2>&1 | FileCheck --match-full-lines %s --check-prefix=CHECK-HELP
 // CHECK-HELP: PrefixVarPlugin_by_Korobeinikov_Arseny:
 // CHECK-HELP-NEXT: This plugin changes names by adding prefixes to variables and parameters.

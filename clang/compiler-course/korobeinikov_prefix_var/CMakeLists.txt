@@ -1,5 +1,5 @@
 set(Title "PrefixVarPlugin")
-set(Student "KorobeinikovArseny")
+set(Student "Korobeinikov_Arseny")
 set(Group "FIIT1")
 set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
 

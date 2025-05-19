@@ -116,5 +116,5 @@ private:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<PrefixVarAction>
-    X("PrefixVarPlugin_Korobeinikov_FIIT1_ClangAST",
+    X("PrefixVarPlugin_Korobeinikov_Arseny_FIIT1_ClangAST",
       "Changes names by adding prefixes to variables and parameters");
