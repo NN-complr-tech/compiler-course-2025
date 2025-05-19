@@ -78,7 +78,7 @@ MLIR_DECLARE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 
 namespace {
-mlir::PassPluginLibraryInfo getMamaevaPluginInfo() {
+mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3", "1.0",
           []() { mlir::PassRegistration<MamaevaRemPass>(); }};
 }
@@ -86,5 +86,5 @@ mlir::PassPluginLibraryInfo getMamaevaPluginInfo() {
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getMamaevaPluginInfo();
+  return getMamaevaRemPassPluginInfo();
 }
