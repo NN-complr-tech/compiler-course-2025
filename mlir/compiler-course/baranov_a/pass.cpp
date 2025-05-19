@@ -20,9 +20,6 @@ class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
     std::string endName =
         "trace_loop_iter_end_" + std::to_string(indVars.size());
 
-    llvm::errs() << "beginName = " << beginName << "\n";
-    llvm::errs() << "endName = " << endName << "\n";
-
     builder.setInsertionPointToStart(&body);
     builder.create<func::CallOp>(loc, beginName, TypeRange{}, indVars);
 
