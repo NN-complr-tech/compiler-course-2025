@@ -38,12 +38,25 @@ module {
     return
   }
 }
+// CHECK-LABEL: func.func @scf_while
+// CHECK-NEXT: %c0 = arith.constant 0 : index
+// CHECK-NEXT: %c1 = arith.constant 1 : index
+// CHECK-NEXT: %c10 = arith.constant 10 : index
+// CHECK-NEXT: %0 = scf.while (%arg0 = %c0) : (index) -> index {
+// CHECK-NEXT:    %1 = arith.cmpi slt, %arg0, %c10 : index
+// CHECK-NEXT:    scf.condition(%1) %arg0 : index
+// CHECK-NEXT:    } do {
+// CHECK-NEXT:    ^bb0(%arg0: index):
+// CHECK-NEXT:      call @trace_loop_iter_begin() : () -> ()
+// CHECK-NEXT:      "test.op"() : () -> ()
+// CHECK-NEXT:      %1 = arith.addi %arg0, %c1 : index
+// CHECK-NEXT:      call @trace_loop_iter_end() : () -> ()
+// CHECK-NEXT:      scf.yield %1 : index
 
 module {
   func.func private @trace_loop_iter_begin() -> ()
   func.func private @trace_loop_iter_end() -> ()
 
-  // CHECK-LABEL: func.func @scf_while
   func.func @scf_while() {
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
@@ -54,10 +67,8 @@ module {
       scf.condition(%cond) %i : index
     } do {
       ^bb0(%i_in: index):
-        // CHECK: call @trace_loop_iter_begin
         "test.op"() : () -> ()
         %inc = arith.addi %i_in, %c1 : index
-        // CHECK: call @trace_loop_iter_end
         scf.yield %inc : index
     }
 
