@@ -5,8 +5,8 @@
 
 namespace {
 struct PureFunctionPass : llvm::PassInfoMixin<PureFunctionPass> {
-    llvm::PreservedAnalyses run(llvm::Function &F,
-				 llvm::FunctionAnalysisManager &) {
+  llvm::PreservedAnalyses run(llvm::Function &F,
+				llvm::FunctionAnalysisManager &) {
     for (auto &BB : F)
       for (auto &I : BB)
         if (I.mayReadOrWriteMemory())
