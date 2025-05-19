@@ -3,16 +3,14 @@ set(Student "Mamaeva_Olga")
 set(Group "FIIT3")
 set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
 
-set(SOURCES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/rem_pass.cpp"
-)
+file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 
 add_llvm_pass_plugin(${TARGET_NAME}
-  ${SOURCES}
-  DEPENDS
-  MLIRArithDialect
-  MLIRFuncDialect
-  BUILDTREE_ONLY
+    ${SOURCES}
+    DEPENDS
+    intrinsics_gen
+    MLIRBuiltinLocationAttributesIncGen
+    BUILDTREE_ONLY
 )
 
 set(MLIR_TEST_DEPENDS ${TARGET_NAME} ${MLIR_TEST_DEPENDS} PARENT_SCOPE)
