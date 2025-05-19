@@ -56,9 +56,8 @@ module {
       ^bb0(%i_in: index):
         // CHECK: call @trace_loop_iter_begin
         "test.op"() : () -> ()
-        // CHECK: call @trace_loop_iter_end
-
         %inc = arith.addi %i_in, %c1 : index
+        // CHECK: call @trace_loop_iter_end
         scf.yield %inc : index
     }
 
