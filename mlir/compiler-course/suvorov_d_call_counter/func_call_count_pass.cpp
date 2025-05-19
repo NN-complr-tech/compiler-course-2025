@@ -25,12 +25,14 @@ public:
     moduleOp.walk([&](func::CallOp callInstruction) {
       StringRef targetFunctionName = callInstruction.getCallee();
       int totalCalls = functionCallFrequencyMap[targetFunctionName];
-      IntegerAttr callCountAttribute = attrBuilder.getI64IntegerAttr(totalCalls);
+      IntegerAttr callCountAttribute =
+          attrBuilder.getI64IntegerAttr(totalCalls);
       callInstruction->setAttr("call_count", callCountAttribute);
     });
 
     for (const auto &[functionName, totalCalls] : functionCallFrequencyMap) {
-      llvm::outs() << "Function " << functionName << " called " << totalCalls << " times\n";
+      llvm::outs() << "Function " << functionName << " called " << totalCalls
+                   << " times\n";
     }
   }
 
