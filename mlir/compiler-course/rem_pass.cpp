@@ -19,7 +19,6 @@ public:
     Value lhs = remOp.getLhs();
     Value rhs = remOp.getRhs();
 
-    // Проверка деления на ноль для констант
     if (auto rhsConst =
             dyn_cast_or_null<arith::ConstantIntOp>(rhs.getDefiningOp())) {
       if (rhsConst.value() == 0) {
@@ -40,8 +39,9 @@ public:
 class RemPass : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final { return "rem-pass"; }
+
   StringRef getDescription() const final {
-    return "Replace remainder operations with div+mul+sub";
+    return "Decomposes remainder operations into div+mul+sub sequences";
   }
 
   void runOnOperation() override {
@@ -59,12 +59,15 @@ public:
 
 } // namespace
 
-// Регистрация плагина
-extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
+MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
+
+mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "RemPass", "1.0",
+          []() { PassRegistration<RemPass>(); }};
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION,
-          "RemPass", // Имя плагина
-          "1.0", [](PassRegistry &registry) {
-            registry.addPass(std::make_unique<RemPass>());
-          }};
+  return getRemPassPluginInfo();
 }
