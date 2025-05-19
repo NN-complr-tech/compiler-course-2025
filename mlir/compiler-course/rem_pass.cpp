@@ -3,87 +3,69 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
-using namespace arith;
 
 namespace {
 
-class RemPass : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
+class MamaevaRemPass
+    : public PassWrapper<MamaevaRemPass, OperationPass<ModuleOp>> {
 private:
-  struct RemSIOpRewrite : public OpRewritePattern<RemSIOp> {
-    using OpRewritePattern::OpRewritePattern;
+  void expandRemainder(Operation *op, OpBuilder &builder, bool isSigned) {
+    Value lhs = op->getOperand(0);
+    Value rhs = op->getOperand(1);
+    Location loc = op->getLoc();
 
-    LogicalResult matchAndRewrite(RemSIOp operation,
-                                  PatternRewriter &rewriter) const override {
-      Location location = operation.getLoc();
-      Value lhs = operation.getLhs();
-      Value rhs = operation.getRhs();
-
-      Value div = rewriter.create<DivSIOp>(location, lhs, rhs);
-      Value mul = rewriter.create<MulIOp>(location, div, rhs);
-      Value sub = rewriter.create<SubIOp>(location, lhs, mul);
-
-      rewriter.replaceOp(operation, sub);
-      return success();
+    Value div;
+    if (isSigned) {
+      div = builder.create<arith::DivSIOp>(loc, lhs, rhs).getResult();
+    } else {
+      div = builder.create<arith::DivUIOp>(loc, lhs, rhs).getResult();
     }
-  };
 
-  struct RemUIOpRewrite : public OpRewritePattern<RemUIOp> {
-    using OpRewritePattern::OpRewritePattern;
+    Value mul = builder.create<arith::MulIOp>(loc, div, rhs).getResult();
+    Value result = builder.create<arith::SubIOp>(loc, lhs, mul).getResult();
 
-    LogicalResult matchAndRewrite(RemUIOp operation,
-                                  PatternRewriter &rewriter) const override {
-      Location location = operation.getLoc();
-      Value lhs = operation.getLhs();
-      Value rhs = operation.getRhs();
-
-      Value div = rewriter.create<DivUIOp>(location, lhs, rhs);
-      Value mul = rewriter.create<MulIOp>(location, div, rhs);
-      Value sub = rewriter.create<SubIOp>(location, lhs, mul);
-
-      rewriter.replaceOp(operation, sub);
-      return success();
-    }
-  };
+    op->getResult(0).replaceAllUsesWith(result);
+    op->erase();
+  }
 
 public:
-  StringRef getArgument() const final { return "rem-pass-mamaeva-olga-fiit3"; }
+  StringRef getArgument() const final {
+    return "rem_pass_Mamaeva_Olga_FIIT3_MLIR";
+  }
 
   StringRef getDescription() const final {
-    return "Replace remui/remsi with equivalent operations using div+mul+sub";
+    return "Replace remainder ops with div+mul+sub sequence";
   }
 
   void runOnOperation() override {
-    RewritePatternSet patterns(&getContext());
-    patterns.add<RemSIOpRewrite, RemUIOpRewrite>(&getContext());
+    ModuleOp module = getOperation();
+    OpBuilder builder(module);
 
-    if (failed(applyPatternsAndFoldGreedily(getOperation(),
-                                            std::move(patterns)))) {
+    module.walk([&](arith::RemSIOp op) {
+      expandRemainder(op, builder, /*isSigned=*/true);
+    });
 
-      Expand All
-
-          @ @-68,
-          15 + 67,
-          18 @ @class RemPass
-          : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
-
-        signalPassFailure();
-      }
-    }
-  };
+    module.walk([&](arith::RemUIOp op) {
+      expandRemainder(op, builder, /*isSigned=*/false);
+    });
+  }
+};
 
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass) MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
+MLIR_DECLARE_EXPLICIT_TYPE_ID(MamaevaRemPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(MamaevaRemPass)
 
-    mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "RemPassMamaevaOlgaFIIT3", "1.0",
-          []() { mlir::PassRegistration<RemPass>(); }};
+namespace {
+mlir::PassPluginLibraryInfo getMamaevaPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "rem_pass_Mamaeva_Olga_FIIT3", "1.0",
+          []() { mlir::PassRegistration<MamaevaRemPass>(); }};
 }
+} // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getRemPassPluginInfo();
+  return getMamaevaPluginInfo();
 }
