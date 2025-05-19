@@ -1,5 +1,5 @@
-// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/librem_pass_Mamaeva_Olga_FIIT3_MLIR%shlibext \
-// RUN: --pass-pipeline="builtin.module(mamaeva-rem-pass)" %s | FileCheck %s
+// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/librem_pass_Mamaeva_Olga_FIIT3_MLIR.so \
+// RUN: --pass-pipeline="builtin.module(rem_pass_Mamaeva_Olga_FIIT3_MLIR)" %s | FileCheck %s
 
 // CHECK-LABEL: func.func @test_remsi
 func.func @test_remsi(%arg0: i32, %arg1: i32) -> i32 {
