@@ -1,5 +1,5 @@
 // RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/RemPass_Mamaeva_Olga_FIIT3_MLIR%shlibext \
-// RUN: --pass-pipeline="builtin.module(rem_pass_Mamaeva_Olga_FIIT3_MLIR)" %s | FileCheck %s
+// RUN: --pass-pipeline="builtin.module(RemPass_Mamaeva_Olga_FIIT3_MLIR)" %s | FileCheck %s
 
 // ==================================================
 // Тест для знакового остатка (remsi)
