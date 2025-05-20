@@ -18,8 +18,10 @@ struct ModRewritePattern : public OpRewritePattern<ModOp> {
     Value rightOperand = operation.getRhs();
 
     Value division = builder.create<DivOp>(location, leftOperand, rightOperand);
-    Value multiplication = builder.create<arith::MulIOp>(location, division, rightOperand);
-    Value result = builder.create<arith::SubIOp>(location, leftOperand, multiplication);
+    Value multiplication =
+        builder.create<arith::MulIOp>(location, division, rightOperand);
+    Value result =
+        builder.create<arith::SubIOp>(location, leftOperand, multiplication);
 
     builder.replaceOp(operation, result);
     return success();
