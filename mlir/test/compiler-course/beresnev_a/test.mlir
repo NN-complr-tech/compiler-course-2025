@@ -28,4 +28,13 @@ module {
 	// CHECK: {trip_count = 14 : i64}
 	func.return
   }
+
+  // CHECK-LABEL: func.func @test3
+  func.func @test3(%a : index) {
+	%b = arith.constant -20 : index
+	%c = arith.constant -3 : index
+	scf.for %i = %a to %b step %c {  }
+	// CHECK-NOT: trip_count
+	func.return
+  }
 }
