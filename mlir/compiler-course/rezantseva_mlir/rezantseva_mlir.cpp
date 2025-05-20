@@ -28,18 +28,14 @@ private:
   }
 
   unsigned computeDepth(Operation *op, unsigned currentDepth = 0) {
+    if (isNestingOp(op))
+      currentDepth++;
     unsigned maxDepth = currentDepth;
-
-    if (isNestingOp(op)) {
-      maxDepth = std::max(maxDepth, currentDepth + 1);
-    }
 
     for (Region &region : op->getRegions()) {
       for (Block &block : region) {
         for (Operation &nestedOp : block) {
-          maxDepth = std::max(
-              maxDepth, computeDepth(&nestedOp,
-                                     currentDepth + (isNestingOp(op) ? 1 : 0)));
+          maxDepth = std::max(maxDepth, computeDepth(&nestedOp, currentDepth));
         }
       }
     }
@@ -53,7 +49,8 @@ public:
   }
 
   StringRef getDescription() const final {
-    return "The pass counts the max depth of control flow operations nests in each "
+    return "The pass counts the max depth of control flow operations nests in "
+           "each "
            "loop.";
   }
 
@@ -61,30 +58,20 @@ public:
     func::FuncOp func = getOperation();
     std::vector<unsigned> loopDepths;
 
-    func.walk([&](Operation *op) {
+    func.walk<mlir::WalkOrder::PreOrder>([&](Operation *op) {
       if (isLoopOp(op)) {
-        Operation *parent = op->getParentOp();
-        bool isNestedInLoop = false;
-        while (parent && !isa<func::FuncOp>(parent)) {
-          if (isLoopOp(parent)) {
-            isNestedInLoop = true;
-            break;
-          }
-          parent = parent->getParentOp();
+        unsigned depth = computeDepth(op);
+        if (depth > 0) {
+          loopDepths.push_back(depth);
         }
-        if (!isNestedInLoop) {
-          unsigned depth = computeDepth(op);
-          if (depth > 0) {
-            loopDepths.push_back(depth);
-          }
-        }
+        return WalkResult::skip();
       }
+      return WalkResult::advance();
     });
 
     if (loopDepths.empty()) {
       func->setAttr("my_loop_depths", ArrayAttr::get(func.getContext(), {}));
     } else {
-      std::sort(loopDepths.begin(), loopDepths.end(), std::greater<unsigned>());
       SmallVector<Attribute> depthAttrs;
       for (unsigned depth : loopDepths) {
         depthAttrs.push_back(

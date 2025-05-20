@@ -91,6 +91,8 @@ func.func @single_scf_while() {
 // CHECK-NEXT:   scf.for %{{.*}} = %c0 to %c10 step %c1 {
 // CHECK-NEXT:     scf.if %{{.*}} {
 // CHECK-NEXT:     }
+// CHECK-NEXT:     scf.if %{{.*}} {
+// CHECK-NEXT:     }
 // CHECK-NEXT:   }
 // CHECK-NEXT:   return
 // CHECK-NEXT: }
@@ -101,6 +103,8 @@ func.func @scf_for_with_if() {
   %c1 = arith.constant 1 : index
   %cond = arith.constant true
   scf.for %i = %c0 to %c10 step %c1 {
+    scf.if %cond {
+    }
     scf.if %cond {
     }
   }
@@ -147,6 +151,7 @@ func.func @deeply_nested_if_in_for() {
 // CHECK-NEXT:     scf.for %arg1 = %c0 to %c20 step %c2 {
 // CHECK-NEXT:       scf.for %arg2 = %c0 to %c20 step %c2 {
 // CHECK-NEXT:         scf.for %arg3 = %c0 to %c20 step %c2 {
+// CHECK-NEXT:           %0 = arith.addi %arg3, %c2 : index
 // CHECK-NEXT:         }
 // CHECK-NEXT:       }
 // CHECK-NEXT:     }
@@ -166,6 +171,7 @@ func.func @nested_loops() {
     scf.for %inner1 = %c0 to %c20 step %c2 {
       scf.for %inner2 = %c0 to %c20 step %c2 {
         scf.for %inner3 = %c0 to %c20 step %c2 {
+          %sum = arith.addi %inner3, %c2 : index
         }
       }
     }
