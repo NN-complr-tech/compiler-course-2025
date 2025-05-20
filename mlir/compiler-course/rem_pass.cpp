@@ -14,60 +14,46 @@ public:
   StringRef getArgument() const final {
     return "RemPass_Mamaeva_Olga_FIIT3_MLIR";
   }
-
-  StringRef getDescription() const final {
-    return "Replace remainder operations with div+mul+sub sequence";
-  }
+  StringRef getDescription() const final { return "Description pass"; }
 
   void runOnOperation() override {
-    ModuleOp module = getOperation();
-    OpBuilder builder(module);
+    ModuleOp moduleOp = getOperation();
+    OpBuilder builder(moduleOp);
 
-    module.walk([&](arith::RemSIOp remOp) {
-      expandRemainder<arith::DivSIOp>(remOp, builder);
-    });
+    moduleOp.walk(
+        [&](arith::RemSIOp op) { Remainder<arith::DivSIOp>(op, builder); });
 
-    module.walk([&](arith::RemUIOp remOp) {
-      expandRemainder<arith::DivUIOp>(remOp, builder);
-    });
+    moduleOp.walk(
+        [&](arith::RemUIOp op) { Remainder<arith::DivUIOp>(op, builder); });
   }
 
 private:
-  template <typename DivOp>
-  void expandRemainder(Operation *op, OpBuilder &bld) {
-    Value lhsVal = op->getOperand(0);
-    Value rhsVal = op->getOperand(1);
-    Location loc = op->getLoc();
+  template <typename DivOp> void Remainder(Operation *op, OpBuilder &builder) {
+    auto lhs = op->getOperand(0);
+    auto rhs = op->getOperand(1);
+    auto loc = op->getLoc();
 
-    bld.setInsertionPoint(op);
+    builder.setInsertionPoint(op);
 
-    if (auto rhsConst =
-            dyn_cast_or_null<arith::ConstantIntOp>(rhsVal.getDefiningOp())) {
-      if (rhsConst.value() == 0) {
-        op->emitError("division by zero");
-        return signalPassFailure();
-      }
-    }
+    auto div = builder.create<DivOp>(loc, lhs, rhs);
+    auto mul = builder.create<arith::MulIOp>(loc, div, rhs);
+    auto sub = builder.create<arith::SubIOp>(loc, lhs, mul);
 
-    Value divVal = bld.create<DivOp>(loc, lhsVal, rhsVal);
-    Value mulVal = bld.create<arith::MulIOp>(loc, divVal, rhsVal);
-    Value subVal = bld.create<arith::SubIOp>(loc, lhsVal, mulVal);
-
-    op->getResult(0).replaceAllUsesWith(subVal);
+    op->replaceAllUsesWith(sub);
     op->erase();
   }
 };
-namespace {
+} // namespace
 
-mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, 
-          "RemPass",  
-          "1.0",
+MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
+
+mlir::PassPluginLibraryInfo getFunctionCallCounterPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "RemPass", "1.0",
           []() { mlir::PassRegistration<RemPass>(); }};
 }
-} // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getMamaevaRemPassPluginInfo(); 
+  return getFunctionCallCounterPassPluginInfo();
 }
