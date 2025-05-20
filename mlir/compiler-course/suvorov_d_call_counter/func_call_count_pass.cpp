@@ -14,7 +14,7 @@ public:
   void runOnOperation() override {
     ModuleOp moduleOp = getOperation();
 
-    llvm::MapVector<StringRef, int> functionCallFrequencyMap;
+    llvm::StringMap<int> functionCallFrequencyMap;
 
     moduleOp.walk([&](func::CallOp callInstruction) {
       StringRef targetFunctionName = callInstruction.getCallee();
@@ -29,11 +29,6 @@ public:
           attrBuilder.getI64IntegerAttr(totalCalls);
       callInstruction->setAttr("call_count", callCountAttribute);
     });
-
-    for (const auto &[functionName, totalCalls] : functionCallFrequencyMap) {
-      llvm::outs() << "Function " << functionName << " called " << totalCalls
-                   << " times\n";
-    }
   }
 
   StringRef getArgument() const final {
