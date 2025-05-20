@@ -1,59 +1,67 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
 
 namespace {
-class RemPass : public PassWrapper<RemPass, OperationPass<ModuleOp>> {
+class RemPass_Mamaeva_Olga_FIIT3_MLIR
+    : public PassWrapper<RemPass_Mamaeva_Olga_FIIT3_MLIR,
+                         OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
-    return "RemPass_Mamaeva_Olga_FIIT3_MLIR";
+    return "rem-pass-mamaeva-olga-fiit3-mlir"; // в kebab-case
   }
-  StringRef getDescription() const final { return "Description pass"; }
+
+  StringRef getDescription() const final {
+    return "Replace remainder operations with div+mul+sub sequence";
+  }
 
   void runOnOperation() override {
-    ModuleOp moduleOp = getOperation();
-    OpBuilder builder(moduleOp);
+    ModuleOp module = getOperation();
+    OpBuilder builder(module);
 
-    moduleOp.walk(
-        [&](arith::RemSIOp op) { Remainder<arith::DivSIOp>(op, builder); });
+    module.walk([&](arith::RemSIOp remOp) {
+      expandRemainder<arith::DivSIOp>(remOp, builder);
+    });
 
-    moduleOp.walk(
-        [&](arith::RemUIOp op) { Remainder<arith::DivUIOp>(op, builder); });
+    module.walk([&](arith::RemUIOp remOp) {
+      expandRemainder<arith::DivUIOp>(remOp, builder);
+    });
   }
 
 private:
-  template <typename DivOp> void Remainder(Operation *op, OpBuilder &builder) {
-    auto lhs = op->getOperand(0);
-    auto rhs = op->getOperand(1);
-    auto loc = op->getLoc();
+  template <typename DivOp>
+  void expandRemainder(Operation *op, OpBuilder &builder) {
+    Value lhs = op->getOperand(0);
+    Value rhs = op->getOperand(1);
+    Location loc = op->getLoc();
 
     builder.setInsertionPoint(op);
 
-    auto div = builder.create<DivOp>(loc, lhs, rhs);
-    auto mul = builder.create<arith::MulIOp>(loc, div, rhs);
-    auto sub = builder.create<arith::SubIOp>(loc, lhs, mul);
+    Value div = builder.create<DivOp>(loc, lhs, rhs);
+    Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
+    Value sub = builder.create<arith::SubIOp>(loc, lhs, mul);
 
-    op->replaceAllUsesWith(sub);
+    op->getResult(0).replaceAllUsesWith(sub);
     op->erase();
   }
 };
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
+MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass_Mamaeva_Olga_FIIT3_MLIR)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass_Mamaeva_Olga_FIIT3_MLIR)
 
-mlir::PassPluginLibraryInfo getFunctionCallCounterPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "RemPass", "1.0",
-          []() { mlir::PassRegistration<RemPass>(); }};
+static mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION,
+          "RemPass_Mamaeva_Olga_FIIT3_MLIR", // Должно совпадать с именем класса
+          "1.0",
+          []() { mlir::PassRegistration<RemPass_Mamaeva_Olga_FIIT3_MLIR>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getFunctionCallCounterPassPluginInfo();
+  return getRemPassPluginInfo();
 }
