@@ -1,5 +1,4 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
@@ -18,41 +17,40 @@ public:
   }
 
   void runOnOperation() override {
-    ModuleOp moduleOp = getOperation();
-    OpBuilder builder(moduleOp);
+    ModuleOp module = getOperation();
+    OpBuilder builder(module);
 
-    moduleOp.walk([&](arith::RemSIOp op) {
-      expandRemainder<arith::DivSIOp>(op, builder);
+    module.walk([&](arith::RemSIOp remOp) {
+      expandRemainder<arith::DivSIOp>(remOp, builder);
     });
 
-    moduleOp.walk([&](arith::RemUIOp op) {
-      expandRemainder<arith::DivUIOp>(op, builder);
+    module.walk([&](arith::RemUIOp remOp) {
+      expandRemainder<arith::DivUIOp>(remOp, builder);
     });
   }
 
 private:
   template <typename DivOp>
-  void expandRemainder(Operation *op, OpBuilder &builder) {
-    Value lhs = op->getOperand(0);
-    Value rhs = op->getOperand(1);
+  void expandRemainder(Operation *op, OpBuilder &bld) {
+    Value lhsVal = op->getOperand(0);
+    Value rhsVal = op->getOperand(1);
     Location loc = op->getLoc();
 
-    builder.setInsertionPoint(op);
+    bld.setInsertionPoint(op);
 
-    // Проверка деления на ноль для констант
     if (auto rhsConst =
-            dyn_cast_or_null<arith::ConstantIntOp>(rhs.getDefiningOp())) {
+            dyn_cast_or_null<arith::ConstantIntOp>(rhsVal.getDefiningOp())) {
       if (rhsConst.value() == 0) {
         op->emitError("division by zero");
         return signalPassFailure();
       }
     }
 
-    Value div = builder.create<DivOp>(loc, lhs, rhs);
-    Value mul = builder.create<arith::MulIOp>(loc, div, rhs);
-    Value sub = builder.create<arith::SubIOp>(loc, lhs, mul);
+    Value divVal = bld.create<DivOp>(loc, lhsVal, rhsVal);
+    Value mulVal = bld.create<arith::MulIOp>(loc, divVal, rhsVal);
+    Value subVal = bld.create<arith::SubIOp>(loc, lhsVal, mulVal);
 
-    op->getResult(0).replaceAllUsesWith(sub);
+    op->getResult(0).replaceAllUsesWith(subVal);
     op->erase();
   }
 };
@@ -61,7 +59,7 @@ private:
 MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
 
-mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
+static mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "RemPass", "1.0",
           []() { mlir::PassRegistration<RemPass>(); }};
 }
