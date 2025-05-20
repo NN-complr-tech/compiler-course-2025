@@ -17,7 +17,7 @@ public:
 
   StringRef getDescription() const final {
     return "Annotate scf.for loops with an attribute \"trip_count\" that "
-               "represents amount of iteration.";
+           "represents amount of iteration.";
   }
 
   void runOnOperation() override {
