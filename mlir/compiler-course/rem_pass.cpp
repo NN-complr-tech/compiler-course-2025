@@ -57,17 +57,17 @@ private:
     op->erase();
   }
 };
-} // namespace
+namespace {
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(RemPass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(RemPass)
-
-static mlir::PassPluginLibraryInfo getRemPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "RemPass", "1.0",
+mlir::PassPluginLibraryInfo getMamaevaRemPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, 
+          "RemPass",  
+          "1.0",
           []() { mlir::PassRegistration<RemPass>(); }};
 }
+} // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getRemPassPluginInfo();
+  return getMamaevaRemPassPluginInfo(); 
 }
