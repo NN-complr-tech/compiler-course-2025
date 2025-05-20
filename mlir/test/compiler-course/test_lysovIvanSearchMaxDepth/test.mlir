@@ -100,7 +100,6 @@ module {
 
     return
   }
-}
 
   // CHECK-LABEL: func.func @while_with_nesting() attributes {loop_max_depth = 3 : i32}
   // CHECK-NEXT:   %{{.*}} = arith.constant true
@@ -126,4 +125,4 @@ module {
 
     return
   }
-  
+}
