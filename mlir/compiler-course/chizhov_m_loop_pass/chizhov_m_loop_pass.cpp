@@ -45,9 +45,26 @@ public:
     insertTraceCalls(afterBlock, builder, op.getLoc());
   }
 
+  void ensureTraceFunctionsExist(ModuleOp moduleOp, OpBuilder &builder) {
+    auto insertFuncIfMissing = [&](StringRef name) {
+      if (!moduleOp.lookupSymbol<func::FuncOp>(name)) {
+        auto funcType = builder.getFunctionType({}, {});
+        OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPointToStart(moduleOp.getBody());
+        builder.create<func::FuncOp>(moduleOp.getLoc(), name, funcType)
+            .setPrivate();
+      }
+    };
+
+    insertFuncIfMissing("trace_loop_iter_begin");
+    insertFuncIfMissing("trace_loop_iter_end");
+  }
+
   void runOnOperation() override {
     ModuleOp moduleOp = getOperation();
     OpBuilder builder(moduleOp.getContext());
+
+    ensureTraceFunctionsExist(moduleOp, builder);
 
     moduleOp.walk([&](Operation *op) {
       if (auto affineFor = dyn_cast<affine::AffineForOp>(op)) {
