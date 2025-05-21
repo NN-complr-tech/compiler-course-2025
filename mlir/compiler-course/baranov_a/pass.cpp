@@ -52,7 +52,8 @@ class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
 
     builder.setInsertionPoint(body.getTerminator());
     builder.create<func::CallOp>(loc, endName, TypeRange{}, afterArgs);
-}
+  }
+
 public:
   StringRef getArgument() const final {
     return "MlirPassLoopIterBeginEnd_Baranov_Aleksey_FIIT1_MLIR";
@@ -60,7 +61,8 @@ public:
   StringRef getDescription() const final {
     return "Inserts a `@trace_loop_iter_begin_*` fuction call on each loop "
            "interation begin (loops: affine.for, scf.for, scf.while, ...), "
-           "`@trace_loop_iter_end` fuction call at the end. The number of indVars is presented in name of the function.";
+           "`@trace_loop_iter_end` fuction call at the end. The number of "
+           "indVars is presented in name of the function.";
   }
   void runOnOperation() override {
     ModuleOp moduleOp = getOperation();
