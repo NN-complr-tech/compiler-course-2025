@@ -34,10 +34,9 @@ public:
           dyn_cast_or_null<arith::ConstantIndexOp>(upper.getDefiningOp());
       auto stepConst =
           dyn_cast_or_null<arith::ConstantIndexOp>(step.getDefiningOp());
-
-      if (lowerConst && upperConst && stepConst) {
+      if (lowerConst && upperConst && stepConst && stepConst.value()) {
         int64_t tripCount =
-            (upperConst.value() - lowerConst.value()) / stepConst.value();
+            std::abs(upperConst.value() - lowerConst.value()) / stepConst.value();
         builder.setInsertionPoint(forOp);
         forOp->setAttr("trip_count", builder.getI64IntegerAttr(tripCount));
       }

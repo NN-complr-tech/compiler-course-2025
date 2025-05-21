@@ -44,3 +44,25 @@ func.func @barfoo(%arg0: index) {
   }
   return
 }
+
+func.func @qux() {
+  %c0 = arith.constant 1 : index
+  %c5 = arith.constant 5 : index
+  %c1 = arith.constant 0 : index
+  // CHECK: scf.for
+  // CHECK-NOT: trip_count
+  scf.for %i = %c0 to %c5 step %c1 {
+  }
+  return
+}
+
+func.func @baz() {
+  %c0 = arith.constant 5 : index
+  %c5 = arith.constant 1 : index
+  %c1 = arith.constant 1 : index
+  // CHECK: scf.for
+  // CHECK-NEXT: {trip_count = 4 : i64}
+  scf.for %i = %c0 to %c5 step %c1 {
+  }
+  return
+}
