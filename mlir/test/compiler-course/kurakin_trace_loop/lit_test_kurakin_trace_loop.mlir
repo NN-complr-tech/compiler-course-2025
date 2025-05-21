@@ -58,11 +58,11 @@ module {
 // CHECK-NEXT: %c0_i32_0 = arith.constant 0 : i32
 // CHECK-NEXT: %c10_i32 = arith.constant 10 : i32
 // CHECK-NEXT: %0:2 = scf.while (%arg0 = %c0_i32, %arg1 = %c0_i32_0) : (i32, i32) -> (i32, i32) {
-// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %1 = arith.cmpi slt, %arg1, %c10_i32 : i32
 // CHECK-NEXT: scf.condition(%1) %arg0, %arg1 : i32, i32
 // CHECK-NEXT: } do {
 // CHECK-NEXT: ^bb0(%arg0: i32, %arg1: i32):
+// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %1 = arith.addi %arg0, %arg1 : i32
 // CHECK-NEXT: %c1_i32 = arith.constant 1 : i32
 // CHECK-NEXT: %2 = arith.addi %arg1, %c1_i32 : i32
@@ -138,11 +138,11 @@ module {
 // CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %1 = arith.index_cast %arg0 : index to i32
 // CHECK-NEXT: %2:2 = scf.while (%arg2 = %arg1, %arg3 = %c0_i32_0) : (i32, i32) -> (i32, i32) {
-// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %3 = arith.cmpi slt, %arg2, %c5_i32 : i32
 // CHECK-NEXT: scf.condition(%3) %arg2, %arg3 : i32, i32
 // CHECK-NEXT: } do {
 // CHECK-NEXT: ^bb0(%arg2: i32, %arg3: i32):
+// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %3 = arith.addi %arg2, %arg3 : i32
 // CHECK-NEXT: %c1_i32 = arith.constant 1 : i32
 // CHECK-NEXT: %4 = arith.addi %arg3, %c1_i32 : i32
@@ -188,11 +188,11 @@ module {
 // CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %c0_i32_1 = arith.constant 0 : i32
 // CHECK-NEXT: %1:2 = scf.while (%arg2 = %arg1, %arg3 = %c0_i32_0) : (i32, i32) -> (i32, i32) {
-// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %2 = arith.cmpi slt, %arg2, %c5_i32 : i32
 // CHECK-NEXT: scf.condition(%2) %arg2, %arg3 : i32, i32
 // CHECK-NEXT: } do {
 // CHECK-NEXT: ^bb0(%arg2: i32, %arg3: i32):
+// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
 // CHECK-NEXT: %2 = arith.addi %arg2, %arg3 : i32
 // CHECK-NEXT: %c1_i32 = arith.constant 1 : i32
 // CHECK-NEXT: %3 = arith.addi %arg3, %c1_i32 : i32

@@ -12,18 +12,15 @@ namespace {
 struct TraceLoopPass
     : public mlir::PassWrapper<TraceLoopPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
-  void insertTraceLoop(mlir::Block &blockBefore, mlir::Block &blockAfter,
-                       mlir::Location loc, mlir::OpBuilder &opBuilder) {
-    opBuilder.setInsertionPointToStart(&blockBefore);
+  void insertTraceLoop(mlir::Block &block, mlir::Location loc,
+                       mlir::OpBuilder &opBuilder) {
+    opBuilder.setInsertionPointToStart(&block);
     opBuilder.create<mlir::func::CallOp>(loc, "trace_loop_iter_begin",
                                          mlir::TypeRange(), mlir::ValueRange());
-    for (auto &op : blockAfter) {
-      if (mlir::isa<mlir::affine::AffineYieldOp>(op) ||
-          mlir::isa<mlir::scf::YieldOp>(op)) {
-        opBuilder.setInsertionPoint(&op);
-        opBuilder.create<mlir::func::CallOp>(
-            loc, "trace_loop_iter_end", mlir::TypeRange(), mlir::ValueRange());
-      }
+    if (mlir::Operation *terminator = block.getTerminator()) {
+      opBuilder.setInsertionPoint(terminator);
+      opBuilder.create<mlir::func::CallOp>(
+          loc, "trace_loop_iter_end", mlir::TypeRange(), mlir::ValueRange());
     }
   }
 
@@ -57,14 +54,13 @@ public:
 
     module.walk([&](mlir::Operation *op) {
       if (auto affineForOp = mlir::dyn_cast<mlir::affine::AffineForOp>(op)) {
-        insertTraceLoop(*affineForOp.getBody(), *affineForOp.getBody(),
-                        affineForOp->getLoc(), opBuilder);
-      } else if (auto forOp = mlir::dyn_cast<mlir::scf::ForOp>(op)) {
-        insertTraceLoop(*forOp.getBody(), *forOp.getBody(), forOp->getLoc(),
+        insertTraceLoop(*affineForOp.getBody(), affineForOp->getLoc(),
                         opBuilder);
+      } else if (auto forOp = mlir::dyn_cast<mlir::scf::ForOp>(op)) {
+        insertTraceLoop(*forOp.getBody(), forOp->getLoc(), opBuilder);
       } else if (auto whileOp = mlir::dyn_cast<mlir::scf::WhileOp>(op)) {
-        insertTraceLoop(whileOp.getBefore().front(), whileOp.getAfter().front(),
-                        whileOp->getLoc(), opBuilder);
+        insertTraceLoop(whileOp.getAfter().front(), whileOp->getLoc(),
+                        opBuilder);
       }
     });
   }
