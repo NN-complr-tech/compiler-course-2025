@@ -17,22 +17,17 @@ struct ModRewritePattern : public OpRewritePattern<ModOp> {
     Value leftOperand = operation.getLhs();
     Value rightOperand = operation.getRhs();
 
-    // Проверка, если rightOperand - константа 1 или -1
-    if (auto constOp = rightOperand.getDefiningOp<arith::ConstantIntOp>()) {
-      int64_t constValue = constOp.value();
-      if (constValue == 1 || constValue == -1) {
-        // Создаем константу 0 того же типа, что и leftOperand
-        auto intType = leftOperand.getType().dyn_cast<IntegerType>();
-        if (!intType) {
-          return failure();
-        }
-        unsigned bitWidth = intType.getWidth();
-        Value zero = builder.create<arith::ConstantIntOp>(location, 0, bitWidth);
+    if (auto constDivisor = rightOperand.getDefiningOp<arith::ConstantIntOp>()) {
+      int64_t divisorValue = constDivisor.value();
+      if (divisorValue == 1 || divisorValue == -1) {
+        // x % 1 = 0 and x % -1 = 0
+        Value zero = builder.create<arith::ConstantIntOp>(location, 0, 
+                                                         rightOperand.getType());
         builder.replaceOp(operation, zero);
         return success();
       }
     }
-
+    
     Value division = builder.create<DivOp>(location, leftOperand, rightOperand);
     Value multiplication =
         builder.create<arith::MulIOp>(location, division, rightOperand);
