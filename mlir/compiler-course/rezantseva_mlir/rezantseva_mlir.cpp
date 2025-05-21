@@ -50,8 +50,7 @@ public:
 
   StringRef getDescription() const final {
     return "The pass counts the max depth of control flow operations nests in "
-           "each "
-           "loop.";
+           "each loop.";
   }
 
   void runOnOperation() override {
