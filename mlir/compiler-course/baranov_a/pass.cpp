@@ -34,7 +34,8 @@ class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
   template <typename OpTy>
   void processWhile(OpTy op, OpBuilder &builder) {
     Block &body = op.getAfter().front();
-    processLoop(op, body, body.getArgument(0), builder);
+    auto afterArgs = op.getAfterArguments(); // <-- исправлено
+    processLoop(op, body, afterArgs, builder); // <-- исправлено
   }
 
 public:

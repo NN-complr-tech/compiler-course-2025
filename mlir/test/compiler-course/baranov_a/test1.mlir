@@ -50,8 +50,8 @@ module {
 // scf.while
 //===----------------------------------------------------------------------===//
 module {
-  func.func private @trace_loop_iter_begin_1(i32) -> ()
-  func.func private @trace_loop_iter_end_1(i32) -> ()
+  func.func private @trace_loop_iter_begin_2(i32, i32) -> ()
+  func.func private @trace_loop_iter_end_2(i32, i32) -> ()
 
   // CHECK-LABEL: func.func @scf_while
   func.func @scf_while() -> i32 {
@@ -64,13 +64,12 @@ module {
       scf.condition(%cmp) %sum, %i : i32, i32
     } do {
     ^bb0(%sum_arg: i32, %i_arg: i32):
-      // CHECK: func.call @trace_loop_iter_begin_1
+      // CHECK: func.call @trace_loop_iter_begin_2
       // CHECK-NEXT: arith.addi
-      // CHECK: func.call @trace_loop_iter_end_1
+      // CHECK: func.call @trace_loop_iter_end_2
       %new_sum = arith.addi %sum_arg, %i_arg : i32
       %one = arith.constant 1 : i32
       %new_i = arith.addi %i_arg, %one : i32
-      func.call @trace_loop_iter_end_1(%sum_arg) : (i32) -> ()
       scf.yield %new_sum, %new_i : i32, i32
     }
 
