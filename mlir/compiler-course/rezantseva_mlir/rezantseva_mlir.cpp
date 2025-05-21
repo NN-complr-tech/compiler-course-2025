@@ -60,8 +60,7 @@ public:
 
     func.walk<mlir::WalkOrder::PreOrder>([&](Operation *op) {
       if (isLoopOp(op)) {
-        unsigned depth = computeDepth(op);
-        if (depth > 0) {
+        if (unsigned depth = computeDepth(op)) {
           loopDepths.push_back(depth);
         }
         return WalkResult::skip();
