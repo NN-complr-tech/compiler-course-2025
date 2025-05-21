@@ -3,24 +3,28 @@
 // RUN: | FileCheck %s
 
 module {
-  func.func @helper() {
-    func.return
-  }
+  "llvm.func"() ({
+    "llvm.return"() : () -> ()
+  }) {
+    sym_name = "helper",
+    function_type = !llvm.func<void ()>,
+    linkage = #llvm.linkage<external>
+  } : () -> ()
 
   func.func @worker() {
     func.return
   }
 
   func.func @main() {
-    // CHECK: call @helper() {invoke_total = 2 : i64}
-    call @helper() : () -> ()
-    
+    // CHECK: llvm.call @helper() {invoke_total = 2 : i64}
+    "llvm.call"() {callee = @helper} : () -> ()
+
     // CHECK: call @worker() {invoke_total = 1 : i64}
     call @worker() : () -> ()
-    
-    // CHECK: call @helper() {invoke_total = 2 : i64}
-    call @helper() : () -> ()
-    
+
+    // CHECK: llvm.call @helper() {invoke_total = 2 : i64}
+    "llvm.call"() {callee = @helper} : () -> ()
+
     func.return
   }
 
