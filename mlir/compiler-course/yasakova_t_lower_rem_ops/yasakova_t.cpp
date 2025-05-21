@@ -17,12 +17,13 @@ struct ModRewritePattern : public OpRewritePattern<ModOp> {
     Value leftOperand = operation.getLhs();
     Value rightOperand = operation.getRhs();
 
-    if (auto constDivisor = rightOperand.getDefiningOp<arith::ConstantIntOp>()) {
+    if (auto constDivisor =
+            rightOperand.getDefiningOp<arith::ConstantIntOp>()) {
       int64_t divisorValue = constDivisor.value();
       if (divisorValue == 1 || divisorValue == -1) {
         // x % 1 = 0 and x % -1 = 0
-        Value zero = builder.create<arith::ConstantIntOp>(location, 0, 
-                                                         rightOperand.getType());
+        Value zero = builder.create<arith::ConstantIntOp>(
+            location, 0, rightOperand.getType());
         builder.replaceOp(operation, zero);
         return success();
       }
