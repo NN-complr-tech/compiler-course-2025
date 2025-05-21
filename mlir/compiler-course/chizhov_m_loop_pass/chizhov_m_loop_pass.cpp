@@ -56,8 +56,8 @@ public:
       }
     };
 
-    insertFuncIfMissing("trace_loop_iter_begin");
     insertFuncIfMissing("trace_loop_iter_end");
+    insertFuncIfMissing("trace_loop_iter_begin");
   }
 
   void runOnOperation() override {
