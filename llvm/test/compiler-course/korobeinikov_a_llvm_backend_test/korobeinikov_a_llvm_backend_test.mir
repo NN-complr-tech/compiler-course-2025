@@ -1,0 +1,143 @@
+#  RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+fma \
+#  RUN:     --load=%llvmshlibdir/FuseMulSubPass_Korobeinikov_Arseny_FIIT1_BACKEND%shlibext \
+#  RUN:     -run-pass=korobeinikov-fuse-mul-sub %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'FuseMulSubTests_Korobeinikov.ll'
+  source_filename = "FuseTests_Korobeinikov.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+
+  module asm ".globl _ZSt21ios_base_library_initv"
+
+  %"class.std::basic_ostream" = type { ptr, %"class.std::basic_ios" }
+  %"class.std::basic_ios" = type { %"class.std::ios_base", ptr, i8, i8, ptr, ptr, ptr, ptr }
+  %"class.std::ios_base" = type { ptr, i64, i64, i32, i32, i32, ptr, %"struct.std::ios_base::_Words", [8 x %"struct.std::ios_base::_Words"], i32, ptr, %"class.std::locale" }
+  %"struct.std::ios_base::_Words" = type { ptr, i64 }
+  %"class.std::locale" = type { ptr }
+
+  @_ZSt4cout = external global %"class.std::basic_ostream", align 8
+
+  define dso_local noundef float @korobeinikov_ss_fma_test(float %a, float %b, float %c) #0 {
+  entry:
+    %mul = fmul float %a, %b
+    %res = fsub float %c, %mul
+    ret float %res
+  }
+
+  define dso_local noundef float @korobeinikov_ss_neg_test(float %a, float %b, float %c) #0 {
+  entry:
+    %mul = fmul float %a, %b
+    %neg = fneg float %mul
+    %res = fadd float %neg, %c
+    ret float %res
+  }
+
+  define dso_local noundef double @korobeinikov_sd_fma_test(double %a, double %b, double %c) #0 {
+  entry:
+    %mul = fmul double %a, %b
+    %res = fsub double %c, %mul
+    ret double %res
+  }
+
+  attributes #0 = { nounwind "target-features"="+fma" }
+
+  !llvm.module.flags = !{!0, !1}
+  !llvm.ident = !{!2}
+
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 7, !"frame-pointer", i32 2}
+  !2 = !{!"Korobeinikov Custom Compiler"}
+
+# CHECK-LABEL: name: korobeinikov_ss_fma_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr32 = VFMSUB213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+...
+---
+name:            korobeinikov_ss_fma_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# CHECK-LABEL: name: korobeinikov_ss_neg_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VADDSSrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr32 = VFMSUB213SSr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+...
+---
+name:            korobeinikov_ss_neg_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VADDSSrr killed %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# CHECK-LABEL: name: korobeinikov_sd_fma_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSDrr
+# CHECK-NOT: VSUBSDrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr64 = VFMSUB213SDr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+...
+---
+name:            korobeinikov_sd_fma_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr64 }
+  - { id: 1, class: fr64 }
+  - { id: 2, class: fr64 }
+  - { id: 3, class: fr64 }
+  - { id: 4, class: fr64 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    
+    %2:fr64 = COPY $xmm2
+    %1:fr64 = COPY $xmm1
+    %0:fr64 = COPY $xmm0
+    %3:fr64 = nofpexcept VMULSDrr %0, %1, implicit $mxcsr
+    %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
