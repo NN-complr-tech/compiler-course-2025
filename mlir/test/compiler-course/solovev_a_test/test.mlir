@@ -128,7 +128,7 @@ module {
   // CHECK-DAG: %c3 = arith.constant 3 : index
   // CHECK-DAG: %[[NEG2:.*]] = arith.constant -2 : index
   // CHECK:      scf.for %{{.*}} = %c0 to %c3 step %[[NEG2]] {{{$}}
-  // CHECK-NEXT: }
+  // CHECK-NEXT: }{{$}}
   // CHECK-NEXT: return
 
   func.func @test_negative_step_wrong_range() {
