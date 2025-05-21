@@ -53,6 +53,31 @@ module {
     return %result : i32
   }
 
+// CHECK: func.func @scf_for_without_yield() -> i32 {
+// CHECK-NEXT: %c0 = arith.constant 0 : index
+// CHECK-NEXT: %c10 = arith.constant 10 : index
+// CHECK-NEXT: %c1 = arith.constant 1 : index
+// CHECK-NEXT: %c0_i32 = arith.constant 0 : i32
+// CHECK-NEXT: scf.for %arg0 = %c0 to %c10 step %c1 {
+// CHECK-NEXT: func.call @trace_loop_iter_begin() : () -> ()
+// CHECK-NEXT: %0 = arith.index_cast %arg0 : index to i32
+// CHECK-NEXT: func.call @trace_loop_iter_end() : () -> ()
+// CHECK-NEXT: }
+// CHECK-NEXT: return %c0_i32 : i32
+// CHECK-NEXT: }
+
+  func.func @scf_for_without_yield() -> i32 {
+    %begin = arith.constant 0 : index
+    %end = arith.constant 10 : index
+    %step = arith.constant 1 : index
+    %ret = arith.constant 0 : i32
+    
+    scf.for %i = %begin to %end step %step {
+      %check = arith.index_cast %i : index to i32
+    }
+    return %ret : i32
+  }
+
 // CHECK: func.func @scf_while() -> i32 {
 // CHECK-NEXT: %c0_i32 = arith.constant 0 : i32
 // CHECK-NEXT: %c0_i32_0 = arith.constant 0 : i32
