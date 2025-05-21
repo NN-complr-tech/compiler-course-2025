@@ -38,36 +38,30 @@ public:
     ensureFuncDecl("trace_loop_iter_begin");
     ensureFuncDecl("trace_loop_iter_end");
 
+    auto insertTraceCalls = [&](Block &block, Location loc, MLIRContext *ctx) {
+      OpBuilder builder(ctx);
+      builder.setInsertionPointToStart(&block);
+      builder.create<func::CallOp>(loc, "trace_loop_iter_begin", TypeRange(),
+                                   ValueRange());
+
+      builder.setInsertionPoint(block.getTerminator());
+      builder.create<func::CallOp>(loc, "trace_loop_iter_end", TypeRange(),
+                                   ValueRange());
+    };
+
     moduleOp.walk([&](Operation *op) {
       if (auto whileOp = dyn_cast<scf::WhileOp>(op)) {
         Region &afterRegion = whileOp.getAfter();
         if (afterRegion.empty())
           return;
-
-        Block &afterBlock = afterRegion.front();
-        OpBuilder builder(op->getContext());
-        builder.setInsertionPointToStart(&afterBlock);
-        builder.create<func::CallOp>(whileOp.getLoc(), "trace_loop_iter_begin",
-                                     TypeRange(), ValueRange());
-
-        builder.setInsertionPoint(afterBlock.getTerminator());
-        builder.create<func::CallOp>(whileOp.getLoc(), "trace_loop_iter_end",
-                                     TypeRange(), ValueRange());
+        insertTraceCalls(afterRegion.front(), whileOp.getLoc(),
+                         op->getContext());
 
       } else if (isa<scf::ForOp, affine::AffineForOp>(op)) {
         Region &bodyRegion = op->getRegion(0);
         if (bodyRegion.empty())
           return;
-
-        Block &entryBlock = bodyRegion.front();
-        OpBuilder builder(op->getContext());
-        builder.setInsertionPointToStart(&entryBlock);
-        builder.create<func::CallOp>(op->getLoc(), "trace_loop_iter_begin",
-                                     TypeRange(), ValueRange());
-
-        builder.setInsertionPoint(entryBlock.getTerminator());
-        builder.create<func::CallOp>(op->getLoc(), "trace_loop_iter_end",
-                                     TypeRange(), ValueRange());
+        insertTraceCalls(bodyRegion.front(), op->getLoc(), op->getContext());
       }
     });
   }
