@@ -40,4 +40,46 @@ module {
     %4 = arith.addi %2, %3 : i32
     return %4 : i32
   }
+
+  // Test 4: Signed remainder with divisor 1
+  // CHECK-LABEL: func.func @test_signed_div1
+  // CHECK-NEXT:     %[[ZERO:.*]] = arith.constant 0 : i32
+  // CHECK-NEXT:     return %[[ZERO]] : i32
+  func.func @test_signed_div1(%a: i32) -> i32 {
+    %c1 = arith.constant 1 : i32
+    %0 = arith.remsi %a, %c1 : i32
+    return %0 : i32
+  }
+
+  // Test 5: Unsigned remainder with divisor -1 (should be treated as unsigned max)
+  // CHECK-LABEL: func.func @test_unsigned_div_max
+  // CHECK-NEXT:     %[[ZERO:.*]] = arith.constant 0 : i32
+  // CHECK-NEXT:     return %[[ZERO]] : i32
+  func.func @test_unsigned_div_max(%a: i32) -> i32 {
+    %cmax = arith.constant -1 : i32
+    %0 = arith.remui %a, %cmax : i32
+    return %0 : i32
+  }
+
+  // Test 6: Mixed cases with constant divisors
+  // CHECK-LABEL: func.func @test_mixed_constants
+  // CHECK-DAG:     %[[ZERO:.*]] = arith.constant 0 : i32
+  // CHECK-DAG:     %[[DIV:.*]] = arith.divsi %arg0, %arg1 : i32
+  // CHECK-DAG:     %[[MUL:.*]] = arith.muli %[[DIV]], %arg1 : i32
+  // CHECK-DAG:     %[[RES:.*]] = arith.subi %arg0, %[[MUL]] : i32
+  // CHECK:         %[[SUM:.*]] = arith.addi %[[ZERO]], %[[RES]] : i32
+  // CHECK:         %[[SUM2:.*]] = arith.addi %[[SUM]], %[[ZERO]] : i32
+  // CHECK:         return %[[SUM2]] : i32
+  func.func @test_mixed_constants(%a: i32, %b: i32) -> i32 {
+    %c1 = arith.constant 1 : i32
+    %cm1 = arith.constant -1 : i32
+    
+    %mod1 = arith.remsi %a, %c1 : i32        // Should be optimized to 0
+    %mod2 = arith.remsi %a, %b : i32          // General case
+    %mod3 = arith.remsi %a, %cm1 : i32        // Should be optimized to 0
+    
+    %sum1 = arith.addi %mod1, %mod2 : i32
+    %sum2 = arith.addi %sum1, %mod3 : i32
+    return %sum2 : i32
+  }
 }
