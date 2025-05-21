@@ -2,6 +2,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 #include "llvm/ADT/StringMap.h"
@@ -26,23 +27,26 @@ public:
     OpBuilder builder(module.getContext());
 
     llvm::StringMap<int64_t> globalCallCounts;
-    llvm::SmallVector<func::CallOp> callOpsCache;
+    llvm::SmallVector<CallOpInterface> callOpsCache;
 
-    // Single walk to collect data and verify functions
-    module.walk([&](func::CallOp callOp) {
-      StringRef callee = callOp.getCallee();
-
-      globalCallCounts[callee]++;
-      callOpsCache.push_back(callOp); // Change 1: Cache call operations
+    module.walk([&](Operation *op) {
+      if (auto call = dyn_cast<CallOpInterface>(op)) {
+        if (auto calleeAttr =
+                call.getCallableForCallee().dyn_cast<SymbolRefAttr>()) {
+          StringRef calleeName = calleeAttr.getRootReference().getValue();
+          globalCallCounts[calleeName]++;
+          callOpsCache.push_back(call);
+        }
+      }
     });
 
-    // Annotate cached calls
-    for (func::CallOp callOp : callOpsCache) {
-      StringRef callee = callOp.getCallee();
-      int64_t totalCalls = globalCallCounts.lookup(callee);
-      callOp->setAttr(
-          "invoke_total",
-          builder.getI64IntegerAttr(totalCalls)); // Changed attribute name
+    for (CallOpInterface call : callOpsCache) {
+      if (auto calleeAttr =
+              call.getCallableForCallee().dyn_cast<SymbolRefAttr>()) {
+        StringRef calleeName = calleeAttr.getRootReference().getValue();
+        int64_t totalCalls = globalCallCounts.lookup(calleeName);
+        call->setAttr("invoke_total", builder.getI64IntegerAttr(totalCalls));
+      }
     }
   }
 };
