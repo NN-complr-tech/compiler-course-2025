@@ -33,19 +33,34 @@ class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
   }
   template <typename OpTy>
   void processWhile(OpTy op, OpBuilder &builder) {
-    Block &body = op.getAfter().front();
-    auto afterArgs = op.getAfterArguments();   // <-- исправлено
-    processLoop(op, body, afterArgs, builder); // <-- исправлено
+    processWhileOp(op, builder);
   }
 
+  void processWhileOp(scf::WhileOp op, OpBuilder &builder) {
+    Block &body = op.getAfter().front();
+    auto beforeArgs = op.getBeforeArguments();
+    auto afterArgs = op.getAfterArguments();
+
+    Location loc = op.getLoc();
+    std::string beginName =
+        "trace_loop_iter_begin_" + std::to_string(beforeArgs.size());
+    std::string endName =
+        "trace_loop_iter_end_" + std::to_string(beforeArgs.size());
+
+    builder.setInsertionPointToStart(&body);
+    builder.create<func::CallOp>(loc, beginName, TypeRange{}, afterArgs);
+
+    builder.setInsertionPoint(body.getTerminator());
+    builder.create<func::CallOp>(loc, endName, TypeRange{}, afterArgs);
+}
 public:
   StringRef getArgument() const final {
     return "MlirPassLoopIterBeginEnd_Baranov_Aleksey_FIIT1_MLIR";
   }
   StringRef getDescription() const final {
-    return "Inserts a `@trace_loop_iter_begin_1_2` fuction call on each loop "
+    return "Inserts a `@trace_loop_iter_begin_*` fuction call on each loop "
            "interation begin (loops: affine.for, scf.for, scf.while, ...), "
-           "`@trace_loop_iter_end` fuction call at the end ";
+           "`@trace_loop_iter_end` fuction call at the end. The number of indVars is presented in name of the function.";
   }
   void runOnOperation() override {
     ModuleOp moduleOp = getOperation();
