@@ -28,7 +28,6 @@ struct ModRewritePattern : public OpRewritePattern<ModOp> {
         return success();
       }
     }
-    
     Value division = builder.create<DivOp>(location, leftOperand, rightOperand);
     Value multiplication =
         builder.create<arith::MulIOp>(location, division, rightOperand);
