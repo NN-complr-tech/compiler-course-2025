@@ -4,8 +4,8 @@
 
 
 module {
-  // CHECK: func private @trace_loop_iter_begin() -> ()
-  // CHECK: func private @trace_loop_iter_end() -> ()
+  // CHECK: func.func private @trace_loop_iter_begin()
+  // CHECK: func.func private @trace_loop_iter_end()
 
   // CHECK-LABEL: func.func @loop_without_decls
   // CHECK-NEXT:   %c0 = arith.constant 0 : index
