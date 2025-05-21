@@ -62,4 +62,15 @@ func.return
 scf.for %i = %c10 to %c2 step %cneg3 {  }
 func.return
   }
+
+  // Test 6: positive step but lb > ub => no trip_count
+  // CHECK-LABEL: func.func @test_no_iter
+  // CHECK-NOT: trip_count
+  func.func @test_no_iter() {
+%c10 = arith.constant 10 : index
+%c1  = arith.constant 1  : index
+%c1s = arith.constant 1  : index
+scf.for %i = %c10 to %c1 step %c1s {  }
+func.return
+  }
 }
