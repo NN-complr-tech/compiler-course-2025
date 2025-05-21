@@ -8,6 +8,9 @@
 using namespace mlir;
 
 namespace {
+bool sameSign(int64_t a, int64_t b) {
+  return (a > 0 && b > 0) || (a < 0 && b < 0);
+}
 class TripCountPass
     : public PassWrapper<TripCountPass, OperationPass<ModuleOp>> {
 public:
@@ -35,8 +38,8 @@ public:
       auto stepConst =
           dyn_cast_or_null<arith::ConstantIndexOp>(step.getDefiningOp());
       if (lowerConst && upperConst && stepConst && stepConst.value()) {
-        if ((upperConst.value() - lowerConst.value()) * stepConst.value() >=
-            0) {
+        if (sameSign((upperConst.value() - lowerConst.value()),
+                     stepConst.value())) {
           int64_t tripCount =
               (std::abs(upperConst.value() - lowerConst.value()) +
                std::abs(stepConst.value()) - 1) /

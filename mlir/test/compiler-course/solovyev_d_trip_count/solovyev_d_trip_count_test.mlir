@@ -81,9 +81,9 @@ func.func @baz() {
 func.func @foobaz() {
   %c0 = arith.constant 0 : index
   %c5 = arith.constant 4611686018427387904 : index
-  %c1 = arith.constant 128 : index
+  %c1 = arith.constant -128 : index
   // CHECK: scf.for
-  // CHECK-NEXT: {trip_count = 36028797018963968 : i64}
+  // CHECK-NOT: trip_count
   scf.for %i = %c0 to %c5 step %c1 {
   }
   return
