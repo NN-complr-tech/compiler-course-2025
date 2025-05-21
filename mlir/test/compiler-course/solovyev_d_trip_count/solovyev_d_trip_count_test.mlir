@@ -18,7 +18,7 @@ func.func @bar() {
   %c12 = arith.constant 17 : index
   %c2_step = arith.constant 2 : index
   // CHECK: scf.for
-  // CHECK-NEXT: {trip_count = 7 : i64}
+  // CHECK-NEXT: {trip_count = 8 : i64}
   scf.for %i = %c2 to %c12 step %c2_step {
   }
   return
@@ -26,7 +26,7 @@ func.func @bar() {
 
 func.func @foobar(%arg0: index) {
   %c10 = arith.constant 10 : index
-  %c1 = arith.constant 1 : index
+  %c1 = arith.constant 1 : index  
   // CHECK: scf.for
   // CHECK-NOT: trip_count
   scf.for %i = %arg0 to %c10 step %c1 {
@@ -73,6 +73,17 @@ func.func @baz() {
   %c1 = arith.constant -1 : index
   // CHECK: scf.for
   // CHECK-NEXT: {trip_count = 4 : i64}
+  scf.for %i = %c0 to %c5 step %c1 {
+  }
+  return
+}
+
+func.func @foobaz() {
+  %c0 = arith.constant 0 : index
+  %c5 = arith.constant 4611686018427387904 : index
+  %c1 = arith.constant 128 : index
+  // CHECK: scf.for
+  // CHECK-NEXT: {trip_count = 36028797018963968 : i64}
   scf.for %i = %c0 to %c5 step %c1 {
   }
   return

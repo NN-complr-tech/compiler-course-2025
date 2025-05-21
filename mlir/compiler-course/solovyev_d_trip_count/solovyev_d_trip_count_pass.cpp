@@ -38,7 +38,9 @@ public:
         if ((upperConst.value() - lowerConst.value()) * stepConst.value() >=
             0) {
           int64_t tripCount =
-              (upperConst.value() - lowerConst.value()) / stepConst.value();
+              (std::abs(upperConst.value() - lowerConst.value()) +
+               std::abs(stepConst.value()) - 1) /
+              std::abs(stepConst.value());
           builder.setInsertionPoint(forOp);
           forOp->setAttr("trip_count", builder.getI64IntegerAttr(tripCount));
         }
