@@ -12,6 +12,8 @@ struct PureFunctionPass : llvm::PassInfoMixin<PureFunctionPass> {
     for (auto &BB : F) {
       for (auto &I : BB) {
         if (auto *LI = llvm::dyn_cast<llvm::LoadInst>(&I)) {
+          if (LI->isVolatile())
+            return false;
           llvm::Value *ptr = LI->getPointerOperand();
           if (auto *GV = llvm::dyn_cast<llvm::GlobalVariable>(
                   ptr->stripPointerCasts()))

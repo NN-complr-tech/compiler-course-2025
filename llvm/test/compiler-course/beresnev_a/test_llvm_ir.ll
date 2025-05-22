@@ -27,5 +27,14 @@ entry:
   ret float %mul
 }
 
+; CHECK: define dso_local noundef i32 @_Z14getSecretValuev() {
+define dso_local noundef i32 @_Z14getSecretValuev() {
+entry:
+  %val = alloca i32, align 4
+  store volatile i32 0, ptr %val, align 4
+  %0 = load volatile i32, ptr %val, align 4
+  ret i32 %0
+}
+
 ; CHECK: attributes #0 = { "pure" }
 
