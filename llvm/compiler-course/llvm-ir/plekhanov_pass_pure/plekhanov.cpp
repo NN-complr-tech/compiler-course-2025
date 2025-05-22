@@ -10,12 +10,11 @@ struct PureFunctionPass : llvm::PassInfoMixin<PureFunctionPass> {
     for (auto &BB : F)
       for (auto &I : BB)
         if (I.mayReadOrWriteMemory())
-          return llvm::PreservedAnalyses::none();
+          return llvm::PreservedAnalyses::all();
 
     F.addFnAttr("pure");
     return llvm::PreservedAnalyses::none();
   }
-
   static bool isRequired() { return true; }
 };
 } // namespace
