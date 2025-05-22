@@ -14,126 +14,167 @@ class FMACombinePass : public MachineFunctionPass {
 public:
   static char ID;
   FMACombinePass() : MachineFunctionPass(ID) {}
-
   bool runOnMachineFunction(MachineFunction &MF) override;
 
 private:
   const X86InstrInfo *TII = nullptr;
 
   bool processBlock(MachineBasicBlock &MBB);
-  std::optional<unsigned> getFMAOpcode(unsigned MulOp, unsigned SubOp) const;
-  bool checkRegisterUsage(const MachineInstr &MulMI,
-                          const MachineInstr &SubMI) const;
+  std::optional<unsigned> getFMAOpcode(unsigned MulOp, unsigned SubOp,
+                                       bool IsSubLHSfirst) const;
+  bool checkRegisterUsage(const MachineInstr &MulMI, const MachineInstr &SubMI,
+                          bool &IsSubLHSfirst) const;
 };
 
 char FMACombinePass::ID = 0;
 
 bool FMACombinePass::runOnMachineFunction(MachineFunction &MF) {
-  const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
+  auto &ST = MF.getSubtarget<X86Subtarget>();
   if (!ST.hasFMA())
     return false;
-
   TII = ST.getInstrInfo();
+
   bool Changed = false;
-
-  for (MachineBasicBlock &MBB : MF)
+  for (auto &MBB : MF)
     Changed |= processBlock(MBB);
-
   return Changed;
 }
 
 bool FMACombinePass::processBlock(MachineBasicBlock &MBB) {
-  bool Modified = false;
-  MachineRegisterInfo &MRI = MBB.getParent()->getRegInfo();
   SmallVector<MachineInstr *, 4> ToErase;
+  auto &MRI = MBB.getParent()->getRegInfo();
+  bool Modified = false;
 
-  for (auto I = MBB.begin(); I != MBB.end(); ++I) {
-    MachineInstr &MI = *I;
-    unsigned MulOp = MI.getOpcode();
-
+  for (auto I = MBB.begin(), E = MBB.end(); I != E; ++I) {
+    MachineInstr &MulMI = *I;
+    unsigned MulOp = MulMI.getOpcode();
+    // 1) Ищем fmul
     if (MulOp != X86::MULSSrr && MulOp != X86::MULSDrr &&
         MulOp != X86::VMULSSrr && MulOp != X86::VMULSDrr &&
         MulOp != X86::VMULPSrr && MulOp != X86::VMULPDrr)
       continue;
 
-    Register MulDst = MI.getOperand(0).getReg();
+    // ровно одно использование результата mul
+    Register MulDst = MulMI.getOperand(0).getReg();
     if (!MRI.hasOneUse(MulDst))
       continue;
 
-    auto SubIter = std::next(I);
-    for (; SubIter != MBB.end(); ++SubIter) {
-      MachineInstr &SubMI = *SubIter;
+    // 2) Ищем sub или add вперед
+    bool IsSubLHSfirst = false;
+    auto SubIt = std::next(I);
+    for (; SubIt != E; ++SubIt) {
+      MachineInstr &SubMI = *SubIt;
       unsigned Op = SubMI.getOpcode();
-      bool isSub = (Op == X86::SUBSSrr || Op == X86::SUBSDrr ||
-                    Op == X86::VSUBSSrr || Op == X86::VSUBSDrr);
-      bool isAdd = (Op == X86::VADDSSrr || Op == X86::VADDSDrr);
-      if ((isSub && SubMI.getOperand(2).getReg() == MulDst) ||
-          (isAdd && SubMI.getOperand(1).getReg() == MulDst))
-        break;
+      bool isSub = Op == X86::SUBSSrr || Op == X86::SUBSDrr ||
+                   Op == X86::VSUBSSrr || Op == X86::VSUBSDrr;
+      bool isAdd = Op == X86::VADDSSrr || Op == X86::VADDSDrr;
+
+      if (isSub) {
+        // tmp-c (tmp in operand1) or c-tmp (tmp in operand2)
+        if (SubMI.getOperand(1).getReg() == MulDst ||
+            SubMI.getOperand(2).getReg() == MulDst)
+          break;
+      } else if (isAdd) {
+        // -(tmp)+c → tmp in operand1
+        if (SubMI.getOperand(1).getReg() == MulDst)
+          break;
+      }
     }
-    if (SubIter == MBB.end())
+    if (SubIt == E)
+      continue;
+    MachineInstr &SubMI = *SubIt;
+
+    // 3) Определяем, какой у нас случай, и корректность использования
+    if (!checkRegisterUsage(MulMI, SubMI, IsSubLHSfirst))
       continue;
 
-    MachineInstr &SubMI = *SubIter;
-    if (!checkRegisterUsage(MI, SubMI))
-      continue;
-
-    auto FMAOp = getFMAOpcode(MulOp, SubMI.getOpcode());
+    // 4) Получаем нужный FMA opcode
+    auto FMAOp = getFMAOpcode(MulOp, SubMI.getOpcode(), IsSubLHSfirst);
     if (!FMAOp)
       continue;
 
-    bool isAdd = (SubMI.getOpcode() == X86::VADDSSrr ||
-                  SubMI.getOpcode() == X86::VADDSDrr);
-    unsigned CIdx = isAdd ? 2 : 1;
+    // 5) Выбираем индекс региста c
+    //   если tmp в lhs → c = operand2, иначе c = operand1
+    unsigned CIdx = IsSubLHSfirst ? 2 : 1;
     Register CReg = SubMI.getOperand(CIdx).getReg();
 
-    // Строим новую FMA инструкцию
+    // 6) Строим fused-инструкцию
     BuildMI(MBB, SubMI, SubMI.getDebugLoc(), TII->get(*FMAOp),
             SubMI.getOperand(0).getReg())
-        .addReg(MI.getOperand(1).getReg(), getRegState(MI.getOperand(1)))
-        .addReg(MI.getOperand(2).getReg(), getRegState(MI.getOperand(2)))
+        .addReg(MulMI.getOperand(1).getReg(), getRegState(MulMI.getOperand(1)))
+        .addReg(MulMI.getOperand(2).getReg(), getRegState(MulMI.getOperand(2)))
         .addReg(CReg, getRegState(SubMI.getOperand(CIdx)));
 
-    // Отложенное удаление
-    ToErase.push_back(&MI);
+    ToErase.push_back(&MulMI);
     ToErase.push_back(&SubMI);
     Modified = true;
   }
 
-  if (!ToErase.empty()) {
-    for (MachineInstr *MI : reverse(ToErase))
-      MI->eraseFromParent();
-  }
-
+  for (auto *MI : reverse(ToErase))
+    MI->eraseFromParent();
   return Modified;
 }
 
 std::optional<unsigned> FMACombinePass::getFMAOpcode(unsigned MulOp,
-                                                     unsigned SubOp) const {
-  const static DenseMap<std::pair<unsigned, unsigned>, unsigned> Map = {
-      {{X86::MULSSrr, X86::SUBSSrr}, X86::VFMSUB213SSr},
-      {{X86::VMULSSrr, X86::VSUBSSrr}, X86::VFMSUB213SSr},
-      {{X86::MULSDrr, X86::SUBSDrr}, X86::VFMSUB213SDr},
-      {{X86::VMULSDrr, X86::VSUBSDrr}, X86::VFMSUB213SDr},
-      {{X86::VMULSSrr, X86::VADDSSrr}, X86::VFMSUB213SSr},
-      {{X86::VMULSDrr, X86::VADDSDrr}, X86::VFMSUB213SDr},
-      {{X86::VMULPSrr, X86::VSUBPSrr}, X86::VFMSUB213PSr},
-      {{X86::VMULPDrr, X86::VSUBPDrr}, X86::VFMSUB213PDr},
-  };
-  auto It = Map.find({MulOp, SubOp});
-  return It == Map.end() ? std::nullopt : std::optional<unsigned>(It->second);
+                                                     unsigned SubOp,
+                                                     bool IsSubLHSfirst) const {
+  // Если это ADD-случай (-(a*b)+c), всегда VFNMADD213
+  if (SubOp == X86::VADDSSrr)
+    return X86::VFNMADD213SSr;
+  if (SubOp == X86::VADDSDrr)
+    return X86::VFNMADD213SDr;
+
+  // Иначе SUB-случай:
+  //   если tmp в lhs → (a*b)-c = VFMSUB213
+  //   иначе           c-(a*b) = VFNMADD213
+  bool tmpOnLHS = IsSubLHSfirst;
+  switch (MulOp) {
+  case X86::MULSSrr:
+    return tmpOnLHS ? X86::VFMSUB213SSr : X86::VFNMADD213SSr;
+  case X86::VMULSSrr:
+    return tmpOnLHS ? X86::VFMSUB213SSr : X86::VFNMADD213SSr;
+  case X86::MULSDrr:
+    return tmpOnLHS ? X86::VFMSUB213SDr : X86::VFNMADD213SDr;
+  case X86::VMULSDrr:
+    return tmpOnLHS ? X86::VFMSUB213SDr : X86::VFNMADD213SDr;
+  case X86::VMULPSrr:
+    return tmpOnLHS ? X86::VFMSUB213PSr : X86::VFNMADD213PSr;
+  case X86::VMULPDrr:
+    return tmpOnLHS ? X86::VFMSUB213PDr : X86::VFNMADD213PDr;
+  default:
+    return std::nullopt;
+  }
 }
 
 bool FMACombinePass::checkRegisterUsage(const MachineInstr &MulMI,
-                                        const MachineInstr &SubMI) const {
+                                        const MachineInstr &SubMI,
+                                        bool &IsSubLHSfirst) const {
   Register MulDst = MulMI.getOperand(0).getReg();
-  bool isAdd = (SubMI.getOpcode() == X86::VADDSSrr ||
-                SubMI.getOpcode() == X86::VADDSDrr);
-  Register SubSrc = SubMI.getOperand(isAdd ? 1 : 2).getReg();
-  return MulDst == SubSrc;
+  unsigned Op = SubMI.getOpcode();
+  Register LHS = SubMI.getOperand(1).getReg();
+  Register RHS = SubMI.getOperand(2).getReg();
+
+  if (Op == X86::VADDSSrr || Op == X86::VADDSDrr) {
+    // ADD-case: -(tmp)+c → tmp must be in LHS
+    IsSubLHSfirst = true;
+    return LHS == MulDst;
+  }
+  // SUB-case:
+  if (LHS == MulDst) {
+    // tmp - c
+    IsSubLHSfirst = true;
+    return true;
+  }
+  if (RHS == MulDst) {
+    // c - tmp
+    IsSubLHSfirst = false;
+    return true;
+  }
+  return false;
 }
 
 } // namespace
 
-static RegisterPass<FMACombinePass> X("korobeinikov-fuse-mul-sub",
-                                      "FMA Combine Pass", false, false);
+static RegisterPass<FMACombinePass>
+    X("korobeinikov-fuse-mul-sub", "Fuse mul+sub/add into VFMSUB213/VFNMADD213",
+      false, false);
