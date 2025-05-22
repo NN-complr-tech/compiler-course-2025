@@ -13,9 +13,8 @@ bool replaceDivWithShift(Function &F) {
   bool modified = false;
 
   for (auto &BB : F) {
-    for (auto it = BB.begin(), end = BB.end(); it != end;) {
-      Instruction *inst = &*it++;
-      auto *divInst = dyn_cast<BinaryOperator>(inst);
+    for (auto &inst : llvm::make_early_inc_range(BB)) {
+      auto *divInst = dyn_cast<BinaryOperator>(&inst);
       if (!divInst)
         continue;
 
@@ -42,6 +41,7 @@ bool replaceDivWithShift(Function &F) {
       } else if (divisorValue.abs().isPowerOf2()) {
         if (opcode == Instruction::UDiv && divisorValue.isNegative())
           continue;
+
         uint64_t shiftAmount = divisorValue.abs().exactLogBase2();
         Value *shift = nullptr;
 
