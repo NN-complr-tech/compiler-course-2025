@@ -7,10 +7,11 @@
 
 namespace {
 class TripPass
-    : public mlir::PassWrapper<TripPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
+    : public mlir::PassWrapper<TripPass, mlir::OperationPass<mlir::ModuleOp>> {
 public:
-  mlir::StringRef getArgument() const final { return "UserPass_Beresnev_Anton_FIIT1_MLIR"; }
+  mlir::StringRef getArgument() const final {
+    return "UserPass_Beresnev_Anton_FIIT1_MLIR";
+  }
   mlir::StringRef getDescription() const final {
     return "Annotate scf.for loops with an attribute trip_count";
   }
@@ -36,7 +37,7 @@ public:
       int64_t tripCount;
       if (step > 0) {
         tripCount = (upper - lower + step - 1) / step;
-      } else if(step < 0){
+      } else if (step < 0) {
         tripCount = (-(upper - lower) - step - 1) / (-step);
       } else {
         if (upper - lower == 0) {
