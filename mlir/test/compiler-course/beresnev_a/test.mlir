@@ -29,10 +29,29 @@ module {
 	func.return
   }
 
-  // CHECK-LABEL: func.func @test3
-  func.func @test3(%a : index) {
+  func.func @test3() {
+	%a = arith.constant 20 : index
+	%b = arith.constant 20 : index
+	%c = arith.constant 0 : index
+	scf.for %i = %a to %b step %c {  }
+	// CHECK: {trip_count = 0 : i64}
+	func.return
+  }
+
+  // CHECK-LABEL: func.func @test4
+  func.func @test4(%a : index) {
 	%b = arith.constant -20 : index
 	%c = arith.constant -3 : index
+	scf.for %i = %a to %b step %c {  }
+	// CHECK-NOT: trip_count
+	func.return
+  }
+
+  // CHECK-LABEL: func.func @test5
+  func.func @test5() {
+	%a = arith.constant 0 : index
+	%b = arith.constant 20 : index
+	%c = arith.constant 0 : index
 	scf.for %i = %a to %b step %c {  }
 	// CHECK-NOT: trip_count
 	func.return
