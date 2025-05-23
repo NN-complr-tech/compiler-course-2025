@@ -1,0 +1,286 @@
+#  RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+fma \
+#  RUN:     --load=%llvmshlibdir/Lab_3_backend_Solovev_a_FIIT1_BACKEND%shlibext \
+#  RUN:     -run-pass=mul_sub_solovev %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'mulsub_test_solovev_a.ll'
+  source_filename = "mulsub_test_solovev_a.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+
+  module asm ".globl _ZSt21ios_base_library_initv"
+
+  %"class.std::basic_ostream" = type { ptr, %"class.std::basic_ios" }
+  %"class.std::basic_ios" = type { %"class.std::ios_base", ptr, i8, i8, ptr, ptr, ptr, ptr }
+  %"class.std::ios_base" = type { ptr, i64, i64, i32, i32, i32, ptr, %"struct.std::ios_base::_Words", [8 x %"struct.std::ios_base::_Words"], i32, ptr, %"class.std::locale" }
+  %"struct.std::ios_base::_Words" = type { ptr, i64 }
+  %"class.std::locale" = type { ptr }
+
+  @_ZSt4cout = external global %"class.std::basic_ostream", align 8
+
+  ; Function Attrs: noinline nounwind mustprogress uwtable
+  define dso_local float @test_solovev_float(float %x, float %y, float %acc) {
+  entry:
+    %mul = fmul float %x, %y
+    %acc_val = fsub float %acc, %mul
+    ret float %acc_val
+  }
+
+  ; Function Attrs: noinline nounwind mustprogress uwtable
+  define dso_local noundef double @test_solovev_double(double noundef %x, double noundef %y, double noundef %acc) #0 {
+  entry:
+    %mul = fmul double %x, %y
+    %acc_val = fsub double %acc, %mul
+    ret double %acc_val
+  }
+
+  ; Function Attrs: noinline nounwind mustprogress uwtable
+  define dso_local noundef double @test_solovev_double_change_vals(double noundef %x, double noundef %y, double noundef %acc) #0 {
+  entry:
+    %mul = fmul double %y, %x
+    %acc_val = fsub double %acc, %mul
+    ret double %acc_val
+  }
+
+
+  attributes #0 = { mustprogress noinline norecurse nounwind uwtable "frame-pointer"="non-leaf" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+fma,-avx" "tune-cpu"="x86-64-v3" }
+
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 2, !"Debug Info Version", i32 3}
+  !2 = !{i32 7, !"uwtable", i32 2}
+  !3 = !{i32 7, !"frame-pointer", i32 1}
+  !4 = !{!"Solovev LLVM Custom v1.0"}
+
+...
+---
+
+# CHECK-LABEL: name: test_solovev_float
+# CHECK: %[[RES:[0-9]+]]:fr32 = VFNMADD213SSr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+name:            test_solovev_float
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr32, preferred-register: '' }
+  - { id: 1, class: fr32, preferred-register: '' }
+  - { id: 2, class: fr32, preferred-register: '' }
+  - { id: 3, class: fr32, preferred-register: '' }
+  - { id: 4, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }  
+  - { reg: '$xmm1', virtual-reg: '%1' }  
+  - { reg: '$xmm2', virtual-reg: '%2' }  
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:fr32 = COPY $xmm0  ; x
+    %1:fr32 = COPY $xmm1  ; y
+    %2:fr32 = COPY $xmm2  ; acc
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+...
+---
+
+# CHECK-LABEL: name: test_solovev_double
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %0, %1, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+name:            test_solovev_double
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr64, preferred-register: '' }
+  - { id: 1, class: fr64, preferred-register: '' }
+  - { id: 2, class: fr64, preferred-register: '' }
+  - { id: 3, class: fr64, preferred-register: '' }
+  - { id: 4, class: fr64, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:fr64 = COPY $xmm0  ; x
+    %1:fr64 = COPY $xmm1  ; y
+    %2:fr64 = COPY $xmm2  ; acc
+    %3:fr64 = nofpexcept VMULSDrr %0, %1, implicit $mxcsr
+    %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+...
+---
+
+# CHECK-LABEL: name: test_solovev_double_change_vals
+# CHECK: %[[RES:[0-9]+]]:fr64 = VFNMADD213SDr %2, %1, %0, 0, implicit $mxcsr, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+name:            test_solovev_double_change_vals
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr64, preferred-register: '' }
+  - { id: 1, class: fr64, preferred-register: '' }
+  - { id: 2, class: fr64, preferred-register: '' }
+  - { id: 3, class: fr64, preferred-register: '' }
+  - { id: 4, class: fr64, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:fr64 = COPY $xmm0  ; x
+    %1:fr64 = COPY $xmm1  ; y
+    %2:fr64 = COPY $xmm2  ; acc
+    %3:fr64 = nofpexcept VMULSDrr %1, %0, implicit $mxcsr
+    %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
