@@ -59,7 +59,7 @@ bool FMACombinePass::processBlock(MachineBasicBlock &MBB) {
     if (!MRI.hasOneUse(MulDst))
       continue;
 
-    // 2) Ищем sub или add вперед
+    // 2) Ищем sub или add вперед (теперь ловим и tmp во 2-м операнде для add)
     bool IsSubLHSfirst = false;
     auto SubIt = std::next(I);
     for (; SubIt != E; ++SubIt) {
@@ -70,16 +70,20 @@ bool FMACombinePass::processBlock(MachineBasicBlock &MBB) {
       bool isAdd = Op == X86::VADDSSrr || Op == X86::VADDSDrr;
 
       if (isSub) {
-        // tmp-c (tmp in operand1) or c-tmp (tmp in operand2)
+        // tmp-c (tmp в operand1) или c-tmp (tmp в operand2)
         if (SubMI.getOperand(1).getReg() == MulDst ||
             SubMI.getOperand(2).getReg() == MulDst)
           break;
       } else if (isAdd) {
-        // -(tmp)+c → tmp in operand1
-        if (SubMI.getOperand(1).getReg() == MulDst)
+        // два варианта:
+        //   -(tmp)+c  → tmp в operand1
+        //    c+tmp    → tmp в operand2
+        if (SubMI.getOperand(1).getReg() == MulDst ||
+            SubMI.getOperand(2).getReg() == MulDst)
           break;
       }
     }
+
     if (SubIt == E)
       continue;
     MachineInstr &SubMI = *SubIt;
@@ -120,9 +124,9 @@ std::optional<unsigned> FMACombinePass::getFMAOpcode(unsigned MulOp,
                                                      bool IsSubLHSfirst) const {
   // Если это ADD-случай (-(a*b)+c), всегда VFNMADD213
   if (SubOp == X86::VADDSSrr)
-    return X86::VFNMADD213SSr;
+    return IsSubLHSfirst ? X86::VFNMADD213SSr : X86::VFNMADD132SSr;
   if (SubOp == X86::VADDSDrr)
-    return X86::VFNMADD213SDr;
+    return IsSubLHSfirst ? X86::VFNMADD213SDr : X86::VFNMADD132SDr;
 
   // Иначе SUB-случай:
   //   если tmp в lhs → (a*b)-c = VFMSUB213
@@ -155,9 +159,18 @@ bool FMACombinePass::checkRegisterUsage(const MachineInstr &MulMI,
   Register RHS = SubMI.getOperand(2).getReg();
 
   if (Op == X86::VADDSSrr || Op == X86::VADDSDrr) {
-    // ADD-case: -(tmp)+c → tmp must be in LHS
-    IsSubLHSfirst = true;
-    return LHS == MulDst;
+    // ADD-case:
+    //   -(tmp)+c → tmp in LHS  → IsSubLHSfirst = true
+    //    c + (tmp) → tmp in RHS → IsSubLHSfirst = false
+    if (LHS == MulDst) {
+      IsSubLHSfirst = true;
+      return true;
+    }
+    if (RHS == MulDst) {
+      IsSubLHSfirst = false;
+      return true;
+    }
+    return false;
   }
   // SUB-case:
   if (LHS == MulDst) {
