@@ -2,6 +2,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/SymbolTable.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 #include "llvm/ADT/DenseMap.h"
@@ -28,12 +29,17 @@ struct FunctionCallAnalyzerPass
     llvm::DenseMap<StringRef, int64_t> callFrequencyMap;
 
     for (auto funcOp : module.getOps<func::FuncOp>()) {
+      auto uses = SymbolTable::getSymbolUses(funcOp, module);
+      if (!uses)
+        continue;
+
       int64_t count = 0;
-      for (auto *user : funcOp.getSymbolUses(module)) {
-        if (auto callOp = dyn_cast<func::CallOp>(user->getOwner())) {
+      for (const auto &use : *uses) {
+        if (isa<func::CallOp>(use.getUser())) {
           count++;
         }
       }
+
       callFrequencyMap[funcOp.getSymName()] = count;
     }
 
