@@ -55,14 +55,13 @@ public:
             Register Reg = Op.getReg();
             if (Reg.isVirtual()) {
               const TargetRegisterClass *RC = RegInfo.getRegClass(Reg);
-              unsigned RCID = RC->getID();
-
-              if (RC->getSize() > 64 &&
-                  (RCID == X86::VECRRegBankID || RCID == X86::VR128RegClassID ||
-                   RCID == X86::VR256RegClassID ||
-                   RCID == X86::VR512RegClassID)) {
-                ++VectorInstrs;
-                break;
+              if (RC && RC->getRegBank() &&
+                  RC->getRegBank()->getID() == X86::VECRRegBankID) {
+                unsigned RegSize = RC->getSize(); // byte size
+                if (RegSize > 8) {                // 8 byte = 64 bit
+                  ++VectorInstrs;
+                  break;
+                }
               }
             }
           }
