@@ -47,13 +47,13 @@ class AVXLogicCombinerPass : public MachineFunctionPass {
     Register useDest = useMI.getOperand(0).getReg();
     Register useSrc = useMI.getOperand(2).getReg();
 
-    bool isOR = (opc1 == X86::PORrr || opc1 == X86::ORPSrr ||
-                 opc1 == X86::ORPDrr);
-    bool isAND = (opc2 == X86::PANDrr || opc2 == X86::ANDPSrr ||
-                  opc2 == X86::ANDPDrr);
+    bool isOR =
+        (opc1 == X86::PORrr || opc1 == X86::ORPSrr || opc1 == X86::ORPDrr);
+    bool isAND =
+        (opc2 == X86::PANDrr || opc2 == X86::ANDPSrr || opc2 == X86::ANDPDrr);
     bool match = (useSrc == def1) || (useSrc == def2);
     if (isOR && isAND && match) {
-      Register toCopy = (useSrc == def1) ? def1 : def2; 
+      Register toCopy = (useSrc == def1) ? def1 : def2;
       BuildMI(MBB, it, useMI.getDebugLoc(), TII->get(X86::MOVAPSrr), useDest)
           .addReg(toCopy);
       return;
