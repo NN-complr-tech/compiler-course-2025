@@ -24,6 +24,7 @@ struct FunctionCallAnalyzerPass
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
+    auto *context = module.getContext();
     llvm::DenseMap<StringRef, int64_t> callFrequencyMap;
 
     for (auto funcOp : module.getOps<func::FuncOp>()) {
@@ -36,7 +37,6 @@ struct FunctionCallAnalyzerPass
       callFrequencyMap[funcOp.getSymName()] = count;
     }
 
-    auto *context = module.getContext();
     OpBuilder builder(context);
 
     // Second walk — adding attributes
