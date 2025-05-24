@@ -26,11 +26,15 @@ struct FunctionCallAnalyzerPass
     ModuleOp module = getOperation();
     llvm::DenseMap<StringRef, int64_t> callFrequencyMap;
 
-    // First walk — collecting the number of function calls
-    module.walk([&](func::CallOp callOp) {
-      auto calleeName = callOp.getCallee();
-      ++callFrequencyMap[calleeName];
-    });
+    for (auto funcOp : module.getOps<func::FuncOp>()) {
+      int64_t count = 0;
+      for (auto *user : funcOp.getSymbolUses(module)) {
+        if (auto callOp = dyn_cast<func::CallOp>(user->getOwner())) {
+          count++;
+        }
+      }
+      callFrequencyMap[funcOp.getSymName()] = count;
+    }
 
     auto *context = module.getContext();
     OpBuilder builder(context);
