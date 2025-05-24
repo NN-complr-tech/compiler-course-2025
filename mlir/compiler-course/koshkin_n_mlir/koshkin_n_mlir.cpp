@@ -23,14 +23,13 @@ public:
   void runOnOperation() override {
     ModuleOp module = getOperation();
 
-    SmallVector<CallOpInterface, 8> gloabalCalls;
-    module.walk([&](Operation *OP) {
-      if (auto call = dyn_cast<CallOpInterface>(OP))
-        gloabalCalls.push_back(call);
+    SmallVector<CallOpInterface, 8> globalCalls;
+    module.walk([&](CallOpInterface callOp) {
+        globalCalls.push_back(callOp);
     });
 
     llvm::StringMap<int64_t> globalCounts;
-    for (auto &call : gloabalCalls) {
+    for (auto &call : globalCalls) {
       if (auto symCallAttr =
               call.getCallableForCallee().dyn_cast<SymbolRefAttr>()) {
         StringRef nameCallee = symCallAttr.getRootReference().getValue();
@@ -39,7 +38,7 @@ public:
     }
 
     OpBuilder builder(module.getContext());
-    for (auto &call : gloabalCalls) {
+    for (auto &call : globalCalls) {
       if (auto symCallAttr =
               call.getCallableForCallee().dyn_cast<SymbolRefAttr>()) {
         StringRef nameCallee = symCallAttr.getRootReference().getValue();
