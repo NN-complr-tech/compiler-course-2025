@@ -24,9 +24,7 @@ public:
     ModuleOp module = getOperation();
 
     SmallVector<CallOpInterface, 8> globalCalls;
-    module.walk([&](CallOpInterface callOp) {
-        globalCalls.push_back(callOp);
-    });
+    module.walk([&](CallOpInterface callOp) { globalCalls.push_back(callOp); });
 
     llvm::StringMap<int64_t> globalCounts;
     for (auto &call : globalCalls) {
