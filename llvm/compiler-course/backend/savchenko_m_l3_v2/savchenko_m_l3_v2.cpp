@@ -57,9 +57,10 @@ public:
               const TargetRegisterClass *RC = RegInfo.getRegClass(Reg);
               unsigned RCID = RC->getID();
 
-              if (RCID == X86::VR128RegClassID ||
-                  RCID == X86::VR256RegClassID ||
-                  RCID == X86::VR512RegClassID) {
+              if (RC->getSize() > 64 &&
+                  (RCID == X86::VECRRegBankID || RCID == X86::VR128RegClassID ||
+                   RCID == X86::VR256RegClassID ||
+                   RCID == X86::VR512RegClassID)) {
                 ++VectorInstrs;
                 break;
               }
