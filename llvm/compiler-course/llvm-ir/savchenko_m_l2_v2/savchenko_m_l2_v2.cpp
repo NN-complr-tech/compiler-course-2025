@@ -9,22 +9,20 @@ using namespace llvm;
 
 namespace {
 struct MarkPureFunctionsPass : PassInfoMixin<MarkPureFunctionsPass> {
+  static bool doesFunctionAccessMemory(Function &F) {
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        if (I.mayReadOrWriteMemory()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
     if (!F.hasFnAttribute("pure")) {
-      bool readsOrWrites = false;
-
-      for (auto &BB : F) {
-        for (auto &I : BB) {
-          if (I.mayReadOrWriteMemory()) {
-            readsOrWrites = true;
-            break;
-          }
-        }
-        if (readsOrWrites)
-          break;
-      }
-
-      if (!readsOrWrites) {
+      if (!doesFunctionAccessMemory(F)) {
         F.addFnAttr("pure");
       }
     }
