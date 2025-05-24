@@ -59,10 +59,11 @@ public:
               unsigned RCID = RC->getID();
 
               if (RCID == X86::VR128RegClassID ||
-                  RCID == X86::VR256RegClassID || RCID == X86::VR512RegClassID)) {
-                  ++VectorInstrs;
-                  break;
-                }
+                  RCID == X86::VR256RegClassID ||
+                  RCID == X86::VR512RegClassID) {
+                ++VectorInstrs;
+                break;
+              }
             }
           }
         }
