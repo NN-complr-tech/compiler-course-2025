@@ -1,0 +1,401 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/CombinationPass_Chistov_Alexey_FIIT1_BACKEND%shlibext \
+# RUN: -run-pass=x86-logic-opt %s -o - | FileCheck %s
+
+# Source files
+# test.cpp
+
+#include <emmintrin.h>
+
+#__m128 test_basic_and_operation(__m128 a, __m128 b) {
+#    return _mm_and_ps(a, b);
+#}
+
+#__m128 test_basic_or_operation(__m128 a, __m128 b) {
+#    return _mm_or_ps(a, b);
+#}
+
+#__m128 test_basic_xor_operation(__m128 a, __m128 b) {
+#    return _mm_xor_ps(a, b);
+#}
+
+#__m128 test_and_with_self_is_copy(__m128 a) {
+#    return _mm_and_ps(a, a);
+#}
+
+#__m128 test_or_with_self(__m128 a) {
+#    return _mm_or_ps(a, a);
+#}
+
+#__m128 test_combined_logic_operations(__m128 a, __m128 b, __m128 c) {
+#    __m128 t1 = _mm_and_ps(a, b);
+#    __m128 t2 = _mm_or_ps(t1, c);
+#    __m128 t3 = _mm_xor_ps(t2, a);
+#    return t3;
+#} 
+
+--- |
+  ; ModuleID = 'llvm/test/compiler-course/chistov_a_combination_test/test.ll'
+  source_filename = "/home/alexe/code/compiler-course-2025/llvm/test/compiler-course/chistov_a_combination_test/test.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-unknown-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z24test_basic_and_operationDv4_fS_(<4 x float> noundef %a, <4 x float> noundef %b) local_unnamed_addr #0 {
+  entry:
+    %0 = bitcast <4 x float> %a to <4 x i32>
+    %1 = bitcast <4 x float> %b to <4 x i32>
+    %and.i = and <4 x i32> %1, %0
+    %2 = bitcast <4 x i32> %and.i to <4 x float>
+    ret <4 x float> %2
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z23test_basic_or_operationDv4_fS_(<4 x float> noundef %a, <4 x float> noundef %b) local_unnamed_addr #0 {
+  entry:
+    %0 = bitcast <4 x float> %a to <4 x i32>
+    %1 = bitcast <4 x float> %b to <4 x i32>
+    %or.i = or <4 x i32> %1, %0
+    %2 = bitcast <4 x i32> %or.i to <4 x float>
+    ret <4 x float> %2
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z24test_basic_xor_operationDv4_fS_(<4 x float> noundef %a, <4 x float> noundef %b) local_unnamed_addr #0 {
+  entry:
+    %0 = bitcast <4 x float> %a to <4 x i32>
+    %1 = bitcast <4 x float> %b to <4 x i32>
+    %xor.i = xor <4 x i32> %1, %0
+    %2 = bitcast <4 x i32> %xor.i to <4 x float>
+    ret <4 x float> %2
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z30test_combined_logic_operationsDv4_fS_S_(<4 x float> noundef %a, <4 x float> noundef %b, <4 x float> noundef %c) local_unnamed_addr #0 {
+  entry:
+    %0 = bitcast <4 x float> %a to <4 x i32>
+    %1 = bitcast <4 x float> %b to <4 x i32>
+    %and.i = and <4 x i32> %1, %0
+    %2 = bitcast <4 x float> %c to <4 x i32>
+    %or.i = or <4 x i32> %and.i, %2
+    %xor.i = xor <4 x i32> %or.i, %0
+    %3 = bitcast <4 x i32> %xor.i to <4 x float>
+    ret <4 x float> %3
+  }
+  
+  attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 2}
+  !4 = !{!"clang version 19.1.6 (git@github.com:wabka22/compiler-course-2025.git b1d11e23163ceba6c5fab91e30f0f2c49ac43d9f)"}
+
+...
+---
+# CHECK-LABEL:name: _Z24test_basic_and_operationDv4_fS_
+name:            _Z24test_basic_and_operationDv4_fS_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPANDrr %1, %0
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %2:vr128 = PANDrr %1, %0
+    $xmm0 = COPY %2
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL:name: _Z23test_basic_or_operationDv4_fS_
+name:            _Z23test_basic_or_operationDv4_fS_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPORrr %1, %0
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %2:vr128 = PORrr %1, %0
+    $xmm0 = COPY %2
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL:name: _Z24test_basic_xor_operationDv4_fS_
+name:            _Z24test_basic_xor_operationDv4_fS_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPXORrr %1, %0
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %2:vr128 = PXORrr %1, %0
+    $xmm0 = COPY %2
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL:name: _Z30test_combined_logic_operationsDv4_fS_S_
+name:            _Z30test_combined_logic_operationsDv4_fS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %3:vr128 = VPANDrr %1, %0
+    ; CHECK-NEXT: %4:vr128 = VPORrr %3, %2
+    ; CHECK-NEXT: %5:vr128 = VPXORrr %4, %0
+    ; CHECK-NEXT: $xmm0 = COPY %5
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = PANDrr %1, %0
+    %4:vr128 = PORrr %3, %2
+    %5:vr128 = PXORrr %4, %0
+    $xmm0 = COPY %5
+    RET 0, $xmm0
