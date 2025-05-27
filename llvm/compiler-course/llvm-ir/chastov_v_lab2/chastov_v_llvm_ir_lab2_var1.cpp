@@ -1,6 +1,6 @@
 #include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -24,8 +24,7 @@ public:
       }
     }
 
-    return Modified ? PreservedAnalyses::none()
-                    : PreservedAnalyses::all();
+    return Modified ? PreservedAnalyses::none() : PreservedAnalyses::all();
   }
 
 private:
@@ -42,52 +41,41 @@ private:
   }
 
   bool isValidMultiplyForFusion(BinaryOperator *MulOp) {
-    return MulOp->getOpcode() == Instruction::FMul && 
-           MulOp->hasOneUse();
+    return MulOp->getOpcode() == Instruction::FMul && MulOp->hasOneUse();
   }
 
-  bool replaceWithFusedOp(BinaryOperator *AddOp, 
-                         BinaryOperator *MulOp,
-                         unsigned MulOperandIdx) {
+  bool replaceWithFusedOp(BinaryOperator *AddOp, BinaryOperator *MulOp,
+                          unsigned MulOperandIdx) {
     IRBuilder<> Builder(AddOp);
     Value *C = AddOp->getOperand(1 - MulOperandIdx);
 
     Value *FMA = Builder.CreateIntrinsic(
-        Intrinsic::fmuladd,
-        {MulOp->getType()},
-        {MulOp->getOperand(0), MulOp->getOperand(1), C},
-        nullptr, "fma"
-    );
+        Intrinsic::fmuladd, {MulOp->getType()},
+        {MulOp->getOperand(0), MulOp->getOperand(1), C}, nullptr, "fma");
 
     AddOp->replaceAllUsesWith(FMA);
     AddOp->eraseFromParent();
-    
+
     if (MulOp->use_empty()) {
       MulOp->eraseFromParent();
     }
-    
+
     return true;
   }
 };
 
 } // namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-  return {
-    LLVM_PLUGIN_API_VERSION,
-    "FMAOptimizer",
-    "v1.0",
-    [](PassBuilder &PB) {
-      PB.registerPipelineParsingCallback(
-          [](StringRef Name, FunctionPassManager &FPM,
-             ArrayRef<PassBuilder::PipelineElement>) {
-            if (Name == "fma-opt") {
-              FPM.addPass(FMAOptimizer());
-              return true;
-            }
-            return false;
-          });
-    }
-  };
+extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo llvmGetPassPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "FMAOptimizer", "v1.0", [](PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, FunctionPassManager &FPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "fma-opt") {
+                    FPM.addPass(FMAOptimizer());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }
