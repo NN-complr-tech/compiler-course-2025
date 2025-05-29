@@ -91,16 +91,18 @@ void transformFMA(llvm::MachineInstr &CurrentMI,
     llvm_unreachable("Недопустимый индекс FMA");
   }
 
-  const llvm::TargetRegisterClass *RegisterClasse = RegInfo.getRegClass(MultiplyLHS);
-  llvm::Register TemporaryRegister = RegInfo.createVirtualRegister(RegisterClasse);
+  const llvm::TargetRegisterClass *RegisterClasse =
+      RegInfo.getRegClass(MultiplyLHS);
+  llvm::Register TemporaryRegister =
+      RegInfo.createVirtualRegister(RegisterClasse);
 
-  llvm::BuildMI(CurrentMBB, CurrentMI, DebugLocation, TargetInfo->get(MultiplyOp),
-                 TemporaryRegister)
+  llvm::BuildMI(CurrentMBB, CurrentMI, DebugLocation,
+                TargetInfo->get(MultiplyOp), TemporaryRegister)
       .addReg(MultiplyLHS)
       .addReg(MultiplyRHS);
 
-  llvm::BuildMI(CurrentMBB, CurrentMI, DebugLocation, TargetInfo->get(AdditionOp),
-                 Destination)
+  llvm::BuildMI(CurrentMBB, CurrentMI, DebugLocation,
+                TargetInfo->get(AdditionOp), Destination)
       .addReg(AdditionSource)
       .addReg(TemporaryRegister);
 }
@@ -122,7 +124,8 @@ public:
     for (llvm::MachineBasicBlock &BasicBlock : MF) {
       llvm::SmallVector<llvm::MachineInstr *, 8> InstructionsToRemove;
 
-      for (llvm::MachineInstr &Instruction : llvm::make_early_inc_range(BasicBlock)) {
+      for (llvm::MachineInstr &Instruction :
+           llvm::make_early_inc_range(BasicBlock)) {
         unsigned MultiplyOp, AdditionOp, FMAVariant;
         if (!identifyFMA(Instruction.getOpcode(), MultiplyOp, AdditionOp,
                          FMAVariant))
