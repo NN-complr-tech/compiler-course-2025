@@ -1,5 +1,5 @@
-// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/libCeilOpt_Mamaeva_Olga_FIIT3_MLIR%shlibext \
-// RUN: --pass-pipeline="builtin.module(ceil-opt)" %s | FileCheck %s
+// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/CeilOpt_Mamaeva_Olga_FIIT3_MLIR%shlibext \
+// RUN: --pass-pipeline="builtin.module(CeilOpt_Mamaeva_Olga_FIIT3_MLIR)" %s | FileCheck %s
 
 module {
   // CHECK-LABEL: func.func @simple_ceil
