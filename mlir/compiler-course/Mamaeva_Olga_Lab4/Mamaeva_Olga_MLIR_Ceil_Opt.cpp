@@ -22,7 +22,10 @@ struct CeilToFloorPattern : public OpRewritePattern<math::CeilOp> {
 
 class CeilOptPass : public PassWrapper<CeilOptPass, OperationPass<ModuleOp>> {
 public:
-  StringRef getArgument() const final { return "ceil-opt"; }
+  StringRef getArgument() const final {
+    return "CeilOpt_Mamaeva_Olga_FIIT3_MLIR";
+  }
+
   StringRef getDescription() const final {
     return "Ceil to floor transformation";
   }
