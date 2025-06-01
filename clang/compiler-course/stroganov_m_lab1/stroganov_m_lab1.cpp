@@ -11,10 +11,14 @@ class StructureDumper : public clang::RecursiveASTVisitor<StructureDumper> {
 
   std::string ToString(clang::AccessSpecifier access) {
     switch (access) {
-      case clang::AS_public: return "public";
-      case clang::AS_protected: return "protected";
-      case clang::AS_private: return "private";
-      default: return "none";
+    case clang::AS_public:
+      return "public";
+    case clang::AS_protected:
+      return "protected";
+    case clang::AS_private:
+      return "private";
+    default:
+      return "none";
     }
   }
 
@@ -23,17 +27,21 @@ class StructureDumper : public clang::RecursiveASTVisitor<StructureDumper> {
     out << "| |_ " << decl->getNameAsString() << " (";
 
     if (const auto *method = llvm::dyn_cast<clang::CXXMethodDecl>(decl)) {
-      out << method->getReturnType().getAsString()
-          << '|' << ToString(method->getAccess());
+      out << method->getReturnType().getAsString() << '|'
+          << ToString(method->getAccess());
 
-      if (method->isStatic()) out << "|static";
-      if (method->isVirtual()) out << "|virtual";
-      if (method->isPureVirtual()) out << "|pure";
-      else if (method->size_overridden_methods() > 0) out << "|override";
+      if (method->isStatic())
+        out << "|static";
+      if (method->isVirtual())
+        out << "|virtual";
+      if (method->isPureVirtual())
+        out << "|pure";
+      else if (method->size_overridden_methods() > 0)
+        out << "|override";
 
     } else {
-      out << decl->getType().getAsString()
-          << '|' << ToString(decl->getAccess());
+      out << decl->getType().getAsString() << '|'
+          << ToString(decl->getAccess());
     }
 
     out << ")\n";
@@ -47,7 +55,7 @@ public:
     std::string qualifiedName = record->getQualifiedNameAsString();
 
     out << qualifiedName
-        << (record->isStruct() ? "(struct"
+        << (record->isStruct()  ? "(struct"
             : record->isUnion() ? "(union"
                                 : "(class")
         << (record->isTemplated() ? "|template)" : ")") << "\n";
@@ -97,8 +105,8 @@ private:
 
 class PluginExecutor : public clang::PluginASTAction {
 public:
-  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-      clang::CompilerInstance &ci, llvm::StringRef) override {
+  std::unique_ptr<clang::ASTConsumer>
+  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     return std::make_unique<ASTPrinterConsumer>(&ci.getASTContext());
   }
 
