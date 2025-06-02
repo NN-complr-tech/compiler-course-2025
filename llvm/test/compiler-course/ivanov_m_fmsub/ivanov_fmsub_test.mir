@@ -1,0 +1,462 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+fma,+avx \
+# RUN: --load=%llvmshlibdir/FMSubPass_Ivanov_Mikhail_FIIT1_BACKEND%shlibext \
+# RUN: -run-pass=fmsub_ivanov  %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'fmsub_pass_test.ll'
+  source_filename = "fmsub_pass_test.ll"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-unknown-linux-gnu"
+  
+  define float @fmsub_ss(float %a, float %b, float %c) {
+  entry:
+    %mul = fmul float %a, %b
+    %sub = fsub float %c, %mul
+    ret float %sub
+  }
+  
+  define double @fmsub_sd(double %a, double %b, double %c) {
+    %mul = fmul double %a, %b
+    %sub = fsub double %c, %mul
+    ret double %sub
+  }
+  
+  define <4 x float> @fmsub_ps(<4 x float> %a, <4 x float> %b, <4 x float> %c) {
+    %mul = fmul <4 x float> %a, %b
+    %sub = fsub <4 x float> %c, %mul
+    ret <4 x float> %sub
+  }
+  
+  define <2 x double> @fmsub_pd(<2 x double> %a, <2 x double> %b, <2 x double> %c) {
+    %mul = fmul <2 x double> %a, %b
+    %sub = fsub <2 x double> %c, %mul
+    ret <2 x double> %sub
+  }
+  
+  define float @wrong_op(float %a, float %b, float %c) {
+    %mul = fmul float %a, %b
+    %sub = fadd float %mul, %c
+    ret float %sub
+  }
+  
+  define float @fmsub_with_add_between(float %a, float %b, float %c) {
+    %mul0 = fmul float %a, %b
+    %mul1 = fadd float %mul0, 1.000000e+00
+    %sub = fsub float %c, %mul1
+    ret float %sub
+  }
+
+
+---
+# CHECK-LABEL: name: fmsub_ss
+name:            fmsub_ss
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    ; CHECK: VFMSUB213SSr
+    renamable %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    renamable %4:fr32 = nofpexcept VSUBSSrr %2, %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 $xmm0
+
+
+---
+# CHECK-LABEL: fmsub_sd
+name:            fmsub_sd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:fr64 = COPY $xmm0
+    %1:fr64 = COPY $xmm1
+    %2:fr64 = COPY $xmm2
+    ; CHECK:       VFMSUB213SDr
+    renamable %3:fr64 = nofpexcept MULSDrr %0, %1, implicit $mxcsr
+    renamable %4:fr64 = nofpexcept SUBSDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 $xmm0
+
+
+---
+# CHECK-LABEL: fmsub_ps
+name:            fmsub_ps
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:vr128 = COPY $xmm0
+    %1:vr128 = COPY $xmm1
+    %2:vr128 = COPY $xmm2
+    ; CHECK:       VFMSUB213PSr
+    renamable %3:vr128 = nofpexcept MULPSrr %0, %1, implicit $mxcsr
+    renamable %4:vr128 = nofpexcept SUBPSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 $xmm0
+
+
+---
+# CHECK-LABEL: fmsub_pd
+name:            fmsub_pd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:vr128 = COPY $xmm0
+    %1:vr128 = COPY $xmm1
+    %2:vr128 = COPY $xmm2
+    ; CHECK:       VFMSUB213PDYr
+    renamable %3:vr128 = nofpexcept MULPDrr %0, %1, implicit $mxcsr
+    renamable %4:vr128 = nofpexcept SUBPDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 $xmm0
+
+
+---
+# CHECK-LABEL: wrong_op
+name:            wrong_op
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    ; CHECK-NOT:   VFMSUB
+    renamable %3:fr32 = nofpexcept MULSSrr %0, %1, implicit $mxcsr
+    renamable %4:fr32 = nofpexcept ADDSSrr %3, killed %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 $xmm0
+
+
+---
+# CHECK-LABEL: fmsub_with_add_between
+name:            fmsub_with_add_between
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$xmm0', virtual-reg: '' }
+  - { reg: '$xmm1', virtual-reg: '' }
+  - { reg: '$xmm2', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:
+  - id:              0
+    value:           'float 1.000000e+00'
+    alignment:       4
+    isTargetSpecific: false
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    ; CHECK-NOT:   VFMSUB
+    renamable %3:fr32 = nofpexcept MULSSrr %0, %1, implicit $mxcsr
+    renamable %4:fr32 = nofpexcept ADDSSrm %3, $rip, 1, $noreg, %const.0, $noreg, implicit $mxcsr :: (load (s32) from constant-pool)
+    renamable %5:fr32 = nofpexcept SUBSSrr %2, killed %4, implicit $mxcsr
+    $xmm0 = COPY %5
+    $xmm0 = MOVAPSrr killed $xmm2
+    RET64 $xmm0
+    
