@@ -1,16 +1,16 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/PrintDataTypePlugin_Stroganov_Mikhail_FIIT2_ClangAST%pluginext -plugin PrintDataTypePlugin %s -fsyntax-only 2>&1 | FileCheck %s
 
-// CHECK: Alpha(struct)
+// CHECK-LABEL: Alpha(struct)
 struct Alpha {};
 
-// CHECK: Beta(struct)
+// CHECK-LABEL: Beta(struct)
 // CHECK-NOT: |_Fields
 // CHECK: Beta::Alpha(struct)
 struct Beta {
   struct Alpha {};
 };
 
-// CHECK: Variant(union)
+// CHECK-LABEL: Variant(union)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ i_val (int|public)
 // CHECK-NEXT: | |_ f_val (float|public)
@@ -19,7 +19,7 @@ union Variant {
   float f_val;
 };
 
-// CHECK: VisibilityTest(class)
+// CHECK-LABEL: VisibilityTest(class)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ x (float|private)
 // CHECK-NEXT: | |_ y (double|protected)
@@ -33,7 +33,7 @@ public:
   long long z;
 };
 
-// CHECK: PlainData(struct)
+// CHECK-LABEL: PlainData(struct)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ a (int|public)
 // CHECK-NEXT: | |_ b (double|public)
@@ -45,14 +45,14 @@ struct PlainData {
   int calculate(int p1, int p2) { return 0; }
 };
 
-// CHECK: WithStatic(class)
+// CHECK-LABEL: WithStatic(class)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ helper (void|private|static)
 class WithStatic {
   static void helper() {}
 };
 
-// CHECK: TemplateType(class|template)
+// CHECK-LABEL: TemplateType(class|template)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ val (T|private)
 // CHECK-NEXT: | |_ index (int|private)
@@ -62,7 +62,7 @@ class TemplateType {
   int index;
 };
 
-// CHECK: DualTemplate(class|template)
+// CHECK-LABEL: DualTemplate(class|template)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ left (T|private)
 // CHECK-NEXT: | |_ right (U|private)
@@ -72,40 +72,40 @@ class DualTemplate {
   U right;
 };
 
-// CHECK: AbstractBase(class)
+// CHECK-LABEL: AbstractBase(class)
 class AbstractBase {
 public:
   virtual ~AbstractBase() = default;
 };
 
-// CHECK: PublicExtension(class)
+// CHECK-LABEL: PublicExtension(class)
 // CHECK-NEXT: PublicExtension -> public AbstractBase
 class PublicExtension : public AbstractBase {};
 
-// CHECK: ProtectedExtension(class)
+// CHECK-LABEL: ProtectedExtension(class)
 // CHECK-NEXT: ProtectedExtension -> protected AbstractBase
 class ProtectedExtension : protected AbstractBase {};
 
-// CHECK: PrivateExtension(class)
+// CHECK-LABEL: PrivateExtension(class)
 // CHECK-NEXT: PrivateExtension -> private AbstractBase
 class PrivateExtension : private AbstractBase {};
 
-// CHECK: Wrapper(class)
+// CHECK-LABEL: Wrapper(class)
 class Wrapper {};
 
-// CHECK: Container(struct)
+// CHECK-LABEL: Container(struct)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ obj (Wrapper|public)
 struct Container {
   Wrapper obj;
 };
 
-// CHECK: Composite(class)
+// CHECK-LABEL: Composite(class)
 // CHECK-NEXT: Composite -> public Wrapper
 // CHECK-NEXT: Composite -> public Container
 class Composite : public Wrapper, public Container {};
 
-// CHECK: Human(struct)
+// CHECK-LABEL: Human(struct)
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ age (unsigned int|public)
 // CHECK-NEXT: | |_ height (unsigned int|public)
@@ -121,7 +121,7 @@ struct Human {
   virtual void feed() = 0;
 };
 
-// CHECK: Learner(class)
+// CHECK-LABEL: Learner(class)
 // CHECK-NEXT: Learner -> public Human
 // CHECK-NEXT: |_Methods
 // CHECK-DAG: | |_ rest (void|public|virtual|override)
@@ -133,4 +133,3 @@ public:
   void feed() override = 0;
   ~Learner() override = default;
 };
-
