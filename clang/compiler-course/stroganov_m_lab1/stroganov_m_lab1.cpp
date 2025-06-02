@@ -120,4 +120,3 @@ public:
 
 static clang::FrontendPluginRegistry::Add<PluginExecutor>
     X("PrintDataTypePlugin", "Print information about a custom data type");
-
