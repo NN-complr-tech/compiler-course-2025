@@ -1,18 +1,18 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/DataTypes_Chastov_Vyacheslav_FIIT2_ClangAST%pluginext -plugin DataTypes_Chastov_Vyacheslav_FIIT2_ClangAST %s -fsyntax-only 2>&1 | FileCheck %s
 
-// CHECK: Base1
+// CHECK-LABEL: Base1
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ (no fields)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ virtualMethod (void()|public|virtual|pure)
 
-// CHECK: Base2
+// CHECK-LABEL: Base2
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ (no fields)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ baseMethod (void()|public|virtual)
 
-// CHECK: Derived -> Base1, Base2
+// CHECK-LABEL: Derived -> Base1, Base2
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ publicField (int|public)
 // CHECK-NEXT: | |_ protectedField (float|protected)
@@ -23,7 +23,7 @@
 // CHECK-NEXT: | |_ constMethod (int()|private|const)
 // CHECK-NEXT: | |_ anotherMethod (void(int)|protected)
 
-// CHECK: Array
+// CHECK-LABEL: Array
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ ptr (T[SZ]|public)
 
