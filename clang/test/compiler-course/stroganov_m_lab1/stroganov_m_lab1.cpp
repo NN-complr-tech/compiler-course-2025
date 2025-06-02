@@ -125,7 +125,7 @@ struct Human {
 // CHECK-NEXT: Learner -> public Human
 // CHECK-NEXT: |_Methods
 // CHECK-DAG: | |_ rest (void|public|virtual|override)
-// CHECK-DAG: | |_ feed (void|public|virtual|pure)
+// CHECK-DAG: | |_ feed (void|public|virtual|pure|override)
 // CHECK-DAG: | |_ ~Learner (void|public|virtual|override)
 class Learner : public Human {
 public:

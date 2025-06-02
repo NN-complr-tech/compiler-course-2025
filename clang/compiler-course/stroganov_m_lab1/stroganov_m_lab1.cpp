@@ -36,7 +36,7 @@ class StructureDumper : public clang::RecursiveASTVisitor<StructureDumper> {
         out << "|virtual";
       if (method->isPureVirtual())
         out << "|pure";
-      else if (method->size_overridden_methods() > 0)
+      if (method->size_overridden_methods() > 0)
         out << "|override";
 
     } else {
