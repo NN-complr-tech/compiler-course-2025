@@ -1,0 +1,512 @@
+#  RUN: llc -mattr=+fma \
+#  RUN:     --load=%llvmshlibdir/MultiplySubtractPass_RezantsevaAnastasia_FIIT1_BACKEND%shlibext \
+#  RUN:     -run-pass=mult_sub_pass %s -o - | FileCheck %s
+--- |
+  ; ModuleID = 'rezantseva_test.mir'
+  source_filename = "test_rezantseva_a.c"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+
+  define void @test_scalar(ptr %a, ptr %b, ptr %c, ptr %d) #0 {
+  entry:
+    %0 = load float, ptr %a, align 4
+    %1 = load float, ptr %b, align 4
+    %2 = load float, ptr %c, align 4
+    %tmp = fmul float %0, %1
+    %res = fsub float %2, %tmp
+    store float %res, ptr %d, align 4
+    ret void
+  }
+
+  define void @test_sse(ptr %a, ptr %b, ptr %c, ptr %d) #0 {
+  entry:
+    %v_a = load <4 x float>, ptr %a, align 16
+    %v_b = load <4 x float>, ptr %b, align 16
+    %v_c = load <4 x float>, ptr %c, align 16
+    %tmp = fmul <4 x float> %v_a, %v_b
+    %res = fsub <4 x float> %v_c, %tmp
+    store <4 x float> %res, ptr %d, align 16
+    ret void
+  }
+
+  define void @test_avx(ptr %a, ptr %b, ptr %c, ptr %d) #0 {
+  entry:
+    %v_a = load <8 x float>, ptr %a, align 32
+    %v_b = load <8 x float>, ptr %b, align 32
+    %v_c = load <8 x float>, ptr %c, align 32
+    %tmp = fmul <8 x float> %v_a, %v_b
+    %res = fsub <8 x float> %v_c, %tmp
+    store <8 x float> %res, ptr %d, align 32
+    ret void
+  }
+
+  define void @test_avx_memory(ptr %a, ptr %b, ptr %c, ptr %d) #0 {
+  entry:
+    %v_a = load <8 x float>, ptr %a, align 32
+    %v_c = load <8 x float>, ptr %c, align 32
+    %tmp = fmul <8 x float> %v_a, %v_c
+    %res = fsub <8 x float> %v_c, %tmp
+    store <8 x float> %res, ptr %d, align 32
+    ret void
+  }
+
+  define void @test_negative(ptr %a, ptr %b, ptr %c, ptr %d) #0 {
+  entry:
+    %v_a = load <8 x float>, ptr %a, align 32
+    %v_b = load <8 x float>, ptr %b, align 32
+    %res = fadd <8 x float> %v_a, %v_b
+    store <8 x float> %res, ptr %d, align 32
+    ret void
+  }
+
+  attributes #0 = { "target-features"="+avx" }
+
+---
+# CHECK-LABEL: name: test_scalar
+name:            test_scalar
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: gr64, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+  - { reg: '$rcx', virtual-reg: '%3' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx, $rcx
+
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr128 = MOVSSrm %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.a)
+    ; CHECK-NEXT: %5:vr128 = MOVSSrm %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.b)
+    ; CHECK-NEXT: %6:vr128 = MOVSSrm %2, 1, $noreg, 0, $noreg :: (load (s32) from %ir.c)
+    ; CHECK-NEXT: %8:vr128 = VFMSUB213SSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
+    ; CHECK-NEXT: MOVSSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s32) into %ir.d)
+    ; CHECK-NEXT: RET64
+
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:gr64 = COPY $rcx
+    %4:vr128 = MOVSSrm %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.a, align 4)
+    %5:vr128 = MOVSSrm %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.b, align 4)
+    %6:vr128 = MOVSSrm %2, 1, $noreg, 0, $noreg :: (load (s32) from %ir.c, align 4)
+    %7:vr128 = MULSSrr %4:vr128, %5:vr128, implicit $mxcsr
+    %8:vr128 = SUBSSrr %6:vr128, %7:vr128, implicit $mxcsr
+    MOVSSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s32) into %ir.d, align 4)
+    RET64
+---
+# CHECK-LABEL: name: test_sse
+name:            test_sse
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: gr64, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+  - { id: 5, class: vr128, preferred-register: '' }
+  - { id: 6, class: vr128, preferred-register: '' }
+  - { id: 7, class: vr128, preferred-register: '' }
+  - { id: 8, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+  - { reg: '$rcx', virtual-reg: '%3' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx, $rcx
+
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr128 = MOVUPSrm %0, 1, $noreg, 0, $noreg :: (load (s128) from %ir.a)
+    ; CHECK-NEXT: %5:vr128 = MOVUPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.b)
+    ; CHECK-NEXT: %6:vr128 = MOVUPSrm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.c)
+    ; CHECK-NEXT: %8:vr128 = VFMSUB213PSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
+    ; CHECK-NEXT: MOVUPSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s128) into %ir.d)
+    ; CHECK-NEXT: RET64
+
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:gr64 = COPY $rcx
+    %4:vr128 = MOVUPSrm %0, 1, $noreg, 0, $noreg :: (load (s128) from %ir.a, align 16)
+    %5:vr128 = MOVUPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.b, align 16)
+    %6:vr128 = MOVUPSrm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.c, align 16)
+    %7:vr128 = MULPSrr %4:vr128, %5:vr128, implicit $mxcsr
+    %8:vr128 = SUBPSrr %6:vr128, %7:vr128, implicit $mxcsr
+    MOVUPSmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s128) into %ir.d, align 16)
+    RET64
+---
+# CHECK-LABEL: name: test_avx
+name:            test_avx
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: gr64, preferred-register: '' }
+  - { id: 4, class: vr256, preferred-register: '' }
+  - { id: 5, class: vr256, preferred-register: '' }
+  - { id: 6, class: vr256, preferred-register: '' }
+  - { id: 7, class: vr256, preferred-register: '' }
+  - { id: 8, class: vr256, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+  - { reg: '$rcx', virtual-reg: '%3' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx, $rcx
+
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a)
+    ; CHECK-NEXT: %5:vr256 = VMOVUPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.b)
+    ; CHECK-NEXT: %6:vr256 = VMOVUPSYrm %2, 1, $noreg, 0, $noreg :: (load (s256) from %ir.c)
+    ; CHECK-NEXT: %8:vr256 = VFMSUB213PSr %6, %4, %5, 0, implicit $mxcsr, implicit $mxcsr, implicit $mxcsr
+    ; CHECK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d)
+    ; CHECK-NEXT: RET64
+
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:gr64 = COPY $rcx
+    %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a, align 32)
+    %5:vr256 = VMOVUPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.b, align 32)
+    %6:vr256 = VMOVUPSYrm %2, 1, $noreg, 0, $noreg :: (load (s256) from %ir.c, align 32)
+    %7:vr256 = VMULPSYrr %4:vr256, %5:vr256, implicit $mxcsr
+    %8:vr256 = VSUBPSYrr %6:vr256, %7:vr256, implicit $mxcsr
+    VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d, align 32)
+    RET64
+---
+# CHECK-LABEL: name: test_avx_memory
+name:            test_avx_memory
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: gr64, preferred-register: '' }
+  - { id: 4, class: vr256, preferred-register: '' }
+  - { id: 5, class: vr256, preferred-register: '' }
+  - { id: 6, class: vr256, preferred-register: '' }
+  - { id: 7, class: vr256, preferred-register: '' }
+  - { id: 8, class: vr256, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+  - { reg: '$rcx', virtual-reg: '%3' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx, $rcx
+
+    ; CHECK: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %3:gr64 = COPY $rcx
+    ; CHECK-NEXT: %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a)
+    ; CHECK-NEXT: %6:vr256 = VMULPSYrm %4, %1, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.b)
+    ; CHECK-NEXT: %7:vr256 = VMOVUPSYrm %2, 1, $noreg, 0, $noreg :: (load (s256) from %ir.c)
+    ; CHECK-NEXT: %8:vr256 = VSUBPSYrr %7, %6, implicit $mxcsr
+    ; CHECK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d)
+    ; CHECK-NEXT: RET64
+
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:gr64 = COPY $rcx
+    %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a, align 32)
+    %6:vr256 = VMULPSYrm %4:vr256, %1:gr64, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.b, align 32)
+    %7:vr256 = VMOVUPSYrm %2, 1, $noreg, 0, $noreg :: (load (s256) from %ir.c, align 32)
+    %8:vr256 = VSUBPSYrr %7:vr256, %6:vr256, implicit $mxcsr
+    VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %8 :: (store (s256) into %ir.d, align 32)
+    RET64
+---
+# CHECK-LABEL: name: test_negative
+name:            test_negative
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   false
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: gr64, preferred-register: '' }
+  - { id: 4, class: vr256, preferred-register: '' }
+  - { id: 5, class: vr256, preferred-register: '' }
+  - { id: 6, class: vr256, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+  - { reg: '$rcx', virtual-reg: '%3' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx, $rcx
+
+    ; CHEKK: %0:gr64 = COPY $rdi
+    ; CHEKK-NEXT: %1:gr64 = COPY $rsi
+    ; CHEKK-NEXT: %2:gr64 = COPY $rdx
+    ; CHEKK-NEXT: %3:gr64 = COPY $rcx
+    ; CHEKK-NEXT: %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a)
+    ; CHEKK-NEXT: %5:vr256 = VMOVUPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.b)
+    ; CHEKK-NEXT: %6:vr256 = VADDPSYrr %4, %5, implicit $mxcsr
+    ; CHEKK-NEXT: VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %6 :: (store (s256) into %ir.d)
+    ; CHEKK-NEXT: RET64
+
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:gr64 = COPY $rcx
+    %4:vr256 = VMOVUPSYrm %0, 1, $noreg, 0, $noreg :: (load (s256) from %ir.a, align 32)
+    %5:vr256 = VMOVUPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.b, align 32)
+    %6:vr256 = VADDPSYrr %4:vr256, %5:vr256, implicit $mxcsr
+    VMOVUPSYmr %3, 1, $noreg, 0, $noreg, %6 :: (store (s256) into %ir.d, align 32)
+    RET64

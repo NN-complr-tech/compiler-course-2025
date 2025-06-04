@@ -11,8 +11,8 @@ def main():
     deadline_date = {
         "lab:clang": datetime(2025, 3, 19, hour=19, tzinfo=moscow_tz),
         "lab:llvm ir": datetime(2025, 4, 9, hour=19, tzinfo=moscow_tz),
-        "lab:backend": datetime(2025, 6, 1, hour=19, tzinfo=moscow_tz),
-        "lab:mlir": datetime(2025, 6, 1, hour=19, tzinfo=moscow_tz),
+        "lab:backend": datetime(2025, 5, 8, hour=19, tzinfo=moscow_tz),
+        "lab:mlir": datetime(2025, 5, 21, hour=19, tzinfo=moscow_tz),
     }
 
     gh = Github(os.environ["GITHUB_TOKEN"])
