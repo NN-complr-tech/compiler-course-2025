@@ -11,11 +11,31 @@ using namespace llvm;
 namespace {
 struct ReplaceAddWithCall : PassInfoMixin<ReplaceAddWithCall> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    if (F.getName() == "add")
+    StringRef FName = F.getName();
+
+    if (FName == "add_i32" || FName == "add_i64" || FName == "add_float")
       return PreservedAnalyses::all();
 
     Module *M = F.getParent();
-    Function *addFunc = M->getFunction("add");
+    if (!M)
+      return PreservedAnalyses::all();
+
+    std::string addFuncName;
+    bool isFloat = false;
+
+    Type *retType = F.getReturnType();
+    if (retType->isIntegerTy(32))
+      addFuncName = "add_i32";
+    else if (retType->isIntegerTy(64))
+      addFuncName = "add_i64";
+    else if (retType->isFloatTy()) {
+      addFuncName = "add_float";
+      isFloat = true;
+    } else {
+      return PreservedAnalyses::all();
+    }
+
+    Function *addFunc = M->getFunction(addFuncName);
     if (!addFunc || addFunc->isDeclaration())
       return PreservedAnalyses::all();
 
@@ -33,7 +53,8 @@ struct ReplaceAddWithCall : PassInfoMixin<ReplaceAddWithCall> {
       for (auto instIter = BB.begin(), end = BB.end(); instIter != end;) {
         Instruction *I = &*instIter++;
         if (auto *binOp = dyn_cast<BinaryOperator>(I)) {
-          if (binOp->getOpcode() == Instruction::Add) {
+          if ((!isFloat && binOp->getOpcode() == Instruction::Add) ||
+              (isFloat && binOp->getOpcode() == Instruction::FAdd)) {
             Value *op1 = binOp->getOperand(0);
             Value *op2 = binOp->getOperand(1);
 
