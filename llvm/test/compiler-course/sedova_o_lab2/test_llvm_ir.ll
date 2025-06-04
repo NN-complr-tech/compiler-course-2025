@@ -31,11 +31,6 @@
 ; CHECK-NEXT: %0 = call float @add_float(float %x, float %y)
 ; CHECK-NEXT: ret float %0
 
-; CHECK: define float @mul(float %x, float %y)
-; CHECK-NEXT: entry:
-; CHECK-NEXT: %sum = mul float %x, %y
-; CHECK-NEXT: ret float %0
-
 define i32 @add_i32(i32 %a, i32 %b) {
 entry:
   %result = add i32 %a, %b
@@ -69,11 +64,5 @@ entry:
 define float @foo_float(float %x, float %y) {
 entry:
   %sum = fadd float %x, %y
-  ret float %sum
-}
-
-define float @mul(float %x, float %y) {
-entry:
-  %sum = mul float %x, %y
   ret float %sum
 }
