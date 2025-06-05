@@ -1,4 +1,5 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
@@ -6,7 +7,7 @@
 using namespace mlir;
 
 namespace {
-class RemLowPass : public PassWrapper<RemLowPass, OperationPass<FuncOp>> {
+class RemLowPass : public PassWrapper<RemLowPass, OperationPass<func::FuncOp>> {
 public:
   StringRef getArgument() const final {
     return "RemLowPass_Opolin_Dmitry_FIIT2_MLIR";
@@ -17,7 +18,7 @@ public:
   }
 
   void runOnOperation() override {
-    FuncOp func = getOperation();
+    func::FuncOp func = getOperation();
     func.walk([&](arith::RemSIOp remOp) {
       OpBuilder builder(remOp);
       transformRemainderOperation<arith::DivSIOp>(remOp, builder);
