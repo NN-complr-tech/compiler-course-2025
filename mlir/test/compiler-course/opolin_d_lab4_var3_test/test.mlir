@@ -1,5 +1,5 @@
 // RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/RemLowPass_Opolin_Dmitry_FIIT2_MLIR%shlibext \
-// RUN: --pass-pipeline="builtin.module(RemLowPass_Opolin_Dmitry_FIIT2_MLIR)" %s | FileCheck %s
+// RUN: --pass-pipeline="builtin.module(func.func(RemLowPass_Opolin_Dmitry_FIIT2_MLIR))" %s | FileCheck %s
 
 // Test 1: base arith.remsi i32
 // CHECK-LABEL: func.func @test_remsi_basic_i32
