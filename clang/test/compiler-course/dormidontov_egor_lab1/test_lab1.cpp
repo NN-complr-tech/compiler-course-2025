@@ -9,6 +9,7 @@
 // CHECK: }
 // CHECK: int bar(int param_x) {
 // CHECK:   int local_y = 0;
+// CHECK:   long long local_var1 = 9LL;
 // CHECK:   for (int local_i = 0; local_i < param_x; ++local_i) {
 // CHECK:     local_y += global_var1 + param_x + local_i;
 // CHECK:   }
@@ -26,6 +27,7 @@ int foo(int a, int b) {
 
 int bar(int x) {
   int y = 0;
+  long long var1 = 9LL;
   for (int i = 0; i < x; ++i) {
     y += var1 + x + i;
   }

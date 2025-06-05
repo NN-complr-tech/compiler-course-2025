@@ -18,17 +18,21 @@ public:
   PrefixCallbackVisitor(ASTContext *context, Rewriter &rewriter)
       : Context(context), TheRewriter(rewriter) {}
 
+  bool VisitParmVarDecl(ParmVarDecl *param) {
+    const FunctionDecl *func = findParentFunction(param);
+    if (!func)
+      return true;
+    std::string newName = "param_" + param->getNameAsString();
+    funcDecl2Map[func][param] = newName;
+    TheRewriter.ReplaceText(param->getLocation(),
+                            param->getNameAsString().length(), newName);
+    return true;
+  }
+
   bool VisitFunctionDecl(FunctionDecl *func) {
     if (!func->hasBody())
       return true;
     funcDecl2Map[func] = std::unordered_map<const ValueDecl *, std::string>();
-
-    for (auto *param : func->parameters()) {
-      std::string newName = "param_" + param->getNameAsString();
-      funcDecl2Map[func][param] = newName;
-      TheRewriter.ReplaceText(param->getLocation(),
-                              param->getNameAsString().length(), newName);
-    }
     return true;
   }
 
@@ -93,22 +97,14 @@ private:
                      std::unordered_map<const ValueDecl *, std::string>>
       funcDecl2Map;
 
-  const FunctionDecl *findParentFunction(const Decl *decl) {
-    const auto &parents = Context->getParents(*decl);
+  template <typename T> const FunctionDecl *findParentFunction(const T *node) {
+    const auto &parents = Context->getParents(*node);
     if (!parents.empty()) {
-      if (const FunctionDecl *func = parents[0].get<FunctionDecl>())
+      if (const FunctionDecl *func = parents[0].template get<FunctionDecl>())
         return func;
-      if (const Decl *parentDecl = parents[0].get<Decl>())
+      if (const Decl *parentDecl = parents[0].template get<Decl>())
         return findParentFunction(parentDecl);
-    }
-    return nullptr;
-  }
-  const FunctionDecl *findParentFunction(const Stmt *stmt) {
-    const auto &parents = Context->getParents(*stmt);
-    if (!parents.empty()) {
-      if (const FunctionDecl *func = parents[0].get<FunctionDecl>())
-        return func;
-      if (const Stmt *parentStmt = parents[0].get<Stmt>())
+      if (const Stmt *parentStmt = parents[0].template get<Stmt>())
         return findParentFunction(parentStmt);
     }
     return nullptr;
