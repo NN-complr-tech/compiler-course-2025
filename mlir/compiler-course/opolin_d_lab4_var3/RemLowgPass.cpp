@@ -1,15 +1,12 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
-using namespace mlir::arith;
 
 namespace {
-class RemLowPass : public PassWrapper<RemLowPass, OperationPass<ModuleOp>> {
+class RemLowPass : public PassWrapper<RemLowPass, OperationPass<FuncOp>> {
 public:
   StringRef getArgument() const final {
     return "RemLowPass_Opolin_Dmitry_FIIT2_MLIR";
@@ -20,14 +17,14 @@ public:
   }
 
   void runOnOperation() override {
-    ModuleOp module = getOperation();
-    module.walk([&](RemSIOp remOp) {
+    FuncOp func = getOperation();
+    func.walk([&](arith::RemSIOp remOp) {
       OpBuilder builder(remOp);
-      transformRemainderOperation<DivSIOp>(remOp, builder);
+      transformRemainderOperation<arith::DivSIOp>(remOp, builder);
     });
-    module.walk([&](RemUIOp remOp) {
+    func.walk([&](arith::RemUIOp remOp) {
       OpBuilder builder(remOp);
-      transformRemainderOperation<DivUIOp>(remOp, builder);
+      transformRemainderOperation<arith::DivUIOp>(remOp, builder);
     });
   }
 
@@ -40,8 +37,8 @@ private:
 
     Value divResult =
         builder.create<CorrespondingDivOpType>(loc, dividend, divisor);
-    Value mulResult = builder.create<MulIOp>(loc, divResult, divisor);
-    Value subResult = builder.create<SubIOp>(loc, dividend, mulResult);
+    Value mulResult = builder.create<arith::MulIOp>(loc, divResult, divisor);
+    Value subResult = builder.create<arith::SubIOp>(loc, dividend, mulResult);
 
     remOp.getResult().replaceAllUsesWith(subResult);
     remOp.erase();
