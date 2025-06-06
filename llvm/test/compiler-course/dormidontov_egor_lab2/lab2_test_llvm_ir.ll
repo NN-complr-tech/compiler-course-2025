@@ -49,3 +49,50 @@ entry:
   ret i32 %mul
 }
 
+; ###Проверка, что деление на не-степень двойки (17) НЕ заменяется
+; ###Вход:  return value / 17;
+; ###После пасса:  return value / 17;  // никаких сдвигов
+; CHECK-LABEL: @divide_by_seventeen
+; CHECK: sdiv i32 %{{[^,]+}}, 17
+
+define i32 @divide_by_seventeen(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 17
+  ret i32 %div
+}
+
+; ###Проверка, что деление на не-степень двойки (3) НЕ заменяется
+; ###Вход:  return value / 3;
+; ###После пасса:  return value / 3;  // никаких сдвигов
+; CHECK-LABEL: @divide_by_three
+; CHECK: sdiv i32 %{{[^,]+}}, 3
+
+define i32 @divide_by_three(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 3
+  ret i32 %div
+}
+
+; ###Проверка замены деления на степень двойки (16) на сдвиг вправо
+; ###Вход:  return value / 16;
+; ###После пасса:  return value >> 4;
+; CHECK-LABEL: @divide_by_sixteen
+; CHECK: ashr i32 %{{[^,]+}}, 4
+
+define i32 @divide_by_sixteen(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 16
+  ret i32 %div
+}
+
+; ###Проверка замены деления на степень двойки (2) на сдвиг вправо
+; ###Вход:  return value / 2;
+; ###После пасса:  return value >> 1;
+; CHECK-LABEL: @divide_by_two
+; CHECK: ashr i32 %{{[^,]+}}, 1
+
+define i32 @divide_by_two(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 2
+  ret i32 %div
+}

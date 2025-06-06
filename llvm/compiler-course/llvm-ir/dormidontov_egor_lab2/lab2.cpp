@@ -3,21 +3,12 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
-#include <cmath>
 
 using namespace llvm;
 
 namespace {
-static bool isPowerOfTwo(uint64_t N) { return N && !(N & (N - 1)); }
-
-static unsigned getLog2(uint64_t N) {
-  // N Ч степень двойки, log2(N) Ч позици¤ единственного бита
-  unsigned Res = 0;
-  while (N >>= 1)
-    ++Res;
-  return Res;
-}
 
 struct DivToBitwiseShiftPass : PassInfoMixin<DivToBitwiseShiftPass> {
   PreservedAnalyses run(Function &Func, FunctionAnalysisManager &) {
@@ -32,8 +23,8 @@ struct DivToBitwiseShiftPass : PassInfoMixin<DivToBitwiseShiftPass> {
 
             if (auto *C = dyn_cast<ConstantInt>(Div->getOperand(1))) {
               uint64_t Divisor = C->getZExtValue();
-              if (isPowerOfTwo(Divisor)) {
-                unsigned ShiftAmt = getLog2(Divisor);
+              if (isPowerOf2_64(Divisor)) {
+                unsigned ShiftAmt = Log2_64(Divisor);
                 IRBuilder<> Builder(Div);
 
                 Value *LHS = Div->getOperand(0);
