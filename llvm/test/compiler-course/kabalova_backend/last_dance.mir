@@ -2,29 +2,45 @@
 # RUN: -run-pass=counter-pass-x86  %s -o - | FileCheck %s
 
 
-# // SSE
-# __m128 add1(__m128 a, __m128 b){
-#   __m128 c = _mm_add_ps(a, b);
-#   return c;
-# }
-# 
-# // SSE2 
-# __m128d add2(__m128d a, __m128d b){
-#   __m128d c = _mm_add_pd(a, b);
-#   return c;
-# }
-# 
-# //AVX
-# __m256 add3(__m256 a, __m256 b){
-#   __m256 c = _mm256_add_ps(a, b);
-#   return c;
-# }
-# 
-# //AVX512
-# __m512d add4(__m512d a, __m512d b){
-#   __m512d c = _mm512_add_pd(a, b);
-#   return c;
-# }
+#// SSE
+#__m128 add1(__m128 a, __m128 b){
+#  __m128 c = _mm_add_ps(a, b);
+#  return c;
+#}
+#
+#// SSE2 
+#__m128d add2(__m128d a, __m128d b){
+#  __m128d c = _mm_add_pd(a, b);
+#  return c;
+#}
+#
+#//AVX
+#__m256 add3(__m256 a, __m256 b){
+#  __m256 c = _mm256_add_ps(a, b);
+#  return c;
+#}
+#
+#//AVX512
+#__m512d add4(__m512d a, __m512d b){
+#  __m512d c = _mm512_add_pd(a, b);
+#  return c;
+#}
+#
+#// Multiple instructions
+#__m512d huge(__m512d a, __m512d b){
+#  __m512d c = _mm512_add_pd(a, b);
+#  if (a > 0){
+#    a = _mm512_add_pd(a, b);
+#  }
+#  else if (b > 0){
+#    b = _mm512_sub_pd(a, b);
+#  }
+#  else {
+#    c = _mm512_mul_pd(a, b);
+#  }
+#  
+#  return c;
+#}
 
 
 --- |
@@ -60,14 +76,21 @@
   }
   
   ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
-  define dso_local noundef i32 @main() local_unnamed_addr #3 {
-    ret i32 0
+  define dso_local noundef <8 x double> @_Z4hugeDv8_dS_(<8 x double> noundef %0, <8 x double> noundef %1) local_unnamed_addr #2 {
+    %3 = fcmp one <8 x double> %0, zeroinitializer
+    %4 = bitcast <8 x i1> %3 to i8
+    %5 = icmp eq i8 %4, 0
+    %6 = fsub <8 x double> %0, %1
+    %7 = select i1 %5, <8 x double> %1, <8 x double> <double -0.000000e+00, double -0.000000e+00, double -0.000000e+00, double -0.000000e+00, double -0.000000e+00, double -0.000000e+00, double -0.000000e+00, double -0.000000e+00>
+    %8 = fadd <8 x double> %7, %0
+    %9 = select i1 %5, <8 x double> %1, <8 x double> %6
+    %10 = fmul <8 x double> %9, %8
+    ret <8 x double> %10
   }
   
   attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+avx2,+avx512f,+cmov,+crc32,+cx8,+evex512,+f16c,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx,+avx" "tune-cpu"="generic" }
   attributes #1 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="256" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+avx2,+avx512f,+cmov,+crc32,+cx8,+evex512,+f16c,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx,+avx" "tune-cpu"="generic" }
   attributes #2 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="512" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+avx2,+avx512f,+cmov,+crc32,+cx8,+evex512,+f16c,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx,+avx" "tune-cpu"="generic" }
-  attributes #3 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+avx2,+avx512f,+cmov,+crc32,+cx8,+evex512,+f16c,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx,+avx" "tune-cpu"="generic" }
   
   !llvm.module.flags = !{!0, !1, !2, !3}
   !llvm.ident = !{!4}
@@ -80,7 +103,7 @@
 
 ...
 ---
-# CHECK-LABEL: name:            _Z4add1Dv4_fS_
+#CHECK-LABEL: name: _Z4add1Dv4_fS_
 name:            _Z4add1Dv4_fS_
 alignment:       16
 exposesReturnsTwice: false
@@ -141,14 +164,14 @@ body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
 
-    ; CHECK: %1:vr128 = COPY $xmm1
-    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
-    ; CHECK-NEXT: %2:vr128 = nofpexcept VADDPSrr %0, %1, implicit $mxcsr
-    ; CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg 
-    ; CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags 
-    ; CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
-    ; CHECK-NEXT: $xmm0 = COPY %2
-    ; CHECK-NEXT: RET 0, $xmm0
+    ;CHECK: %1:vr128 = COPY $xmm1
+    ;CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ;CHECK-NEXT: %2:vr128 = nofpexcept VADDPSrr %0, %1, implicit $mxcsr
+    ;CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg
+    ;CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags
+    ;CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
+    ;CHECK-NEXT: $xmm0 = COPY %2
+    ;CHECK-NEXT: RET 0, $xmm0
 
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -158,7 +181,7 @@ body:             |
 
 ...
 ---
-# CHECK-LABEL: name:            _Z4add2Dv2_dS_
+# CHECK-LABEL: name:  _Z4add2Dv2_dS_
 name:            _Z4add2Dv2_dS_
 alignment:       16
 exposesReturnsTwice: false
@@ -219,14 +242,14 @@ body:             |
   bb.0 (%ir-block.2):
     liveins: $xmm0, $xmm1
 
-    ; CHECK: %1:vr128 = COPY $xmm1
-    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
-    ; CHECK-NEXT: %2:vr128 = nofpexcept VADDPDrr %0, %1, implicit $mxcsr
-    ; CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg 
-    ; CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags 
-    ; CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
-    ; CHECK-NEXT: $xmm0 = COPY %2
-    ; CHECK-NEXT: RET 0, $xmm0 
+    ;CHECK: %1:vr128 = COPY $xmm1
+    ;CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ;CHECK-NEXT: %2:vr128 = nofpexcept VADDPDrr %0, %1, implicit $mxcsr
+    ;CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg
+    ;CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags
+    ;CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
+    ;CHECK-NEXT: $xmm0 = COPY %2
+    ;CHECK-NEXT: RET 0, $xmm0
 
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -236,7 +259,7 @@ body:             |
 
 ...
 ---
-# CHECK-LABEL: name:            _Z4add3Dv8_fS_
+#CHECK-LABEL: name: _Z4add3Dv8_fS_
 name:            _Z4add3Dv8_fS_
 alignment:       16
 exposesReturnsTwice: false
@@ -297,14 +320,14 @@ body:             |
   bb.0 (%ir-block.2):
     liveins: $ymm0, $ymm1
 
-    ; CHECK: %1:vr256 = COPY $ymm1
-    ; CHECK-NEXT: %0:vr256 = COPY $ymm0
-    ; CHECK-NEXT: %2:vr256 = nofpexcept VADDPSYrr %0, %1, implicit $mxcsr
-    ; CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg 
-    ; CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags 
-    ; CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
-    ; CHECK-NEXT: $ymm0 = COPY %2
-    ; CHECK-NEXT: RET 0, $ymm0 
+    ;CHECK: %1:vr256 = COPY $ymm1
+    ;CHECK-NEXT: %0:vr256 = COPY $ymm0
+    ;CHECK-NEXT: %2:vr256 = nofpexcept VADDPSYrr %0, %1, implicit $mxcsr
+    ;CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg
+    ;CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags
+    ;CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
+    ;CHECK-NEXT: $ymm0 = COPY %2
+    ;CHECK-NEXT: RET 0, $ymm0
 
     %1:vr256 = COPY $ymm1
     %0:vr256 = COPY $ymm0
@@ -314,7 +337,7 @@ body:             |
 
 ...
 ---
-# CHECK-LABEL: name:            _Z4add4Dv8_dS_
+#CHECK-LABEL: name: _Z4add4Dv8_dS_
 name:            _Z4add4Dv8_dS_
 alignment:       16
 exposesReturnsTwice: false
@@ -374,15 +397,15 @@ machineFunctionInfo:
 body:             |
   bb.0 (%ir-block.2):
     liveins: $zmm0, $zmm1
-
-    ; CHECK: %1:vr512 = COPY $zmm1
-    ; CHECK-NEXT: %0:vr512 = COPY $zmm0
-    ; CHECK-NEXT: %2:vr512 = nofpexcept VADDPDZrr %0, %1, implicit $mxcsr
-    ; CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg 
-    ; CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags 
-    ; CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
-    ; CHECK-NEXT: $zmm0 = COPY %2
-    ; CHECK-NEXT: RET 0, $zmm0
+  
+    ;CHECK: %1:vr512 = COPY $zmm1
+    ;CHECK-NEXT: %0:vr512 = COPY $zmm0
+    ;CHECK-NEXT: %2:vr512 = nofpexcept VADDPDZrr %0, %1, implicit $mxcsr
+    ;CHECK-NEXT: %4:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg
+    ;CHECK-NEXT: %4:gr64 = ADD64ri32 %4, 1, implicit-def $eflags
+    ;CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %4
+    ;CHECK-NEXT: $zmm0 = COPY %2
+    ;CHECK-NEXT: RET 0, $zmm0
 
     %1:vr512 = COPY $zmm1
     %0:vr512 = COPY $zmm0
@@ -392,7 +415,8 @@ body:             |
 
 ...
 ---
-name:            main
+#CHECK-LABEL: name: _Z4hugeDv8_dS_
+name:            _Z4hugeDv8_dS_
 alignment:       16
 exposesReturnsTwice: false
 legalized:       false
@@ -411,8 +435,24 @@ debugInstrRef:   true
 failsVerification: false
 tracksDebugUserValues: false
 registers:
-  - { id: 0, class: gr32, preferred-register: '' }
-liveins:         []
+  - { id: 0, class: vr512, preferred-register: '' }
+  - { id: 1, class: vr512, preferred-register: '' }
+  - { id: 2, class: vr512, preferred-register: '' }
+  - { id: 3, class: vk8, preferred-register: '' }
+  - { id: 4, class: gr32, preferred-register: '' }
+  - { id: 5, class: gr8, preferred-register: '' }
+  - { id: 6, class: vr512, preferred-register: '' }
+  - { id: 7, class: vr512, preferred-register: '' }
+  - { id: 8, class: vr512, preferred-register: '' }
+  - { id: 9, class: vr512, preferred-register: '' }
+  - { id: 10, class: vr512, preferred-register: '' }
+  - { id: 11, class: vr512, preferred-register: '' }
+  - { id: 12, class: gr64, preferred-register: '' }
+  - { id: 13, class: gr64, preferred-register: '' }
+  - { id: 14, class: gr64, preferred-register: '' }
+liveins:
+  - { reg: '$zmm0', virtual-reg: '%0' }
+  - { reg: '$zmm1', virtual-reg: '%1' }
 frameInfo:
   isFrameAddressTaken: false
   isReturnAddressTaken: false
@@ -440,13 +480,78 @@ stack:           []
 entry_values:    []
 callSites:       []
 debugValueSubstitutions: []
-constants:       []
+constants:
+  - id:              0
+    value:           'double -0.000000e+00'
+    alignment:       8
+    isTargetSpecific: false
 machineFunctionInfo:
   amxProgModel:    None
 body:             |
-  bb.0 (%ir-block.0):
-    %0:gr32 = MOV32r0 implicit-def dead $eflags
-    $eax = COPY %0
-    RET 0, $eax
+  bb.0 (%ir-block.2):
+    successors: %bb.1(0x40000000), %bb.2(0x40000000)
+    liveins: $zmm0, $zmm1
+
+    ;CHECK: %1:vr512 = COPY $zmm1
+    ;CHECK-NEXT: %0:vr512 = COPY $zmm0
+    ;CHECK-NEXT: %2:vr512 = AVX512_512_SET0
+    ;CHECK-NEXT: %3:vk8 = nofpexcept VCMPPDZrri %0, killed %2, 12, implicit $mxcsr
+    ;CHECK-NEXT: %4:gr32 = COPY %3
+    ;CHECK-NEXT: %5:gr8 = COPY %4.sub_8bit
+    ;CHECK-NEXT: TEST8rr %5, %5, implicit-def $eflags
+    ;CHECK-NEXT: %6:vr512 = nofpexcept VSUBPDZrr %0, %1, implicit $mxcsr
+    ;CHECK-NEXT: %7:vr512 = VBROADCASTSDZrm $rip, 1, $noreg, %const.0, $noreg :: (load (s64) from constant-pool)
+    ;CHECK-NEXT: %15:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg
+    ;CHECK-NEXT: %15:gr64 = ADD64ri32 %15, 3, implicit-def $eflags
+    ;CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %15
+    ;CHECK-NEXT: JCC_1 %bb.2, 4, implicit $eflags
+
+    %1:vr512 = COPY $zmm1
+    %0:vr512 = COPY $zmm0
+    %2:vr512 = AVX512_512_SET0
+    %3:vk8 = nofpexcept VCMPPDZrri %0, killed %2, 12, implicit $mxcsr
+    %4:gr32 = COPY %3
+    %5:gr8 = COPY %4.sub_8bit
+    TEST8rr %5, %5, implicit-def $eflags
+    %6:vr512 = nofpexcept VSUBPDZrr %0, %1, implicit $mxcsr
+    %7:vr512 = VBROADCASTSDZrm $rip, 1, $noreg, %const.0, $noreg :: (load (s64) from constant-pool)
+    JCC_1 %bb.2, 4, implicit $eflags
+  
+  bb.1 (%ir-block.2):
+    successors: %bb.2(0x80000000)
+    liveins: $eflags
+  
+  bb.2 (%ir-block.2):
+    successors: %bb.3(0x40000000), %bb.4(0x40000000)
+    liveins: $eflags
+  
+    ;CHECK: %8:vr512 = PHI %7, %bb.1, %1, %bb.0
+    ;CHECK-NEXT: %9:vr512 = nofpexcept VADDPDZrr killed %8, %0, implicit $mxcsr
+    ;CHECK-NEXT: %16:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg
+    ;CHECK-NEXT: %16:gr64 = ADD64ri32 %16, 1, implicit-def $eflags
+    ;CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %16
+    ;CHECK-NEXT: JCC_1 %bb.4, 4, implicit $eflags
+
+    %8:vr512 = PHI %7, %bb.1, %1, %bb.0
+    %9:vr512 = nofpexcept VADDPDZrr killed %8, %0, implicit $mxcsr
+    JCC_1 %bb.4, 4, implicit $eflags
+  
+  bb.3 (%ir-block.2):
+    successors: %bb.4(0x80000000)
+  
+  bb.4 (%ir-block.2):
+    
+    ;CHECK: %10:vr512 = PHI %6, %bb.3, %1, %bb.2
+    ;CHECK-NEXT: %11:vr512 = nofpexcept VMULPDZrr killed %10, killed %9, implicit $mxcsr
+    ;CHECK-NEXT: %17:gr64 = MOV64rm @counter, 1, $noreg, 0, $noreg
+    ;CHECK-NEXT: %17:gr64 = ADD64ri32 %17, 1, implicit-def $eflags
+    ;CHECK-NEXT: MOV64mr @counter, 1, $noreg, 0, $noreg, %17
+    ;CHECK-NEXT: $zmm0 = COPY %11
+    ;CHECK-NEXT: RET 0, $zmm0
+
+    %10:vr512 = PHI %6, %bb.3, %1, %bb.2
+    %11:vr512 = nofpexcept VMULPDZrr killed %10, killed %9, implicit $mxcsr
+    $zmm0 = COPY %11
+    RET 0, $zmm0
 
 ...

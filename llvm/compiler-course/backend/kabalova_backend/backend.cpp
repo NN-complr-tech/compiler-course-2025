@@ -43,40 +43,45 @@ bool CounterPass::runOnMachineFunction(MachineFunction &func) {
   }
 
   for (MachineBasicBlock &block : func) {
+    int count = 0;
+    MachineInstr *lastInstr = nullptr;
     for (MachineInstr &instr : block) {
       if (isSIMDInstruction(module, func, instr)) {
-        auto pos = std::next(instr.getIterator());
-        DebugLoc loc = instr.getDebugLoc();
-
-        const MCInstrDesc &movTo = info->get(llvm::X86::MOV64rm);
-        const MCInstrDesc &add = info->get(llvm::X86::ADD64ri32);
-        const MCInstrDesc &movFrom = info->get(llvm::X86::MOV64mr);
-
-        const TargetRegisterInfo *regInfo =
-            func.getSubtarget().getRegisterInfo();
-        const TargetRegisterClass *GR64RC =
-            regInfo->getRegClass(X86::GR64RegClassID);
-        Register tmpReg = func.getRegInfo().createVirtualRegister(GR64RC);
-
-        BuildMI(block, pos, loc, movTo, tmpReg)
-            .addGlobalAddress(counter)
-            .addImm(1)
-            .addReg(0)
-            .addImm(0)
-            .addReg(0);
-
-        BuildMI(block, pos, loc, add, tmpReg).addReg(tmpReg).addImm(1);
-
-        BuildMI(block, pos, loc, movFrom)
-            .addGlobalAddress(counter)
-            .addImm(1)
-            .addReg(0)
-            .addImm(0)
-            .addReg(0)
-            .addReg(tmpReg);
-
-        isChanged = true;
+        ++count;
+        lastInstr = &instr;
       }
+    }
+    if (count != 0) {
+      auto pos = std::next(lastInstr->getIterator());
+      DebugLoc loc = lastInstr->getDebugLoc();
+
+      const MCInstrDesc &movTo = info->get(llvm::X86::MOV64rm);
+      const MCInstrDesc &add = info->get(llvm::X86::ADD64ri32);
+      const MCInstrDesc &movFrom = info->get(llvm::X86::MOV64mr);
+
+      const TargetRegisterInfo *regInfo = func.getSubtarget().getRegisterInfo();
+      const TargetRegisterClass *GR64RC =
+          regInfo->getRegClass(X86::GR64RegClassID);
+      Register tmpReg = func.getRegInfo().createVirtualRegister(GR64RC);
+
+      BuildMI(block, pos, loc, movTo, tmpReg)
+          .addGlobalAddress(counter)
+          .addImm(1)
+          .addReg(0)
+          .addImm(0)
+          .addReg(0);
+
+      BuildMI(block, pos, loc, add, tmpReg).addReg(tmpReg).addImm(count);
+
+      BuildMI(block, pos, loc, movFrom)
+          .addGlobalAddress(counter)
+          .addImm(1)
+          .addReg(0)
+          .addImm(0)
+          .addReg(0)
+          .addReg(tmpReg);
+
+      isChanged = true;
     }
   }
 
