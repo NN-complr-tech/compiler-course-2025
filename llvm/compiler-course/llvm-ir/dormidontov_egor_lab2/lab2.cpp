@@ -9,55 +9,53 @@
 using namespace llvm;
 
 namespace {
-static bool isPowerOfTwo(uint64_t n) { return n && !(n & (n - 1)); }
+static bool isPowerOfTwo(uint64_t N) { return N && !(N & (N - 1)); }
 
-static unsigned getLog2(uint64_t n) {
-  // n - ñòåïåíü äâîéêè, log2(n) - ïîçèöèÿ åäèíñòâåííîãî áèòà
-  unsigned res = 0;
-  while (n >>= 1)
-    ++res;
-  return res;
+static unsigned getLog2(uint64_t N) {
+  // N Ð§ ÑÑ‚ÐµÐ¿ÐµÐ½ÑŒ Ð´Ð²Ð¾Ð¹ÐºÐ¸, log2(N) Ð§ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Â¤ ÐµÐ´Ð¸Ð½ÑÑ‚Ð²ÐµÐ½Ð½Ð¾Ð³Ð¾ Ð±Ð¸Ñ‚Ð°
+  unsigned Res = 0;
+  while (N >>= 1)
+    ++Res;
+  return Res;
 }
 
-struct DivToBitwiseShiftPass : llvm::PassInfoMixin<DivToBitwiseShiftPass> {
-  llvm::PreservedAnalyses run(llvm::Function &func,
-                              llvm::FunctionAnalysisManager &) {
-    bool changed = false;
+struct DivToBitwiseShiftPass : PassInfoMixin<DivToBitwiseShiftPass> {
+  PreservedAnalyses run(Function &Func, FunctionAnalysisManager &) {
+    bool Changed = false;
 
-    for (auto &BB : func) {
-      for (auto it = BB.begin(); it != BB.end();) {
-        Instruction *inst = &*it++;
-        if (auto *div = dyn_cast<BinaryOperator>(inst)) {
-          if (div->getOpcode() == Instruction::SDiv ||
-              div->getOpcode() == Instruction::UDiv) {
+    for (auto &BB : Func) {
+      for (auto It = BB.begin(); It != BB.end();) {
+        Instruction *Inst = &*It++;
+        if (auto *Div = dyn_cast<BinaryOperator>(Inst)) {
+          if (Div->getOpcode() == Instruction::SDiv ||
+              Div->getOpcode() == Instruction::UDiv) {
 
-            if (auto *C = dyn_cast<ConstantInt>(div->getOperand(1))) {
-              uint64_t divisor = C->getZExtValue();
-              if (isPowerOfTwo(divisor)) {
-                unsigned shift = getLog2(divisor);
-                IRBuilder<> builder(div);
+            if (auto *C = dyn_cast<ConstantInt>(Div->getOperand(1))) {
+              uint64_t Divisor = C->getZExtValue();
+              if (isPowerOfTwo(Divisor)) {
+                unsigned ShiftAmt = getLog2(Divisor);
+                IRBuilder<> Builder(Div);
 
-                Value *lhs = div->getOperand(0);
-                Value *shift_amt = ConstantInt::get(lhs->getType(), shift);
+                Value *LHS = Div->getOperand(0);
+                Value *ShiftValue = ConstantInt::get(LHS->getType(), ShiftAmt);
 
-                Value *newInstr = nullptr;
-                if (div->getOpcode() == Instruction::SDiv) {
-                  newInstr = builder.CreateAShr(lhs, shift_amt, "div2shift");
+                Value *NewInstr = nullptr;
+                if (Div->getOpcode() == Instruction::SDiv) {
+                  NewInstr = Builder.CreateAShr(LHS, ShiftValue, "div2shift");
                 } else {
-                  newInstr = builder.CreateLShr(lhs, shift_amt, "div2shift");
+                  NewInstr = Builder.CreateLShr(LHS, ShiftValue, "div2shift");
                 }
-                div->replaceAllUsesWith(newInstr);
-                div->eraseFromParent();
-                changed = true;
+                Div->replaceAllUsesWith(NewInstr);
+                Div->eraseFromParent();
+                Changed = true;
               }
             }
           }
         }
       }
     }
-    return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
   }
-
   static bool isRequired() { return true; }
 };
 } // namespace
