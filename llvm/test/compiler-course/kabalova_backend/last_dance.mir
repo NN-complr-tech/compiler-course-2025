@@ -29,15 +29,13 @@
 #// Multiple instructions
 #__m512d huge(__m512d a, __m512d b){
 #  __m512d c = _mm512_add_pd(a, b);
-#  if (a > 0){
+#  if (_mm512_cmp_pd_mask(a, _mm512_setzero_pd(), _CMP_NEQ_OQ) == 0){
 #    a = _mm512_add_pd(a, b);
 #  }
-#  else if (b > 0){
+#  else{
 #    b = _mm512_sub_pd(a, b);
 #  }
-#  else {
-#    c = _mm512_mul_pd(a, b);
-#  }
+#  c = _mm512_mul_pd(a, b);
 #  
 #  return c;
 #}
