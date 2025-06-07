@@ -22,23 +22,47 @@ struct DivToBitwiseShiftPass : PassInfoMixin<DivToBitwiseShiftPass> {
               Div->getOpcode() == Instruction::UDiv) {
 
             if (auto *C = dyn_cast<ConstantInt>(Div->getOperand(1))) {
-              uint64_t Divisor = C->getZExtValue();
-              if (isPowerOf2_64(Divisor)) {
-                unsigned ShiftAmt = Log2_64(Divisor);
-                IRBuilder<> Builder(Div);
+              int64_t Divisor = C->getSExtValue();
 
-                Value *LHS = Div->getOperand(0);
-                Value *ShiftValue = ConstantInt::get(LHS->getType(), ShiftAmt);
+              if (Div->getOpcode() == Instruction::SDiv) {
+                int64_t AbsDiv = std::abs(Divisor);
+                if (AbsDiv > 0 && isPowerOf2_64(AbsDiv)) {
+                  unsigned ShiftAmt = Log2_64(AbsDiv);
+                  IRBuilder<> Builder(Div);
 
-                Value *NewInstr = nullptr;
-                if (Div->getOpcode() == Instruction::SDiv) {
-                  NewInstr = Builder.CreateAShr(LHS, ShiftValue, "div2shift");
-                } else {
-                  NewInstr = Builder.CreateLShr(LHS, ShiftValue, "div2shift");
+                  Value *LHS = Div->getOperand(0);
+                  Value *ShiftValue =
+                      ConstantInt::get(LHS->getType(), ShiftAmt);
+                  Value *Shifted =
+                      Builder.CreateAShr(LHS, ShiftValue, "div2shift");
+
+                  Value *NewInstr = Shifted;
+                  if (Divisor < 0) {
+                    NewInstr = Builder.CreateSub(
+                        ConstantInt::get(LHS->getType(), 0), Shifted, "neg");
+                  }
+
+                  Div->replaceAllUsesWith(NewInstr);
+                  Div->eraseFromParent();
+                  Changed = true;
                 }
-                Div->replaceAllUsesWith(NewInstr);
-                Div->eraseFromParent();
-                Changed = true;
+              } else {
+                uint64_t UDivisor = C->getZExtValue();
+                if (UDivisor > 0 && isPowerOf2_64(UDivisor)) {
+                  unsigned ShiftAmt = Log2_64(UDivisor);
+                  IRBuilder<> Builder(Div);
+
+                  Value *LHS = Div->getOperand(0);
+                  Value *ShiftValue =
+                      ConstantInt::get(LHS->getType(), ShiftAmt);
+
+                  Value *NewInstr =
+                      Builder.CreateLShr(LHS, ShiftValue, "div2shift");
+
+                  Div->replaceAllUsesWith(NewInstr);
+                  Div->eraseFromParent();
+                  Changed = true;
+                }
               }
             }
           }
