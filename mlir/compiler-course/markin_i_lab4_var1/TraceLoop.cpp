@@ -44,8 +44,8 @@ struct LoopTracerPass
       // Check for existing loop_end_marker
       if (!markerCallExists(kLoopEndMarker)) {
         builder.setInsertionPoint(terminator);
-        builder.create<mlir::func::CallOp>(loc, kLoopEndMarker,
-                                           mlir::TypeRange(), mlir::ValueRange());
+        builder.create<mlir::func::CallOp>(
+            loc, kLoopEndMarker, mlir::TypeRange(), mlir::ValueRange());
       }
     }
   }
@@ -69,8 +69,8 @@ public:
     auto createMarkerFunction = [&](mlir::StringRef funcName) {
       if (!symbolTable.lookup(funcName)) {
         auto funcType = mlir::FunctionType::get(context, {}, {});
-        auto newFunc = mlir::func::FuncOp::create(module.getLoc(), funcName,
-                                                 funcType);
+        auto newFunc =
+            mlir::func::FuncOp::create(module.getLoc(), funcName, funcType);
         newFunc.setVisibility(mlir::SymbolTable::Visibility::Private);
         symbolTable.insert(newFunc);
       }
@@ -82,14 +82,14 @@ public:
 
     module.walk([&](mlir::Operation *op) {
       if (auto affineForOp = mlir::dyn_cast<mlir::affine::AffineForOp>(op)) {
-        addTraceMarkers(*affineForOp.getBody(), affineForOp->getLoc(),
-                        builder, symbolTable); // Pass symbolTable
+        addTraceMarkers(*affineForOp.getBody(), affineForOp->getLoc(), builder,
+                        symbolTable); // Pass symbolTable
       } else if (auto forOp = mlir::dyn_cast<mlir::scf::ForOp>(op)) {
         addTraceMarkers(*forOp.getBody(), forOp->getLoc(), builder,
                         symbolTable); // Pass symbolTable
       } else if (auto whileOp = mlir::dyn_cast<mlir::scf::WhileOp>(op)) {
-        addTraceMarkers(whileOp.getAfter().front(), whileOp->getLoc(),
-                        builder, symbolTable); // Pass symbolTable
+        addTraceMarkers(whileOp.getAfter().front(), whileOp->getLoc(), builder,
+                        symbolTable); // Pass symbolTable
       }
     });
   }
