@@ -12,15 +12,41 @@ namespace {
 struct LoopTracerPass
     : public mlir::PassWrapper<LoopTracerPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
+
+  // Constants for function names
+  static constexpr mlir::StringRef kLoopBeginMarker = "loop_begin_marker";
+  static constexpr mlir::StringRef kLoopEndMarker = "loop_end_marker";
+
   void addTraceMarkers(mlir::Block &block, mlir::Location loc,
-                       mlir::OpBuilder &builder) {
-    builder.setInsertionPointToStart(&block);
-    builder.create<mlir::func::CallOp>(loc, "loop_begin_marker",
-                                       mlir::TypeRange(), mlir::ValueRange());
-    if (mlir::Operation *terminator = block.getTerminator()) {
-      builder.setInsertionPoint(terminator);
-      builder.create<mlir::func::CallOp>(loc, "loop_end_marker",
+                       mlir::OpBuilder &builder,
+                       mlir::SymbolTable &symbolTable) {
+
+    // Helper function to check if a call to a specific marker exists
+    auto markerCallExists = [&](mlir::StringRef markerName) {
+      for (auto &op : block) {
+        if (auto callOp = mlir::dyn_cast<mlir::func::CallOp>(&op)) {
+          if (callOp.getCallee() == markerName) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    // Check for existing loop_begin_marker
+    if (!markerCallExists(kLoopBeginMarker)) {
+      builder.setInsertionPointToStart(&block);
+      builder.create<mlir::func::CallOp>(loc, kLoopBeginMarker,
                                          mlir::TypeRange(), mlir::ValueRange());
+    }
+
+    if (mlir::Operation *terminator = block.getTerminator()) {
+      // Check for existing loop_end_marker
+      if (!markerCallExists(kLoopEndMarker)) {
+        builder.setInsertionPoint(terminator);
+        builder.create<mlir::func::CallOp>(loc, kLoopEndMarker,
+                                           mlir::TypeRange(), mlir::ValueRange());
+      }
     }
   }
 
@@ -38,28 +64,32 @@ public:
     mlir::MLIRContext *context = module.getContext();
     mlir::OpBuilder builder(context);
     mlir::SymbolTable symbolTable(module);
-    if (!symbolTable.lookup("loop_begin_marker")) {
-      auto funcType = mlir::FunctionType::get(context, {}, {});
-      auto newFunc = mlir::func::FuncOp::create(module.getLoc(),
-                                                "loop_begin_marker", funcType);
-      newFunc.setVisibility(mlir::SymbolTable::Visibility::Private);
-      symbolTable.insert(newFunc);
-    }
-    if (!symbolTable.lookup("loop_end_marker")) {
-      auto funcType = mlir::FunctionType::get(context, {}, {});
-      auto newFunc = mlir::func::FuncOp::create(module.getLoc(),
-                                                "loop_end_marker", funcType);
-      newFunc.setVisibility(mlir::SymbolTable::Visibility::Private);
-      symbolTable.insert(newFunc);
-    }
+
+    // Function to create and insert the marker functions
+    auto createMarkerFunction = [&](mlir::StringRef funcName) {
+      if (!symbolTable.lookup(funcName)) {
+        auto funcType = mlir::FunctionType::get(context, {}, {});
+        auto newFunc = mlir::func::FuncOp::create(module.getLoc(), funcName,
+                                                 funcType);
+        newFunc.setVisibility(mlir::SymbolTable::Visibility::Private);
+        symbolTable.insert(newFunc);
+      }
+    };
+
+    // Create the marker functions if they don't exist
+    createMarkerFunction(kLoopBeginMarker);
+    createMarkerFunction(kLoopEndMarker);
 
     module.walk([&](mlir::Operation *op) {
       if (auto affineForOp = mlir::dyn_cast<mlir::affine::AffineForOp>(op)) {
-        addTraceMarkers(*affineForOp.getBody(), affineForOp->getLoc(), builder);
+        addTraceMarkers(*affineForOp.getBody(), affineForOp->getLoc(),
+                        builder, symbolTable); // Pass symbolTable
       } else if (auto forOp = mlir::dyn_cast<mlir::scf::ForOp>(op)) {
-        addTraceMarkers(*forOp.getBody(), forOp->getLoc(), builder);
+        addTraceMarkers(*forOp.getBody(), forOp->getLoc(), builder,
+                        symbolTable); // Pass symbolTable
       } else if (auto whileOp = mlir::dyn_cast<mlir::scf::WhileOp>(op)) {
-        addTraceMarkers(whileOp.getAfter().front(), whileOp->getLoc(), builder);
+        addTraceMarkers(whileOp.getAfter().front(), whileOp->getLoc(),
+                        builder, symbolTable); // Pass symbolTable
       }
     });
   }
