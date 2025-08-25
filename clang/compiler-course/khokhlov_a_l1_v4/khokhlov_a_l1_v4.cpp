@@ -22,7 +22,6 @@ public:
     if (prevName.empty()) return true;
 
     std::string prefix;
-
     if (varDecl->isStaticLocal()) {
       prefix = "static_";
     } else if (varDecl->hasGlobalStorage()) {
