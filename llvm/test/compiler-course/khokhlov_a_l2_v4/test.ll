@@ -1,4 +1,4 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/ReplaceDivPass_KozlovaEkaterina_FIIT3_LLVM_IR%pluginext\
+; RUN: opt -load-pass-plugin %llvmshlibdir/Khokhlov_A_Pass_Khokhlov_Andrey_FIIT2_LLVM_IR%pluginext\
 ; RUN: -passes=replace-div -S %s | FileCheck %s
 
 
