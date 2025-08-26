@@ -27,33 +27,34 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
             if (auto *constDivisor = llvm::dyn_cast<llvm::ConstantInt>(divisor)) {
               int64_t divisorValue = constDivisor->getSExtValue();
               
-              // Проверяем, является ли делитель степенью двойки и положительным
+              // Проверяем, является ли делитель положительной степенью двойки
               if (divisorValue > 0 && (divisorValue & (divisorValue - 1)) == 0) {
-                // Вычисляем степень двойки (логарифм по основанию 2)
                 unsigned shiftAmount = llvm::Log2_64(divisorValue);
                 
-                // Создаем IRBuilder для вставки новой инструкции
                 llvm::IRBuilder<> builder(divInst);
                 
-                // Заменяем деление на арифметический сдвиг вправо
                 llvm::Value *shiftInst = nullptr;
                 if (divInst->getOpcode() == llvm::Instruction::SDiv) {
-                  // Для знакового деления используем арифметический сдвиг
                   shiftInst = builder.CreateAShr(dividend, shiftAmount);
                 } else {
-                  // Для беззнакового деления используем логический сдвиг
                   shiftInst = builder.CreateLShr(dividend, shiftAmount);
                 }
                 
-                // Заменяем использование результата деления результатом сдвига
                 divInst->replaceAllUsesWith(shiftInst);
-                
-                // Добавляем инструкцию в список для удаления
                 toRemove.push_back(divInst);
                 
                 changed = true;
                 llvm::outs() << "Replaced division by " << divisorValue 
                             << " with shift by " << shiftAmount << "\n";
+              }
+              // Особый случай: деление на 1
+              else if (divisorValue == 1) {
+                // Просто заменяем деление на 1 самим операндом
+                divInst->replaceAllUsesWith(dividend);
+                toRemove.push_back(divInst);
+                
+                changed = true;
+                llvm::outs() << "Replaced division by 1 with the operand itself\n";
               }
             }
           }
