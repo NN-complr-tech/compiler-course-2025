@@ -1,5 +1,5 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/Khokhlov_A_Pass_Khokhlov_Andrey_FIIT2_LLVM_IR%pluginext\
-; RUN: -passes=replace-div -S %s | FileCheck %s
+; RUN: -passes=div-to-shift -S %s | FileCheck %s
 
 
 define i32 @f1(i32 %value) {
