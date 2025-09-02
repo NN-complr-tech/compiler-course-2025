@@ -35,7 +35,7 @@ public:
         std::string NewVariableName = ScopePrefix + OriginalName;
         RenamedVariablesMap[OriginalName] = NewVariableName;
         clang::SourceLocation NamePosition = VariableDeclaration->getLocation();
-        RewriterTool.ReplaceText(NamePosition, OriginalName.length(), 
+        RewriterTool.ReplaceText(NamePosition, OriginalName.length(),
                                  NewVariableName);
       }
     }
@@ -50,7 +50,7 @@ public:
     std::string OriginalName = FunctionParameter->getName().str();
     std::string NewParameterName = "param_" + OriginalName;
     RenamedVariablesMap[OriginalName] = NewParameterName;
-    RewriterTool.ReplaceText(FunctionParameter->getLocation(), 
+    RewriterTool.ReplaceText(FunctionParameter->getLocation(),
                              OriginalName.size(), NewParameterName);
     return true;
   }
@@ -74,11 +74,11 @@ public:
       RewriterTool.ReplaceText(ReferencePosition, OriginalName.length(),
                                MapIterator->second);
     } else {
-      if (auto VarDecl = 
+      if (auto VarDecl =
               llvm::dyn_cast<clang::VarDecl>(ReferencedDeclaration)) {
         VarDecl = VarDecl->getCanonicalDecl();
         std::string NewName;
-        
+
         if (VarDecl->hasGlobalStorage() && !VarDecl->isStaticLocal()) {
           NewName = "global_" + OriginalName;
         } else if (VarDecl->isStaticLocal()) {
@@ -88,7 +88,7 @@ public:
         } else if (VarDecl->isLocalVarDecl()) {
           NewName = "local_" + OriginalName;
         }
-        
+
         if (!NewName.empty()) {
           RenamedVariablesMap[OriginalName] = NewName;
           RewriterTool.ReplaceText(VariableReference->getLocation(),
@@ -106,7 +106,7 @@ private:
 
 class ASTTransformer final : public clang::ASTConsumer {
 public:
-  explicit ASTTransformer(clang::ASTContext *Context, 
+  explicit ASTTransformer(clang::ASTContext *Context,
                           clang::Rewriter &CodeRewriter)
       : RewriterTool(CodeRewriter), PrefixVisitor(CodeRewriter) {}
 
@@ -122,9 +122,9 @@ private:
 class PrefixPlugin final : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &Compiler, 
+  CreateASTConsumer(clang::CompilerInstance &Compiler,
                     llvm::StringRef) override {
-    SourceRewriter.setSourceMgr(Compiler.getSourceManager(), 
+    SourceRewriter.setSourceMgr(Compiler.getSourceManager(),
                                 Compiler.getLangOpts());
     return std::make_unique<ASTTransformer>(&Compiler.getASTContext(), 
                                             SourceRewriter);
@@ -147,5 +147,5 @@ private:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<PrefixPlugin>
-    PluginRegistration("clangAstPrefix_1", 
+    PluginRegistration("clangAstPrefix_1",
                         "Adds scope-based prefixes to variable names");
