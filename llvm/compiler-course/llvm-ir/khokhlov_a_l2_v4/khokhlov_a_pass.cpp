@@ -47,9 +47,7 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
                 llvm::outs() << "Replaced division by " << divisorValue 
                             << " with shift by " << shiftAmount << "\n";
               }
-              // Особый случай: деление на 1
               else if (divisorValue == 1) {
-                // Просто заменяем деление на 1 самим операндом
                 divInst->replaceAllUsesWith(dividend);
                 toRemove.push_back(divInst);
                 
@@ -62,7 +60,6 @@ struct DivisionToShiftPass : llvm::PassInfoMixin<DivisionToShiftPass> {
       }
     }
     
-    // Безопасно удаляем все отмеченные инструкции
     for (auto *inst : toRemove) {
       if (inst->use_empty()) {
         inst->eraseFromParent();
