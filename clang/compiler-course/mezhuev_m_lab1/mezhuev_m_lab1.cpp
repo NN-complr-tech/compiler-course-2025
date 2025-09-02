@@ -8,7 +8,7 @@
 
 namespace {
 
-class ScopePrefixAdder final 
+class ScopePrefixAdder final
     : public clang::RecursiveASTVisitor<ScopePrefixAdder> {
 public:
   explicit ScopePrefixAdder(clang::Rewriter &CodeRewriter)
@@ -20,7 +20,7 @@ public:
     }
 
     std::string ScopePrefix;
-    
+
     if (VariableDeclaration->isStaticLocal()) {
       ScopePrefix = "static_";
     } else if (VariableDeclaration->isLocalVarDecl()) {
@@ -67,7 +67,7 @@ public:
 
     std::string OriginalName = ReferencedDeclaration->getName().str();
     auto MapIterator = RenamedVariablesMap.find(OriginalName);
-    
+
     if (MapIterator != RenamedVariablesMap.end()) {
       clang::SourceLocation ReferencePosition =
           VariableReference->getLocation();
@@ -126,7 +126,7 @@ public:
                     llvm::StringRef) override {
     SourceRewriter.setSourceMgr(Compiler.getSourceManager(),
                                 Compiler.getLangOpts());
-    return std::make_unique<ASTTransformer>(&Compiler.getASTContext(), 
+    return std::make_unique<ASTTransformer>(&Compiler.getASTContext(),
                                             SourceRewriter);
   }
 
@@ -148,4 +148,4 @@ private:
 
 static clang::FrontendPluginRegistry::Add<PrefixPlugin>
     PluginRegistration("clangAstPrefix_1",
-                        "Adds scope-based prefixes to variable names");
+                      "Adds scope-based prefixes to variable names");
