@@ -8,7 +8,8 @@
 
 namespace {
 
-class ScopePrefixAdder final : public clang::RecursiveASTVisitor<ScopePrefixAdder> {
+class ScopePrefixAdder final 
+    : public clang::RecursiveASTVisitor<ScopePrefixAdder> {
 public:
   explicit ScopePrefixAdder(clang::Rewriter &CodeRewriter)
       : RewriterTool(CodeRewriter) {}
@@ -34,7 +35,8 @@ public:
         std::string NewVariableName = ScopePrefix + OriginalName;
         RenamedVariablesMap[OriginalName] = NewVariableName;
         clang::SourceLocation NamePosition = VariableDeclaration->getLocation();
-        RewriterTool.ReplaceText(NamePosition, OriginalName.length(), NewVariableName);
+        RewriterTool.ReplaceText(NamePosition, OriginalName.length(), 
+                                 NewVariableName);
       }
     }
     return true;
@@ -48,7 +50,8 @@ public:
     std::string OriginalName = FunctionParameter->getName().str();
     std::string NewParameterName = "param_" + OriginalName;
     RenamedVariablesMap[OriginalName] = NewParameterName;
-    RewriterTool.ReplaceText(FunctionParameter->getLocation(), OriginalName.size(), NewParameterName);
+    RewriterTool.ReplaceText(FunctionParameter->getLocation(), 
+                             OriginalName.size(), NewParameterName);
     return true;
   }
 
@@ -66,10 +69,13 @@ public:
     auto MapIterator = RenamedVariablesMap.find(OriginalName);
     
     if (MapIterator != RenamedVariablesMap.end()) {
-      clang::SourceLocation ReferencePosition = VariableReference->getLocation();
-      RewriterTool.ReplaceText(ReferencePosition, OriginalName.length(), MapIterator->second);
+      clang::SourceLocation ReferencePosition =
+          VariableReference->getLocation();
+      RewriterTool.ReplaceText(ReferencePosition, OriginalName.length(),
+                               MapIterator->second);
     } else {
-      if (auto VarDecl = llvm::dyn_cast<clang::VarDecl>(ReferencedDeclaration)) {
+      if (auto VarDecl = 
+              llvm::dyn_cast<clang::VarDecl>(ReferencedDeclaration)) {
         VarDecl = VarDecl->getCanonicalDecl();
         std::string NewName;
         
@@ -85,7 +91,8 @@ public:
         
         if (!NewName.empty()) {
           RenamedVariablesMap[OriginalName] = NewName;
-          RewriterTool.ReplaceText(VariableReference->getLocation(), OriginalName.length(), NewName);
+          RewriterTool.ReplaceText(VariableReference->getLocation(),
+                                   OriginalName.length(), NewName);
         }
       }
     }
@@ -99,7 +106,8 @@ private:
 
 class ASTTransformer final : public clang::ASTConsumer {
 public:
-  explicit ASTTransformer(clang::ASTContext *Context, clang::Rewriter &CodeRewriter)
+  explicit ASTTransformer(clang::ASTContext *Context, 
+                          clang::Rewriter &CodeRewriter)
       : RewriterTool(CodeRewriter), PrefixVisitor(CodeRewriter) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
@@ -114,9 +122,12 @@ private:
 class PrefixPlugin final : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &Compiler, llvm::StringRef) override {
-    SourceRewriter.setSourceMgr(Compiler.getSourceManager(), Compiler.getLangOpts());
-    return std::make_unique<ASTTransformer>(&Compiler.getASTContext(), SourceRewriter);
+  CreateASTConsumer(clang::CompilerInstance &Compiler, 
+                    llvm::StringRef) override {
+    SourceRewriter.setSourceMgr(Compiler.getSourceManager(), 
+                                Compiler.getLangOpts());
+    return std::make_unique<ASTTransformer>(&Compiler.getASTContext(), 
+                                            SourceRewriter);
   }
 
   bool ParseArgs(const clang::CompilerInstance &Compiler,
@@ -136,4 +147,5 @@ private:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<PrefixPlugin>
-    PluginRegistration("clangAstPrefix_1", "Adds scope-based prefixes to variable names");
+    PluginRegistration("clangAstPrefix_1", 
+                        "Adds scope-based prefixes to variable names");
