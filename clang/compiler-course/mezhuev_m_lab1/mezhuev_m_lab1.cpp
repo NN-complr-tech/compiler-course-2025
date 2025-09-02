@@ -148,4 +148,4 @@ private:
 
 static clang::FrontendPluginRegistry::Add<PrefixPlugin>
     PluginRegistration("clangAstPrefix_1",
-                        "Adds scope-based prefixes to variable names");
+                      "Adds scope-based prefixes to variable names");
