@@ -90,24 +90,24 @@ void processMethods(const clang::CXXRecordDecl *record,
   }
 }
 
-  void processNested(const clang::CXXRecordDecl *record, llvm::raw_ostream &output) {
-    bool has_nested_types = false;
+void processNested(const clang::CXXRecordDecl *record, llvm::raw_ostream &output) {
+  bool has_nested_types = false;
 
-    for (const auto *decl : record->decls()) {
-      if (const auto *nested = llvm::dyn_cast<clang::CXXRecordDecl>(decl)) {
-        if (!nested->isThisDeclarationADefinition() || nested->isImplicit())
-          continue;
+  for (const auto *decl : record->decls()) {
+    if (const auto *nested = llvm::dyn_cast<clang::CXXRecordDecl>(decl)) {
+      if (!nested->isThisDeclarationADefinition() || nested->isImplicit())
+        continue;
 
-        if (!has_nested_types) {
-          has_nested_types = true;
-        }
-        output << "| |_ " << nested->getNameAsString() << "\n";
+      if (!has_nested_types) {
+        has_nested_types = true;
       }
+      output << "| |_ " << nested->getNameAsString() << "\n";
     }
-
-    if (!has_nested_types)
-      output << "| |_ (no nested types)\n";
   }
+
+  if (!has_nested_types)
+    output << "| |_ (no nested types)\n";
+}
 
 class Visitor final : public clang::RecursiveASTVisitor<Visitor> {
 public:
