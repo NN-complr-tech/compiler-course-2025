@@ -6,6 +6,9 @@
 // CHECK-NEXT: | |_ height (unsigned int|public)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ sleep (void()|public|virtual|pure)
+// CHECK-NEXT: | |_ eat (void()|public|virtual|pure)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ (no nested types)
 struct Human {
   unsigned age;
   unsigned height;
@@ -22,6 +25,8 @@ struct Human {
 // CHECK-NEXT: | |_ work (double()|public)
 // CHECK-NEXT: | |_ type_float (float()|public)
 // CHECK-NEXT: | |_ type_char (char()|public)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ (no nested types)
 struct Engineer : Human {
   unsigned salary;
   void sleep() override { /* something */ }
@@ -36,6 +41,8 @@ struct Engineer : Human {
 // CHECK-NEXT: | |_ (has no fields)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ (no nested types)
 class BaseClass {};
 
 // CHECK: NaslClass(class) -> public BaseClass
@@ -43,6 +50,8 @@ class BaseClass {};
 // CHECK-NEXT: | |_ (has no fields)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ (no nested types)
 class NaslClass : public BaseClass {};
 
 // CHECK: TempClass(class|template)
@@ -50,6 +59,8 @@ class NaslClass : public BaseClass {};
 // CHECK-NEXT: | |_ type_t (T|private)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ (no nested types)
 
 template <class T> class TempClass {
   T type_t;
@@ -61,7 +72,29 @@ template <class T> class TempClass {
 // CHECK-NEXT: | |_ boo (char|public)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ (no nested types)
 union UnionCheck {
   int foo;
   char boo;
+};
+
+// CHECK: A(struct)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (has no fields)
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ (has no methods)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ (no nested types)
+struct A {};
+
+// CHECK: B(struct)
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ (has no fields)
+// CHECK-NEXT: |_Methods
+// CHECK-NEXT: | |_ (has no methods)
+// CHECK-NEXT: |_Nested Types
+// CHECK-NEXT: | |_ A
+struct B {
+  struct A {};
 };

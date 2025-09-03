@@ -3,10 +3,8 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
-#include <algorithm>
-#include <string>
 
-namespace anikin_m_ast {
+namespace {
 
 std::string getAccessSpecifierString(clang::AccessSpecifier access) {
   if (access == clang::AS_public)
@@ -66,8 +64,8 @@ void processMethods(const clang::CXXRecordDecl *record,
         << method->getReturnType().getAsString();
     out << "(";
     llvm::interleaveComma(method->parameters(), out,
-                          [](const clang::ParmVarDecl *param) {
-                            llvm::outs() << param->getType().getAsString();
+                          [&out](const clang::ParmVarDecl *param) {
+                            out << param->getType().getAsString();
                           }
 
     );
@@ -92,9 +90,28 @@ void processMethods(const clang::CXXRecordDecl *record,
   }
 }
 
-class ASTWalker final : public clang::RecursiveASTVisitor<ASTWalker> {
+  void processNested(const clang::CXXRecordDecl *record, llvm::raw_ostream &output) {
+    bool has_nested_types = false;
+
+    for (const auto *decl : record->decls()) {
+      if (const auto *nested = llvm::dyn_cast<clang::CXXRecordDecl>(decl)) {
+        if (!nested->isThisDeclarationADefinition() || nested->isImplicit())
+          continue;
+
+        if (!has_nested_types) {
+          has_nested_types = true;
+        }
+        output << "| |_ " << nested->getNameAsString() << "\n";
+      }
+    }
+
+    if (!has_nested_types)
+      output << "| |_ (no nested types)\n";
+  }
+
+class Visitor final : public clang::RecursiveASTVisitor<Visitor> {
 public:
-  explicit ASTWalker(clang::ASTContext *context) : context_(context) {}
+  explicit Visitor(clang::ASTContext *context) : context_(context) {}
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
     auto &&out = llvm::outs();
     // is union
@@ -129,6 +146,9 @@ public:
     out << "|_Methods\n";
     processMethods(record, out);
 
+    out << "|_Nested Types\n";
+    processNested(record, out);
+
     return true;
   }
 
@@ -136,23 +156,23 @@ private:
   clang::ASTContext *context_;
 };
 
-class ASTAnalyzer final : public clang::ASTConsumer {
+class Consumer final : public clang::ASTConsumer {
 public:
-  explicit ASTAnalyzer(clang::ASTContext *context) : walker_(context) {}
+  explicit Consumer(clang::ASTContext *context) : walker_(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     walker_.TraverseDecl(context.getTranslationUnitDecl());
   }
 
 private:
-  ASTWalker walker_;
+  Visitor walker_;
 };
 
-class ASTPluginAction final : public clang::PluginASTAction {
+class Action final : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ASTAnalyzer>(&ci.getASTContext());
+    return std::make_unique<Consumer>(&ci.getASTContext());
   }
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
@@ -160,7 +180,7 @@ public:
   }
 };
 
-} // namespace anikin_m_ast
-
-static clang::FrontendPluginRegistry::Add<anikin_m_ast::ASTPluginAction>
+clang::FrontendPluginRegistry::Add<Action>
     Y("data_type", "Analyzes AST and prints information about data types");
+
+} // namespace
