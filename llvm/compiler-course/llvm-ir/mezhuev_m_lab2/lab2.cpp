@@ -101,7 +101,7 @@ private:
 
     DivOp->replaceAllUsesWith(ShiftResult);
     DivOp->eraseFromParent();
-    
+
     return true;
   }
 };
