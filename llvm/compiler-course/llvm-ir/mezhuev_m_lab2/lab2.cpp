@@ -116,7 +116,7 @@ llvmGetPassPluginInfo() {
                 [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
                   if (name == "int-div-optimize") {
-                    FPM.addPass(DivToBitwiseShiftPass{});
+                    FPM.addPass(IntegerDivisionOptimizer{});
                     return true;
                   }
                   return false;
