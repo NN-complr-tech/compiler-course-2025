@@ -46,7 +46,6 @@ public:
       return true;
     }
 
-    // Проверяем, что оба типа являются встроенными
     if (srcN->isBuiltinType() && dstN->isBuiltinType()) {
       std::string from = srcN.getAsString();
       std::string to = dstN.getAsString();
