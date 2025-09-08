@@ -117,13 +117,13 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
         InstrInfo->get(fusedOpcode), arithmeticInstr.getOperand(0).getReg());
 
     fusedInstr
-        .addReg(currentInstr.getOperand(1).getReg(), 
+        .addReg(currentInstr.getOperand(1).getReg(),
                 getRegState(currentInstr.getOperand(1)))
-        .addReg(currentInstr.getOperand(2).getReg(), 
+        .addReg(currentInstr.getOperand(2).getReg(),
                 getRegState(currentInstr.getOperand(2)));
     
 
-    fusedInstr.addReg(otherOperandReg, 
+    fusedInstr.addReg(otherOperandReg,
                       getRegState(arithmeticInstr.getOperand(otherOperandIdx)));
 
     instructionsForRemoval.push_back(&currentInstr);
@@ -187,4 +187,4 @@ bool ArithmeticFusionOptimizer::validateOperandPattern(
 
 static RegisterPass<ArithmeticFusionOptimizer>
     Z("x86-arith-fusion", "X86 Arithmetic Operations Fusion Pass", false,
-        false);
+      false);
