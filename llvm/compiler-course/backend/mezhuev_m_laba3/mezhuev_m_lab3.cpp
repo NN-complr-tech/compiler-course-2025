@@ -121,7 +121,6 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
                 getRegState(currentInstr.getOperand(1)))
         .addReg(currentInstr.getOperand(2).getReg(),
                 getRegState(currentInstr.getOperand(2)));
-    
 
     fusedInstr.addReg(otherOperandReg,
                       getRegState(arithmeticInstr.getOperand(otherOperandIdx)));
