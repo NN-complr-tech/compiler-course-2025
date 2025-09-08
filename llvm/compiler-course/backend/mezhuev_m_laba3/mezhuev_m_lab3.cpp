@@ -16,8 +16,8 @@ public:
   static char ID;
   ArithmeticFusionOptimizer() : MachineFunctionPass(ID) {}
 
-  StringRef getPassName() const override { 
-    return "X86 Arithmetic Operations Fusion"; 
+  StringRef getPassName() const override {
+    return "X86 Arithmetic Operations Fusion";
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override;
@@ -26,12 +26,12 @@ private:
   const X86InstrInfo *InstrInfo = nullptr;
 
   bool processMachineBlock(MachineBasicBlock &MBB);
-  unsigned selectFusedOperation(unsigned multiplicationOp, 
-                               unsigned arithmeticOp, 
-                               bool multiplicationFirst) const;
-  bool validateOperandPattern(const MachineInstr &mulInstr, 
-                             const MachineInstr &arithInstr,
-                             bool &mulOperandFirst) const;
+  unsigned selectFusedOperation(unsigned multiplicationOp,
+                                unsigned arithmeticOp,
+                                bool multiplicationFirst) const;
+  bool validateOperandPattern(const MachineInstr &mulInstr,
+                              const MachineInstr &arithInstr,
+                              bool &mulOperandFirst) const;
 };
 
 char ArithmeticFusionOptimizer::ID = 0;
@@ -51,12 +51,12 @@ bool ArithmeticFusionOptimizer::runOnMachineFunction(MachineFunction &MF) {
 }
 
 bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
-  SmallVector<MachineInstr*, 8> instructionsForRemoval;
+  SmallVector<MachineInstr *, 8> instructionsForRemoval;
   auto &regInfo = MBB.getParent()->getRegInfo();
   bool modified = false;
 
-  for (auto instIter = MBB.begin(), endIter = MBB.end(); 
-       instIter != endIter; ++instIter) {
+  for (auto instIter = MBB.begin(), endIter = MBB.end(); instIter != endIter;
+       ++instIter) {
 
     MachineInstr &currentInstr = *instIter;
     unsigned currentOpcode = currentInstr.getOpcode();
@@ -79,11 +79,10 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
       MachineInstr &arithmeticInstr = *arithmeticIter;
       unsigned arithmeticOp = arithmeticInstr.getOpcode();
 
-      bool isSubtractionOp = (arithmeticOp == X86::SUBSSrr || 
-                             arithmeticOp == X86::SUBSDrr ||
-                             arithmeticOp == X86::VSUBSSrr || 
-                             arithmeticOp == X86::VSUBSDrr);
-      
+      bool isSubtractionOp =
+          (arithmeticOp == X86::SUBSSrr || arithmeticOp == X86::SUBSDrr ||
+           arithmeticOp == X86::VSUBSSrr || arithmeticOp == X86::VSUBSDrr);
+
       if (isSubtractionOp) {
         if (arithmeticInstr.getOperand(1).getReg() == multiplicationDest ||
             arithmeticInstr.getOperand(2).getReg() == multiplicationDest) {
@@ -92,36 +91,40 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
       }
     }
 
-    if (arithmeticIter == endIter) continue;
-    
+    if (arithmeticIter == endIter)
+      continue;
+
     MachineInstr &arithmeticInstr = *arithmeticIter;
 
-    if (!validateOperandPattern(currentInstr, arithmeticInstr, 
-                               multiplicationIsFirstOperand)) {
+    if (!validateOperandPattern(currentInstr, arithmeticInstr,
+                                multiplicationIsFirstOperand)) {
       continue;
     }
 
-    unsigned fusedOpcode = selectFusedOperation(currentOpcode, 
-                                               arithmeticInstr.getOpcode(),
-                                               multiplicationIsFirstOperand);
-    if (fusedOpcode == 0) continue;
+    unsigned fusedOpcode =
+        selectFusedOperation(currentOpcode, arithmeticInstr.getOpcode(),
+                             multiplicationIsFirstOperand);
+
+    if (fusedOpcode == 0)
+      continue;
 
     unsigned otherOperandIdx = multiplicationIsFirstOperand ? 2 : 1;
-    Register otherOperandReg = arithmeticInstr.getOperand(otherOperandIdx).getReg();
+    Register otherOperandReg =
+        arithmeticInstr.getOperand(otherOperandIdx).getReg();
 
-    MachineInstrBuilder fusedInstr = BuildMI(MBB, arithmeticInstr, 
-                                           arithmeticInstr.getDebugLoc(),
-                                           InstrInfo->get(fusedOpcode),
-                                           arithmeticInstr.getOperand(0).getReg());
+    MachineInstrBuilder fusedInstr = BuildMI(
+        MBB, arithmeticInstr, arithmeticInstr.getDebugLoc(),
+        InstrInfo->get(fusedOpcode), arithmeticInstr.getOperand(0).getReg());
 
-    fusedInstr.addReg(currentInstr.getOperand(1).getReg(), 
-                     getRegState(currentInstr.getOperand(1)))
-              .addReg(currentInstr.getOperand(2).getReg(), 
-                     getRegState(currentInstr.getOperand(2)));
+    fusedInstr
+        .addReg(currentInstr.getOperand(1).getReg(), 
+                getRegState(currentInstr.getOperand(1)))
+        .addReg(currentInstr.getOperand(2).getReg(), 
+                getRegState(currentInstr.getOperand(2)));
     
 
     fusedInstr.addReg(otherOperandReg, 
-                     getRegState(arithmeticInstr.getOperand(otherOperandIdx)));
+                      getRegState(arithmeticInstr.getOperand(otherOperandIdx)));
 
     instructionsForRemoval.push_back(&currentInstr);
     instructionsForRemoval.push_back(&arithmeticInstr);
@@ -136,7 +139,8 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
 }
 
 unsigned ArithmeticFusionOptimizer::selectFusedOperation(
-    unsigned multiplicationOp, unsigned arithmeticOp, bool multiplicationFirst) const {
+    unsigned multiplicationOp, unsigned arithmeticOp,
+    bool multiplicationFirst) const {
 
   switch (multiplicationOp) {
   case X86::MULSSrr:
@@ -182,5 +186,5 @@ bool ArithmeticFusionOptimizer::validateOperandPattern(
 } // namespace
 
 static RegisterPass<ArithmeticFusionOptimizer>
-    Z("x86-arith-fusion", "X86 Arithmetic Operations Fusion Pass",
-      false, false);
+    Z("x86-arith-fusion", "X86 Arithmetic Operations Fusion Pass", false,
+        false);
