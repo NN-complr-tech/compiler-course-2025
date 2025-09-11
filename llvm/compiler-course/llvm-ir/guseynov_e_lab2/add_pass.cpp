@@ -40,7 +40,7 @@ struct ReplaceAddPass : llvm::PassInfoMixin<ReplaceAddPass> {
         if (auto *BO = llvm::dyn_cast<llvm::BinaryOperator>(&I)) {
 
           if (llvm::isa<llvm::Constant>(BO->getOperand(0)) ||
-            llvm::isa<llvm::Constant>(BO->getOperand(1))) {
+              llvm::isa<llvm::Constant>(BO->getOperand(1))) {
             continue;
           }
 
@@ -58,9 +58,7 @@ struct ReplaceAddPass : llvm::PassInfoMixin<ReplaceAddPass> {
     for (llvm::Instruction *addInst : instructionsToReplace) {
       llvm::IRBuilder<> builder(addInst);
       llvm::Value *call = builder.CreateCall(
-      addFunc,
-      {addInst->getOperand(0), addInst->getOperand(1)}
-      );
+          addFunc, {addInst->getOperand(0), addInst->getOperand(1)});
       call->setName(addInst->getName());
 
       addInst->replaceAllUsesWith(call);
