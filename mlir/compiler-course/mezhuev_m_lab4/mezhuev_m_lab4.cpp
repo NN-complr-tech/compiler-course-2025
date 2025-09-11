@@ -18,12 +18,15 @@ public:
   }
 
   StringRef getDescription() const final {
-    return "Annotates SCF for loops with trip_count attribute indicating iteration count";
+    return "Annotates SCF for loops with trip_count attribute indicating "
+           "iteration count";
   }
 
   bool areLoopBoundsValid(int64_t lower, int64_t upper, int64_t step) {
-    if (step == 0) return false;
-    if (step > 0) return upper > lower;
+    if (step == 0)
+      return false;
+    if (step > 0)
+      return upper > lower;
     return upper < lower;
   }
 
@@ -34,7 +37,8 @@ public:
   }
 
   bool extractConstantValue(Value value, int64_t &result) {
-    if (auto constantOp = dyn_cast_or_null<arith::ConstantIndexOp>(value.getDefiningOp())) {
+    if (auto constantOp =
+            dyn_cast_or_null<arith::ConstantIndexOp>(value.getDefiningOp())) {
       result = constantOp.value();
       return true;
     }
@@ -43,14 +47,15 @@ public:
 
   void processSCFForLoop(scf::ForOp forOp) {
     int64_t lowerValue, upperValue, stepValue;
-    
+
     bool hasLower = extractConstantValue(forOp.getLowerBound(), lowerValue);
     bool hasUpper = extractConstantValue(forOp.getUpperBound(), upperValue);
     bool hasStep = extractConstantValue(forOp.getStep(), stepValue);
 
     if (hasLower && hasUpper && hasStep) {
       if (areLoopBoundsValid(lowerValue, upperValue, stepValue)) {
-        int64_t iterationCount = calculateTripCount(lowerValue, upperValue, stepValue);
+        int64_t iterationCount =
+            calculateTripCount(lowerValue, upperValue, stepValue);
         OpBuilder builder(forOp);
         forOp->setAttr("trip_count", builder.getI64IntegerAttr(iterationCount));
       }
@@ -59,9 +64,7 @@ public:
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
-    module.walk([this](scf::ForOp forOp) {
-      processSCFForLoop(forOp);
-    });
+    module.walk([this](scf::ForOp forOp) { processSCFForLoop(forOp); });
   }
 };
 
@@ -71,10 +74,8 @@ MLIR_DECLARE_EXPLICIT_TYPE_ID(ForLoopTripCountAnnotator)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(ForLoopTripCountAnnotator)
 
 mlir::PassPluginLibraryInfo getTripCountAnnotatorPluginInfo() {
-  return {
-      MLIR_PLUGIN_API_VERSION, "ForLoopTripCountAnnotator", "1.0",
-      []() { PassRegistration<ForLoopTripCountAnnotator>(); }
-  };
+  return {MLIR_PLUGIN_API_VERSION, "ForLoopTripCountAnnotator", "1.0",
+          []() { PassRegistration<ForLoopTripCountAnnotator>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
