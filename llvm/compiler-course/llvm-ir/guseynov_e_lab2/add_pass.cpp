@@ -24,7 +24,7 @@ struct ReplaceAddPass : llvm::PassInfoMixin<ReplaceAddPass> {
       return llvm::PreservedAnalyses::all();
     }
 
-    if (addFunc->arg_size() != 2 && addFunc->isVarArg()) {
+    if (addFunc->arg_size() != 2 || addFunc->isVarArg()) {
       return llvm::PreservedAnalyses::all();
     }
 
