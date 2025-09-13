@@ -69,9 +69,9 @@ private:
     std::string Normalized = Type;
 
     size_t PtrPos = Normalized.find("(*)");
-    if (PtrPos != std::string::npos) {
+    /*if (PtrPos != std::string::npos) {
       Normalized.erase(PtrPos, 3); // Удаляем "(*)"
-    }
+    }*/
 
     std::string WithoutModifiers = Normalized;
     WithoutModifiers.erase(
