@@ -9,16 +9,16 @@ using namespace llvm;
 
 namespace {
 struct MarkPureFunctionsPass : PassInfoMixin<MarkPureFunctionsPass> {
-  static bool doesFunctionAccessMemory(const Function& F) {
-    for (const auto& BB : F) {
-      for (const auto& I : BB) {
+  static bool doesFunctionAccessMemory(const Function &F) {
+    for (const auto &BB : F) {
+      for (const auto &I : BB) {
         if (I.mayReadOrWriteMemory())
           return true;
       }
     }
     return false;
   }
-  PreservedAnalyses run(Function& F, FunctionAnalysisManager&) {
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
     if (!F.hasFnAttribute("pure") && !doesFunctionAccessMemory(F)) {
       F.addFnAttr("pure");
     }
@@ -30,10 +30,10 @@ struct MarkPureFunctionsPass : PassInfoMixin<MarkPureFunctionsPass> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return { LLVM_PLUGIN_API_VERSION, "MarkPureFunctionsPass", "1.0",
-          [](PassBuilder& PB) {
+  return {LLVM_PLUGIN_API_VERSION, "MarkPureFunctionsPass", "1.0",
+          [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager& FPM,
+                [](StringRef Name, FunctionPassManager &FPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
                   if (Name == "mark-pure") {
                     FPM.addPass(MarkPureFunctionsPass{});
