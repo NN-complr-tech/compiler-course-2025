@@ -93,10 +93,9 @@ public:
         MIB.addReg(0, RegState::Implicit);
         MIB.addGlobalAddress(CounterGV, 0);
         MIB.addReg(0, RegState::Implicit);
-
         MIB.addImm(1);
 
-        MachineMemOperand *MMO = MMI.getMachineMemOperand(
+        MachineMemOperand *MMO = MF.getMachineMemOperand(
             MachinePointerInfo(CounterGV),
             MachineMemOperand::MOLoad | MachineMemOperand::MOStore |
                 MachineMemOperand::MOVolatile,
