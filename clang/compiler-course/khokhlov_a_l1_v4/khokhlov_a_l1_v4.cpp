@@ -14,12 +14,14 @@ class PrefixVisitor final : public clang::RecursiveASTVisitor<PrefixVisitor> {
 public:
   explicit PrefixVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
       : m_rewriter(rewriter) {}
-  
+
   bool VisitVarDecl(clang::VarDecl *varDecl) {
-    if (!varDecl) return true;
+    if (!varDecl)
+      return true;
 
     std::string prevName = varDecl->getName().str();
-    if (prevName.empty()) return true;
+    if (prevName.empty())
+      return true;
 
     std::string prefix;
     if (varDecl->isStaticLocal()) {
@@ -46,7 +48,8 @@ public:
 
   bool VisitParmVarDecl(clang::ParmVarDecl *parDecl) {
     std::string prevName = parDecl->getName().str();
-    if (prevName.empty()) return true;
+    if (prevName.empty())
+      return true;
 
     std::string newName = "param_" + prevName;
     m_rewriter.ReplaceText(parDecl->getLocation(), prevName.size(), newName);
@@ -56,7 +59,8 @@ public:
 
   bool VisitDeclRefExpr(clang::DeclRefExpr *declRef) {
     auto *varDecl = clang::dyn_cast<clang::VarDecl>(declRef->getDecl());
-    if (!varDecl) return true;
+    if (!varDecl)
+      return true;
 
     auto it = rewrittenDecl.find(varDecl);
     if (it != rewrittenDecl.end()) {
