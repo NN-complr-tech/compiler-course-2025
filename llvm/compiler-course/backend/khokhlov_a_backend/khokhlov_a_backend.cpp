@@ -20,8 +20,11 @@ private:
   const X86InstrInfo *InstrDesc = nullptr;
 
   bool transformBlock(MachineBasicBlock &BasicBlock);
-  std::optional<unsigned> pickFMAOpcode(unsigned MulCode, unsigned SubCode, bool MulResultOnLeft) const;
-  bool verifyRegisterUsage(const MachineInstr &MulInstruction, const MachineInstr &SubInstruction, bool &MulResultOnLeft) const;
+  std::optional<unsigned> pickFMAOpcode(unsigned MulCode, unsigned SubCode,
+                                        bool MulResultOnLeft) const;
+  bool verifyRegisterUsage(const MachineInstr &MulInstruction,
+                           const MachineInstr &SubInstruction,
+                           bool &MulResultOnLeft) const;
 };
 
 char FusedMulSubPass::ID = 0;
@@ -43,7 +46,8 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
   auto &RegInfo = BasicBlock.getParent()->getRegInfo();
   bool Changed = false;
 
-  for (auto Itr = BasicBlock.begin(), End = BasicBlock.end(); Itr != End; ++Itr) {
+  for (auto Itr = BasicBlock.begin(), End = BasicBlock.end(); Itr != End;
+       ++Itr) {
     MachineInstr &MulInstr = *Itr;
     unsigned MulOpcode = MulInstr.getOpcode();
 
@@ -84,7 +88,8 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
       continue;
 
     // Выбираем подходящий FMA opcode
-    auto FMAOpcode = pickFMAOpcode(MulOpcode, SubInstr.getOpcode(), MulResultOnLeft);
+    auto FMAOpcode =
+        pickFMAOpcode(MulOpcode, SubInstr.getOpcode(), MulResultOnLeft);
     if (!FMAOpcode)
       continue;
 
@@ -93,10 +98,12 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
     Register COperand = SubInstr.getOperand(CIndex).getReg();
 
     // Создаем новую FMA-инструкцию
-    BuildMI(BasicBlock, SubInstr, SubInstr.getDebugLoc(), InstrDesc->get(*FMAOpcode),
-            SubInstr.getOperand(0).getReg())
-        .addReg(MulInstr.getOperand(1).getReg(), getRegState(MulInstr.getOperand(1)))
-        .addReg(MulInstr.getOperand(2).getReg(), getRegState(MulInstr.getOperand(2)))
+    BuildMI(BasicBlock, SubInstr, SubInstr.getDebugLoc(),
+            InstrDesc->get(*FMAOpcode), SubInstr.getOperand(0).getReg())
+        .addReg(MulInstr.getOperand(1).getReg(),
+                getRegState(MulInstr.getOperand(1)))
+        .addReg(MulInstr.getOperand(2).getReg(),
+                getRegState(MulInstr.getOperand(2)))
         .addReg(COperand, getRegState(SubInstr.getOperand(CIndex)));
 
     ToDelete.push_back(&MulInstr);
@@ -110,7 +117,9 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
   return Changed;
 }
 
-std::optional<unsigned> FusedMulSubPass::pickFMAOpcode(unsigned MulCode, unsigned SubCode, bool MulResultOnLeft) const {
+std::optional<unsigned>
+FusedMulSubPass::pickFMAOpcode(unsigned MulCode, unsigned SubCode,
+                               bool MulResultOnLeft) const {
   // Случай сложения: -(a*b) + c
   if (SubCode == X86::VADDSSrr)
     return MulResultOnLeft ? X86::VFNMADD213SSr : X86::VFNMADD132SSr;
@@ -135,8 +144,8 @@ std::optional<unsigned> FusedMulSubPass::pickFMAOpcode(unsigned MulCode, unsigne
 }
 
 bool FusedMulSubPass::verifyRegisterUsage(const MachineInstr &MulInstruction,
-                                         const MachineInstr &SubInstruction,
-                                         bool &MulResultOnLeft) const {
+                                          const MachineInstr &SubInstruction,
+                                          bool &MulResultOnLeft) const {
   Register MulOutput = MulInstruction.getOperand(0).getReg();
   unsigned SubOpcode = SubInstruction.getOpcode();
   Register LeftOp = SubInstruction.getOperand(1).getReg();
@@ -170,5 +179,6 @@ bool FusedMulSubPass::verifyRegisterUsage(const MachineInstr &MulInstruction,
 } // namespace
 
 static RegisterPass<FusedMulSubPass>
-    Z("fused-mul-sub-khokhlov", "Combine multiply and subtract/add into VFMSUB213/VFNMADD213",
-      false, false);
+    Z("fused-mul-sub-khokhlov",
+      "Combine multiply and subtract/add into VFMSUB213/VFNMADD213", false,
+      false);
