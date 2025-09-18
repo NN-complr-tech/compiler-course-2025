@@ -13,7 +13,7 @@
 #     __m128 c = _mm_add_ps(a, b);
 #     *out = c;
 # }
-#
+# 
 # // simple double add using 128-bit SSE2
 # extern "C"
 # void simd_add_pd(__m128d a, __m128d b, __m128d *out) {
