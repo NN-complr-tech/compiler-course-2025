@@ -14,93 +14,87 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Passes/PassBuilder.h"
 
-#define DEBUG_TYPE "simd-instrument"
+#define DEBUG_TYPE "instrument-simd"
 
 using namespace llvm;
 
 namespace {
-
-  class SimdCounterPass : public MachineFunctionPass {
+class InstrumentSimdPass : public MachineFunctionPass {
   public:
     static char ID;
-    SimdCounterPass() : MachineFunctionPass(ID) {}
+    InstrumentSimdPass() : MachineFunctionPass(ID) {}
 
     bool doInitialization(Module& M) override {
-      LLVMContext& C = M.getContext();
-      Type* I64 = Type::getInt64Ty(C);
-      Constant* InitZero = ConstantInt::get(I64, 0);
+      LLVMContext& Ctx = M.getContext();
+      Type* Int64Ty = Type::getInt64Ty(Ctx);
+      Constant* Zero = ConstantInt::get(Int64Ty, 0);
 
-      auto* GV = new GlobalVariable(
-        M, I64, false,
-        GlobalValue::ExternalLinkage, InitZero, "simd_counter");
-
-      GV->setAlignment(MaybeAlign(8));
+      GlobalVariable* CounterGV =
+        new GlobalVariable(M, Int64Ty, false,
+          GlobalValue::ExternalLinkage, Zero, "simd_counter");
+      CounterGV->setAlignment(MaybeAlign(8));
       return true;
     }
 
     bool runOnMachineFunction(MachineFunction& MF) override {
       MachineModuleInfo& MMI = MF.getMMI();
       const Module* Mod = MMI.getModule();
-      const GlobalVariable* GV = Mod->getGlobalVariable("simd_counter");
-      if (!GV)
+      const GlobalVariable* CounterGV = Mod->getGlobalVariable("simd_counter");
+      if (!CounterGV)
         return false;
 
-      const X86Subtarget& SubT = MF.getSubtarget<X86Subtarget>();
-      const X86InstrInfo* TII = SubT.getInstrInfo();
+      const X86Subtarget& ST = MF.getSubtarget<X86Subtarget>();
+      const X86InstrInfo* TII = ST.getInstrInfo();
       MachineRegisterInfo& MRI = MF.getRegInfo();
       const X86RegisterInfo& RI = TII->getRegisterInfo();
-      const TargetRegisterClass* RC64 = RI.getRegClass(X86::GR64RegClassID);
+      const TargetRegisterClass* GPR64RC = RI.getRegClass(X86::GR64RegClassID);
 
       bool Changed = false;
 
-      for (auto& BB : MF) {
-        for (auto It = BB.begin(); It != BB.end(); ++It) {
-          MachineInstr& Inst = *It;
-
-          bool HasSimd = false;
-          for (const MachineOperand& Op : Inst.operands()) {
-            if (!Op.isReg())
+      for (auto& MBB : MF) {
+        for (auto MI_it = MBB.begin(), E = MBB.end(); MI_it != E; ++MI_it) {
+          MachineInstr& MI = *MI_it;
+          bool isSimd = false;
+          for (const MachineOperand& MO : MI.operands()) {
+            if (!MO.isReg())
               continue;
-
-            unsigned Reg = Op.getReg();
+            unsigned Reg = MO.getReg();
             Register R(Reg);
             if (!R.isVirtual())
               continue;
-
             const TargetRegisterClass* RC = MRI.getRegClass(Reg);
-            unsigned ClassID = RC->getID();
-            if (ClassID == X86::VR128RegClassID || ClassID == X86::VR256RegClassID ||
-              ClassID == X86::VR512RegClassID) {
-              HasSimd = true;
+            unsigned RCID = RC->getID();
+            if (RCID == X86::VR128RegClassID || RCID == X86::VR256RegClassID ||
+              RCID == X86::VR512RegClassID) {
+              isSimd = true;
               break;
             }
           }
-
-          if (!HasSimd)
+          if (!isSimd)
             continue;
 
-          DebugLoc DL = Inst.getDebugLoc();
-          auto InsertHere = std::next(It);
+          DebugLoc DL = MI.getDebugLoc();
+          auto InsertPt = std::next(MI_it);
 
-          Register CReg = MRI.createVirtualRegister(RC64);
+          Register CounterReg = MRI.createVirtualRegister(GPR64RC);
 
-          BuildMI(BB, InsertHere, DL, TII->get(X86::MOV64rm), CReg)
+          BuildMI(MBB, InsertPt, DL, TII->get(X86::MOV64rm), CounterReg)
             .addReg(X86::RIP, RegState::Implicit)
             .addImm(1)
             .addReg(0, RegState::Implicit)
-            .addGlobalAddress(GV, 0)
+            .addGlobalAddress(CounterGV, 0)
             .addReg(0, RegState::Implicit);
 
-          BuildMI(BB, InsertHere, DL, TII->get(X86::ADD64ri32), CReg)
-            .addReg(CReg)
+          BuildMI(MBB, InsertPt, DL, TII->get(X86::ADD64ri32), CounterReg)
+            .addReg(CounterReg)
             .addImm(1);
 
-          BuildMI(BB, InsertHere, DL, TII->get(X86::MOV64mr))
+          BuildMI(MBB, InsertPt, DL, TII->get(X86::MOV64mr))
             .addReg(X86::RIP, RegState::Implicit)
             .addImm(1)
             .addReg(0, RegState::Implicit)
-            .addGlobalAddress(GV, 0)
-            .addReg(CReg);
+            .addGlobalAddress(CounterGV, 0)
+            .addReg(CounterReg);
 
           Changed = true;
         }
@@ -110,9 +104,9 @@ namespace {
     }
   };
 
-  char SimdCounterPass::ID = 0;
+  char InstrumentSimdPass::ID = 0;
 
 } // namespace
 
-static llvm::RegisterPass<SimdCounterPass>
-X("simd-counter-pass", "Count SIMD instructions", false, false);
+static llvm::RegisterPass<InstrumentSimdPass>
+X("instrument-simd-x86", "Instrument SIMD instructions", false, false);

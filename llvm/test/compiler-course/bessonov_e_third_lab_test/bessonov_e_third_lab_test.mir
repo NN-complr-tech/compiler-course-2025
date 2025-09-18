@@ -2,23 +2,32 @@
 #  RUN:     --load=%llvmshlibdir/SimdPassCounter_Bessonov_Egor_FIIT2_BACKEND%shlibext \
 #  RUN:     -run-pass=instrument-simd-x86 %s -o - | FileCheck %s
 
-# test_simd.cpp (weak de-dup variant)
+# test_simd.cpp
 #
 # #include <immintrin.h>
-#
-# extern "C" void simd_add_ps(__m128 a, __m128 b, __m128 *out) {
-#   __m128 c = _mm_add_ps(a, b);
-#   *out = c;
+# 
+# // simple float add using 128-bit SSE
+# extern "C"
+# void simd_add_ps(__m128 a, __m128 b, __m128 *out) {
+#     // this maps to vaddps xmm*, xmm*, xmm*
+#     __m128 c = _mm_add_ps(a, b);
+#     *out = c;
 # }
-#
-# extern "C" void simd_add_pd(__m128d a, __m128d b, __m128d *out) {
-#   __m128d c = _mm_add_pd(a, b);
-#   *out = c;
+# 
+# // simple double add using 128-bit SSE2
+# extern "C"
+# void simd_add_pd(__m128d a, __m128d b, __m128d *out) {
+#     // this maps to vaddpd xmm*, xmm*, xmm*
+#     __m128d c = _mm_add_pd(a, b);
+#     *out = c;
 # }
-#
-# extern "C" void simd256_add_ps(__m256 a, __m256 b, __m256 *out) {
-#   __m256 c = _mm256_add_ps(a, b);
-#   *out = c;
+# 
+# // float add using 256-bit AVX
+# extern "C"
+# void simd256_add_ps(__m256 a, __m256 b, __m256 *out) {
+#     // this maps to vaddps ymm*, ymm*, ymm*
+#     __m256 c = _mm256_add_ps(a, b);
+#     *out = c;
 # }
 
 --- |
@@ -144,7 +153,7 @@ body:             |
     ; CHECK-NEXT: %7:gr64 = ADD64ri32 %7, 1, implicit-def $eflags
     ; CHECK-NEXT: MOV64mr 1, @simd_counter, %7, implicit $rip, implicit $noreg
     ; CHECK-NEXT: RET 0
-
+  
     %2:gr64 = COPY $rdi
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -232,7 +241,7 @@ body:             |
     ; CHECK-NEXT: %7:gr64 = ADD64ri32 %7, 1, implicit-def $eflags
     ; CHECK-NEXT: MOV64mr 1, @simd_counter, %7, implicit $rip, implicit $noreg
     ; CHECK-NEXT: RET 0
-
+  
     %2:gr64 = COPY $rdi
     %1:vr128 = COPY $xmm1
     %0:vr128 = COPY $xmm0
@@ -320,7 +329,7 @@ body:             |
     ; CHECK-NEXT: %7:gr64 = ADD64ri32 %7, 1, implicit-def $eflags
     ; CHECK-NEXT: MOV64mr 1, @simd_counter, %7, implicit $rip, implicit $noreg
     ; CHECK-NEXT: RET 0
-
+  
     %2:gr64 = COPY $rdi
     %1:vr256 = COPY $ymm1
     %0:vr256 = COPY $ymm0
