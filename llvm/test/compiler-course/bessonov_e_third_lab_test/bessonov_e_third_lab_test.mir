@@ -336,4 +336,3 @@ body:             |
     %3:vr256 = nofpexcept VADDPSYrr %0, %1, implicit $mxcsr
     VMOVAPSYmr %2, 1, $noreg, 0, $noreg, killed %3 :: (store (s256) into %ir.2, !tbaa !5)
     RET 0
-...
