@@ -4,7 +4,7 @@
 @sync_var = global i32 0
 
 
-; CHECK: @add_ints
+; CHECK-LABEL: @add_ints
 ; CHECK-SAME: #0
 define i32 @add_ints(i32 %x, i32 %y) {
 entry:
@@ -12,7 +12,7 @@ entry:
   ret i32 %sum
 }
 
-; CHECK: @division
+; CHECK-LABEL: @division
 ; CHECK-SAME: #0
 define float @division(i32 %a, float %b) {
 entry:
@@ -22,7 +22,7 @@ entry:
 }
 
 
-; CHECK: @multiply
+; CHECK-LABEL: @multiply
 ; CHECK-NOT: #0
 define float @multiply(float %val) {
 entry:
@@ -31,7 +31,7 @@ entry:
   ret float %res
 }
 
-; CHECK: @convert
+; CHECK-LABEL: @convert
 ; CHECK-NOT: #0
 define float @convert(ptr %ptr) {
 entry:
@@ -40,7 +40,7 @@ entry:
   ret float %c
 }
 
-; CHECK: @volatile_test
+; CHECK-LABEL: @volatile_test
 ; CHECK-NOT: #0
 define float @volatile_test() {
 entry:
@@ -53,7 +53,7 @@ entry:
   ret float %conv
 }
 
-; CHECK: @atomic_op
+; CHECK-LABEL: @atomic_op
 ; CHECK-NOT: #0
 define void @atomic_op() {
 entry:
@@ -61,7 +61,7 @@ entry:
   ret void
 }
 
-; CHECK: @atomic_read
+; CHECK-LABEL: @atomic_read
 ; CHECK-NOT: #0
 define i32 @atomic_read() {
 entry:
@@ -69,6 +69,6 @@ entry:
   ret i32 %r
 }
 
-; CHECK: #0
+; CHECK-LABEL: #0
 ; CHECK-SAME: pure
 attributes #0 = { "pure" }
