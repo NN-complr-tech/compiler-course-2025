@@ -20,7 +20,8 @@ using namespace llvm;
 
 namespace {
 
-static bool touchesVectorReg(const MachineInstr &MI, const MachineRegisterInfo &MRI) {
+static bool touchesVectorReg(const MachineInstr &MI,
+                             const MachineRegisterInfo &MRI) {
   for (const MachineOperand &Op : MI.operands()) {
     if (!Op.isReg())
       continue;
@@ -29,7 +30,8 @@ static bool touchesVectorReg(const MachineInstr &MI, const MachineRegisterInfo &
       continue;
     const TargetRegisterClass *RC = MRI.getRegClass(Reg);
     const unsigned RCID = RC->getID();
-    if (RCID == X86::VR128RegClassID || RCID == X86::VR256RegClassID || RCID == X86::VR512RegClassID)
+    if (RCID == X86::VR128RegClassID || RCID == X86::VR256RegClassID ||
+        RCID == X86::VR512RegClassID)
       return true;
   }
   return false;
@@ -44,9 +46,8 @@ public:
     LLVMContext &Ctx = M.getContext();
     Type *I64 = Type::getInt64Ty(Ctx);
     Constant *Zero = ConstantInt::get(I64, 0);
-    auto *GV = new GlobalVariable(M, I64, false,
-                                  GlobalValue::ExternalLinkage, Zero,
-                                  "simd_counter");
+    auto *GV = new GlobalVariable(M, I64, false, GlobalValue::ExternalLinkage,
+                                  Zero, "simd_counter");
     GV->setAlignment(MaybeAlign(8));
     return true;
   }
@@ -103,7 +104,7 @@ public:
 
 char InstrumentSimdPass::ID = 0;
 
-} 
+} // namespace
 
 static llvm::RegisterPass<InstrumentSimdPass>
     X("instrument-simd-x86", "Instrument SIMD instructions", false, false);
