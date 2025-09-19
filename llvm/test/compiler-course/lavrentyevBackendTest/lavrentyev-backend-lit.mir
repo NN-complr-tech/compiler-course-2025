@@ -1,0 +1,420 @@
+#  RUN: llc -mattr=+fma \
+#  RUN:     --load=%llvmshlibdir/FMSUBComposePass_Lavrentyev_Alexey_FIIT3_BACKEND%shlibext \
+#  RUN:     -run-pass=fmsub-compose-x86 %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'tests.ll'
+  source_filename = "test.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @testPackedPS(ptr nocapture noundef %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #0 {
+    %4 = load float, ptr %1, align 4, !tbaa !5
+    %5 = load float, ptr %2, align 4, !tbaa !5
+    %6 = fmul float %4, %5
+    %7 = load float, ptr %0, align 4, !tbaa !5
+    %8 = fsub float %7, %6
+    store float %8, ptr %0, align 4, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @testPackedPD(ptr nocapture noundef %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #0 {
+    %4 = load double, ptr %1, align 8, !tbaa !9
+    %5 = load double, ptr %2, align 8, !tbaa !9
+    %6 = fmul double %4, %5
+    %7 = load double, ptr %0, align 8, !tbaa !9
+    %8 = fsub double %7, %6
+    store double %8, ptr %0, align 8, !tbaa !9
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @testScalarSS(ptr nocapture noundef %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #0 {
+    %4 = load float, ptr %1, align 4, !tbaa !5
+    %5 = load float, ptr %2, align 4, !tbaa !5
+    %6 = fmul float %4, %5
+    %7 = load float, ptr %0, align 4, !tbaa !5
+    %8 = fsub float %7, %6
+    store float %8, ptr %0, align 4, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @testScalarSD(ptr nocapture noundef %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #0 {
+    %4 = load double, ptr %1, align 8, !tbaa !9
+    %5 = load double, ptr %2, align 8, !tbaa !9
+    %6 = fmul double %4, %5
+    %7 = load double, ptr %0, align 8, !tbaa !9
+    %8 = fsub double %7, %6
+    store double %8, ptr %0, align 8, !tbaa !9
+    ret void
+  }
+  
+  attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87,-avx" "tune-cpu"="generic" }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 2}
+  !4 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
+  !5 = !{!6, !6, i64 0}
+  !6 = !{!"float", !7, i64 0}
+  !7 = !{!"omnipotent char", !8, i64 0}
+  !8 = !{!"Simple C++ TBAA"}
+  !9 = !{!10, !10, i64 0}
+  !10 = !{!"double", !7, i64 0}
+
+...
+---
+
+# CHECK-LABEL: name: testPackedPS
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
+# CHECK-NEXT: %6:fr32 = VFMSUB213SSm %2, %5, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
+# CHECK-NEXT: %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
+# CHECK-NEXT: MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
+# CHECK-NEXT: RET 0
+
+name:            testPackedPS
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: fr32, preferred-register: '' }
+  - { id: 4, class: fr32, preferred-register: '' }
+  - { id: 5, class: fr32, preferred-register: '' }
+  - { id: 6, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
+    %4:fr32 = nofpexcept MULSSrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
+    %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
+    %6:fr32 = nofpexcept SUBSSrr %5, killed %4, implicit $mxcsr
+    MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
+    RET 0
+
+...
+---
+
+# CHECK-LABEL: name: testPackedPD
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
+# CHECK-NEXT: %6:fr64 = VFMSUB213SDm %2, %5, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
+# CHECK-NEXT: %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
+# CHECK-NEXT: MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
+# CHECK-NEXT: RET 0
+
+name:            testPackedPD
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: fr64, preferred-register: '' }
+  - { id: 4, class: fr64, preferred-register: '' }
+  - { id: 5, class: fr64, preferred-register: '' }
+  - { id: 6, class: fr64, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
+    %4:fr64 = nofpexcept MULSDrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
+    %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
+    %6:fr64 = nofpexcept SUBSDrr %5, killed %4, implicit $mxcsr
+    MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
+    RET 0
+
+...
+---
+
+# CHECK-LABEL: name: testScalarSS
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
+# CHECK-NEXT: %6:fr32 = VFMSUB213SSm %2, %5, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
+# CHECK-NEXT: %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
+# CHECK-NEXT: MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
+# CHECK-NEXT: RET 0
+
+name:            testScalarSS
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: fr32, preferred-register: '' }
+  - { id: 4, class: fr32, preferred-register: '' }
+  - { id: 5, class: fr32, preferred-register: '' }
+  - { id: 6, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:fr32 = MOVSSrm_alt %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, !tbaa !5)
+    %4:fr32 = nofpexcept MULSSrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s32) from %ir.2, !tbaa !5)
+    %5:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.0, !tbaa !5)
+    %6:fr32 = nofpexcept SUBSSrr %5, killed %4, implicit $mxcsr
+    MOVSSmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s32) into %ir.0, !tbaa !5)
+    RET 0
+
+...
+---
+
+# CHECK-LABEL: name: testScalarSD
+# CHECK: %2:gr64 = COPY $rdx
+# CHECK-NEXT: %1:gr64 = COPY $rsi
+# CHECK-NEXT: %0:gr64 = COPY $rdi
+# CHECK-NEXT: %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
+# CHECK-NEXT: %6:fr64 = VFMSUB213SDm %2, %5, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
+# CHECK-NEXT: %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
+# CHECK-NEXT: MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
+# CHECK-NEXT: RET 0
+
+name:            testScalarSD
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: fr64, preferred-register: '' }
+  - { id: 4, class: fr64, preferred-register: '' }
+  - { id: 5, class: fr64, preferred-register: '' }
+  - { id: 6, class: fr64, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:fr64 = MOVSDrm_alt %1, 1, $noreg, 0, $noreg :: (load (s64) from %ir.1, !tbaa !9)
+    %4:fr64 = nofpexcept MULSDrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s64) from %ir.2, !tbaa !9)
+    %5:fr64 = MOVSDrm_alt %0, 1, $noreg, 0, $noreg :: (load (s64) from %ir.0, !tbaa !9)
+    %6:fr64 = nofpexcept SUBSDrr %5, killed %4, implicit $mxcsr
+    MOVSDmr %0, 1, $noreg, 0, $noreg, killed %6 :: (store (s64) into %ir.0, !tbaa !9)
+    RET 0
+
+...
