@@ -5,10 +5,6 @@
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
-#include "llvm/CodeGen/MachineInstrBuilder.h"
-#include "llvm/CodeGen/MachineRegisterInfo.h"
-#include "llvm/Passes/PassBuilder.h"
-#include <functional>
 
 namespace {
 class CombineLogicPass : public llvm::MachineFunctionPass {
