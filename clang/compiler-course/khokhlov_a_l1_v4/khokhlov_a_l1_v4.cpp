@@ -12,7 +12,7 @@ class PrefixVisitor final : public clang::RecursiveASTVisitor<PrefixVisitor> {
   std::unordered_map<clang::VarDecl *, std::string> rewrittenDecl;
 
 public:
-  explicit PrefixVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
+  PrefixVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
       : m_rewriter(rewriter) {}
 
   bool VisitVarDecl(clang::VarDecl *varDecl) {
@@ -41,7 +41,7 @@ public:
     if (!prefix.empty()) {
       std::string newName = prefix + prevName;
       m_rewriter.ReplaceText(varDecl->getLocation(), prevName.size(), newName);
-      rewrittenDecl[varDecl] = newName;
+      rewrittenDecl[varDecl] = std::move(newName);
     }
     return true;
   }
@@ -53,7 +53,7 @@ public:
 
     std::string newName = "param_" + prevName;
     m_rewriter.ReplaceText(parDecl->getLocation(), prevName.size(), newName);
-    rewrittenDecl[parDecl] = newName;
+    rewrittenDecl[parDecl] = std::move(newName);
     return true;
   }
 
@@ -105,4 +105,4 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<PrefixAction>
-    X("PrefixPlugin_Khokhlov_andrey_FIIT2_ClangAST", "Some Description plugin");
+    X("PrefixPlugin_Khokhlov_andrey_FIIT2_ClangAST", "tЕhis plugin adds the variable's type to the variable's prefix: local_, static_, global_, extern_");
