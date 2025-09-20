@@ -1,0 +1,523 @@
+#  RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+#  RUN:     --load=%llvmshlibdir/InstSimdPass_Lysov_Ivan_FIIT3_BACKEND%shlibext \
+#  RUN:     -run-pass=inst-simd-x86 %s -o - | FileCheck %s
+
+# test.cpp
+# // SSE2: сложение двух double‑векторов (vaddpd)
+# NOINLINE void simd_add_pd(double* out, const double* a, const double* b) {
+#     __m128d va = _mm_load_pd(a);
+#     __m128d vb = _mm_load_pd(b);
+#     __m128d vc = _mm_add_pd(va, vb);
+#     _mm_store_pd(out, vc);
+# }
+# 
+# // SSE2: xor двух 128‑бит целых (pxor)
+# NOINLINE void simd_xor_si128(int32_t* out, const int32_t* a, const int32_t* b) {
+#     __m128i va = _mm_load_si128(reinterpret_cast<const __m128i*>(a));
+#     __m128i vb = _mm_load_si128(reinterpret_cast<const __m128i*>(b));
+#     __m128i vc = _mm_xor_si128(va, vb);
+#     _mm_store_si128(reinterpret_cast<__m128i*>(out), vc);
+# }
+# 
+# // SSE: вычитание четырёх float‑элементов (vsubps)
+# NOINLINE void simd_sub_ps(float* out, const float* a, const float* b) {
+#     __m128 va = _mm_load_ps(a);
+#     __m128 vb = _mm_load_ps(b);
+#     __m128 vc = _mm_sub_ps(va, vb);
+#     _mm_store_ps(out, vc);
+# }
+# 
+# // AVX: умножение восьми float‑элементов (vmulps)
+# NOINLINE void simd_mul_ps(float* out, const float* a, const float* b) {
+#     __m256 va = _mm256_load_ps(a);
+#     __m256 vb = _mm256_load_ps(b);
+#     __m256 vc = _mm256_mul_ps(va, vb);
+#     _mm256_store_ps(out, vc);
+# }
+# 
+# // AVX: сложение четырёх double‑элементов (vaddpd)
+# NOINLINE void simd_add_pd256(double* out, const double* a, const double* b) {
+#     __m256d va = _mm256_load_pd(a);
+#     __m256d vb = _mm256_load_pd(b);
+#     __m256d vc = _mm256_add_pd(va, vb);
+#     _mm256_store_pd(out, vc);
+# }
+
+
+--- |
+  ; ModuleID = 'test.ll'
+  source_filename = "test.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @_Z11simd_add_pdPdPKdS1_(ptr nocapture noundef writeonly %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #0 {
+    %4 = load <2 x double>, ptr %1, align 16, !tbaa !5
+    %5 = load <2 x double>, ptr %2, align 16, !tbaa !5
+    %6 = fadd <2 x double> %4, %5
+    store <2 x double> %6, ptr %0, align 16, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @_Z14simd_xor_si128PiPKiS1_(ptr nocapture noundef writeonly %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #0 {
+    %4 = load <2 x i64>, ptr %1, align 16, !tbaa !5
+    %5 = load <2 x i64>, ptr %2, align 16, !tbaa !5
+    %6 = xor <2 x i64> %5, %4
+    store <2 x i64> %6, ptr %0, align 16, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @_Z11simd_sub_psPfPKfS1_(ptr nocapture noundef writeonly %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #0 {
+    %4 = load <4 x float>, ptr %1, align 16, !tbaa !5
+    %5 = load <4 x float>, ptr %2, align 16, !tbaa !5
+    %6 = fsub <4 x float> %4, %5
+    store <4 x float> %6, ptr %0, align 16, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @_Z11simd_mul_psPfPKfS1_(ptr nocapture noundef writeonly %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #1 {
+    %4 = load <8 x float>, ptr %1, align 32, !tbaa !5
+    %5 = load <8 x float>, ptr %2, align 32, !tbaa !5
+    %6 = fmul <8 x float> %4, %5
+    store <8 x float> %6, ptr %0, align 32, !tbaa !5
+    ret void
+  }
+  
+  ; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable
+  define dso_local void @_Z14simd_add_pd256PdPKdS1_(ptr nocapture noundef writeonly %0, ptr nocapture noundef readonly %1, ptr nocapture noundef readonly %2) local_unnamed_addr #1 {
+    %4 = load <4 x double>, ptr %1, align 32, !tbaa !5
+    %5 = load <4 x double>, ptr %2, align 32, !tbaa !5
+    %6 = fadd <4 x double> %4, %5
+    store <4 x double> %6, ptr %0, align 32, !tbaa !5
+    ret void
+  }
+  
+  attributes #0 = { mustprogress nofree noinline norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx" "tune-cpu"="generic" }
+  attributes #1 = { mustprogress nofree noinline norecurse nosync nounwind willreturn memory(argmem: readwrite) uwtable "min-legal-vector-width"="256" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+avx" "tune-cpu"="generic" }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 2}
+  !4 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
+  !5 = !{!6, !6, i64 0}
+  !6 = !{!"omnipotent char", !7, i64 0}
+  !7 = !{!"Simple C++ TBAA"}
+
+...
+---
+# CHECK-LABEL: name: _Z11simd_add_pdPdPKdS1_
+name:            _Z11simd_add_pdPdPKdS1_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+
+    ; CHECK: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %3:vr128 = VMOVAPDrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
+    ; CHECK-NEXT: %4:vr128 = nofpexcept VADDPDrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s128) from %ir.2, !tbaa !5)
+    ; CHECK-NEXT: VMOVAPDmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: RET 0
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:vr128 = VMOVAPDrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
+    %4:vr128 = nofpexcept VADDPDrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s128) from %ir.2, !tbaa !5)
+    VMOVAPDmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
+    RET 0
+
+...
+---
+# CHECK-LABEL: name: _Z14simd_xor_si128PiPKiS1_
+name:            _Z14simd_xor_si128PiPKiS1_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+
+    ; CHECK: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %3:vr128 = VMOVDQArm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.2, !tbaa !5)
+    ; CHECK-NEXT: %4:vr128 = VPXORrm killed %3, %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
+    ; CHECK-NEXT: VMOVDQAmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: RET 0
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:vr128 = VMOVDQArm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.2, !tbaa !5)
+    %4:vr128 = VPXORrm killed %3, %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
+    VMOVDQAmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
+    RET 0
+
+...
+---
+# CHECK-LABEL: name: _Z11simd_sub_psPfPKfS1_
+name:            _Z11simd_sub_psPfPKfS1_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+  - { id: 4, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+
+    ; CHECK: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %3:vr128 = VMOVAPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
+    ; CHECK-NEXT: %4:vr128 = nofpexcept VSUBPSrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s128) from %ir.2, !tbaa !5)
+    ; CHECK-NEXT: VMOVAPSmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: RET 0
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:vr128 = VMOVAPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.1, !tbaa !5)
+    %4:vr128 = nofpexcept VSUBPSrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s128) from %ir.2, !tbaa !5)
+    VMOVAPSmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s128) into %ir.0, !tbaa !5)
+    RET 0
+
+...
+---
+# CHECK-LABEL: name: _Z11simd_mul_psPfPKfS1_
+name:            _Z11simd_mul_psPfPKfS1_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr256, preferred-register: '' }
+  - { id: 4, class: vr256, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+
+    ; CHECK: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %3:vr256 = VMOVAPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.1, !tbaa !5)
+    ; CHECK-NEXT: %4:vr256 = nofpexcept VMULPSYrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.2, !tbaa !5)
+    ; CHECK-NEXT: VMOVAPSYmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s256) into %ir.0, !tbaa !5)
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: RET 0
+  
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:vr256 = VMOVAPSYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.1, !tbaa !5)
+    %4:vr256 = nofpexcept VMULPSYrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.2, !tbaa !5)
+    VMOVAPSYmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s256) into %ir.0, !tbaa !5)
+    RET 0
+
+...
+---
+# CHECK-LABEL: name: _Z14simd_add_pd256PdPKdS1_
+name:            _Z14simd_add_pd256PdPKdS1_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr64, preferred-register: '' }
+  - { id: 3, class: vr256, preferred-register: '' }
+  - { id: 4, class: vr256, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+  - { reg: '$rdx', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $rdi, $rsi, $rdx
+
+    ; CHECK: %2:gr64 = COPY $rdx
+    ; CHECK-NEXT: %1:gr64 = COPY $rsi
+    ; CHECK-NEXT: %0:gr64 = COPY $rdi
+    ; CHECK-NEXT: %3:vr256 = VMOVAPDYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.1, !tbaa !5)
+    ; CHECK-NEXT: %4:vr256 = nofpexcept VADDPDYrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.2, !tbaa !5)
+    ; CHECK-NEXT: VMOVAPDYmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s256) into %ir.0, !tbaa !5)
+    ; CHECK-NEXT: ADD64mi32 1, @simd_counter, 3, implicit-def $eflags, implicit $rip, implicit $noreg, implicit $noreg
+    ; CHECK-NEXT: RET 0
+
+    %2:gr64 = COPY $rdx
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %3:vr256 = VMOVAPDYrm %1, 1, $noreg, 0, $noreg :: (load (s256) from %ir.1, !tbaa !5)
+    %4:vr256 = nofpexcept VADDPDYrm killed %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s256) from %ir.2, !tbaa !5)
+    VMOVAPDYmr %0, 1, $noreg, 0, $noreg, killed %4 :: (store (s256) into %ir.0, !tbaa !5)
+    RET 0
+
+...
