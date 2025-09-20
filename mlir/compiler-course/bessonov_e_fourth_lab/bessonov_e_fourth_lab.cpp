@@ -1,5 +1,5 @@
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/PatternMatch.h"
@@ -23,12 +23,13 @@ static int64_t ceilDivAbs(int64_t a, int64_t b) {
 }
 
 static bool sameDirection(int64_t delta, int64_t step) {
-  if (step == 0 || delta == 0) return false;
+  if (step == 0 || delta == 0)
+    return false;
   return (delta > 0 && step > 0) || (delta < 0 && step < 0);
 }
 
 class AnnotateTripCountPass
-  : public PassWrapper<AnnotateTripCountPass, OperationPass<ModuleOp>> {
+    : public PassWrapper<AnnotateTripCountPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
     return "AnnotateTripCount_Bessonov_Egor_FIIT2_MLIR";
@@ -36,38 +37,38 @@ public:
 
   StringRef getDescription() const final {
     return "Attach a `trip_count` attribute to scf.for when the iteration "
-      "count is statically computable.";
+           "count is statically computable.";
   }
 
-void runOnOperation() override {
-  ModuleOp module = getOperation();
-  OpBuilder builder(module.getContext());
+  void runOnOperation() override {
+    ModuleOp module = getOperation();
+    OpBuilder builder(module.getContext());
 
-  module.walk([&](scf::ForOp forOp) {
-    if (forOp->hasAttr("trip_count"))
-      return;
+    module.walk([&](scf::ForOp forOp) {
+      if (forOp->hasAttr("trip_count"))
+        return;
 
-    std::optional<int64_t> lb = constIndex(forOp.getLowerBound());
-    std::optional<int64_t> ub = constIndex(forOp.getUpperBound());
-    std::optional<int64_t> st = constIndex(forOp.getStep());
+      std::optional<int64_t> lb = constIndex(forOp.getLowerBound());
+      std::optional<int64_t> ub = constIndex(forOp.getUpperBound());
+      std::optional<int64_t> st = constIndex(forOp.getStep());
 
-    if (!lb || !ub || !st)
-      return;
+      if (!lb || !ub || !st)
+        return;
 
-    int64_t delta = *ub - *lb;
-    int64_t step = *st;
+      int64_t delta = *ub - *lb;
+      int64_t step = *st;
 
-    if (!sameDirection(delta, step))
-      return;
+      if (!sameDirection(delta, step))
+        return;
 
-    int64_t trips = ceilDivAbs(delta, step);
-    if (trips <= 0)
-      return;
+      int64_t trips = ceilDivAbs(delta, step);
+      if (trips <= 0)
+        return;
 
-    builder.setInsertionPoint(forOp);
-    forOp->setAttr("trip_count", builder.getI64IntegerAttr(trips));
-    });
-}
+      builder.setInsertionPoint(forOp);
+      forOp->setAttr("trip_count", builder.getI64IntegerAttr(trips));
+      });
+  }
 };
 
 } // namespace
@@ -77,7 +78,7 @@ MLIR_DEFINE_EXPLICIT_TYPE_ID(AnnotateTripCountPass)
 
 mlir::PassPluginLibraryInfo getAnnotateTripCountPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "AnnotateTripCount", "1.0",
-          []() { PassRegistration<AnnotateTripCountPass>(); } };
+          []() { PassRegistration<AnnotateTripCountPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
