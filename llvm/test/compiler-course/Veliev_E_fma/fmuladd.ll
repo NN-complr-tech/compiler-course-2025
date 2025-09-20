@@ -1,4 +1,3 @@
-
 ; RUN: opt -load-pass-plugin %llvmshlibdir/FMAPass_VelievElvin_FIIT1_LLVM_IR%pluginext \
 ; RUN: -passes="fmapass" -S %s | FileCheck %s
 
@@ -71,9 +70,9 @@ define dso_local noundef float @_Z2f6fff(float noundef %0, float noundef %1, flo
 
 ; TEST 7. Same multiplication used twice, cannot fuse
 ; CHECK-LABEL: @_Z2f7ddd
-; CHECK: fmul double %0, %1
-; CHECK: fadd double
-; CHECK: fadd double
+; CHECK-NEXT: fmul double %0, %1
+; CHECK-NEXT: fadd double
+; CHECK-NEXT: fadd double
 define dso_local noundef double @_Z2f7ddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr {
   %mul = fmul double %0, %1
   %add1 = fadd double %mul, %2
@@ -83,9 +82,9 @@ define dso_local noundef double @_Z2f7ddd(double noundef %0, double noundef %1, 
 
 ; TEST 8. Type mismatch float * float + double
 ; CHECK-LABEL: @_Z2f8ffd
-; CHECK: fmul float %0, %1
-; CHECK: fpext float %{{.*}} to double
-; CHECK: fadd double
+; CHECK-NEXT: fmul float %0, %1
+; CHECK-NEXT: fpext float %{{.*}} to double
+; CHECK-NEXT: fadd double
 define dso_local noundef double @_Z2f8ffd(float noundef %0, float noundef %1, double noundef %2) local_unnamed_addr {
   %mul = fmul float %0, %1
   %ext = fpext float %mul to double
@@ -95,7 +94,7 @@ define dso_local noundef double @_Z2f8ffd(float noundef %0, float noundef %1, do
 
 ; TEST 9. Integer multiplication + addition, no FMA
 ; CHECK-LABEL: @_Z2f9iii
-; CHECK: mul nsw i32 %0, %1
+; CHECK-NEXT: mul nsw i32 %0, %1
 ; CHECK-NEXT: add nsw i32 %{{.*}}, %2
 define dso_local noundef i32 @_Z2f9iii(i32 noundef %0, i32 noundef %1, i32 noundef %2) local_unnamed_addr {
   %mul = mul nsw i32 %0, %1
@@ -105,7 +104,7 @@ define dso_local noundef i32 @_Z2f9iii(i32 noundef %0, i32 noundef %1, i32 nound
 
 ; TEST 10. Integer multiplication + addition, no FMA
 ; CHECK-LABEL: @_Z3f10xxx
-; CHECK: mul nsw i64 %0, %1
+; CHECK-NEXT: mul nsw i64 %0, %1
 ; CHECK-NEXT: add nsw i64 %{{.*}}, %2
 define dso_local noundef i64 @_Z3f10xxx(i64 noundef %0, i64 noundef %1, i64 noundef %2) local_unnamed_addr {
   %mul = mul nsw i64 %0, %1
