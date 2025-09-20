@@ -105,4 +105,6 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<PrefixAction>
-    X("PrefixPlugin_Khokhlov_andrey_FIIT2_ClangAST", "tЕhis plugin adds the variable's type to the variable's prefix: local_, static_, global_, extern_");
+    X("PrefixPlugin_Khokhlov_andrey_FIIT2_ClangAST",
+      "tЕhis plugin adds the variable's type to the variable's prefix: local_, "
+      "static_, global_, extern_");
