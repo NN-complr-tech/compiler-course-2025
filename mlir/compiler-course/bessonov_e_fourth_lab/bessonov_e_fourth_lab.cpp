@@ -67,7 +67,7 @@ public:
 
       builder.setInsertionPoint(forOp);
       forOp->setAttr("trip_count", builder.getI64IntegerAttr(trips));
-      });
+    });
   }
 };
 
