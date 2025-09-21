@@ -48,9 +48,9 @@ public:
       if (forOp->hasAttr("trip_count"))
         return;
 
-      std::optional<int64_t> lb = constIndex(forOp.getLowerBound());
-      std::optional<int64_t> ub = constIndex(forOp.getUpperBound());
-      std::optional<int64_t> st = constIndex(forOp.getStep());
+      auto lb = constIndex(forOp.getLowerBound());
+      auto ub = constIndex(forOp.getUpperBound());
+      auto st = constIndex(forOp.getStep());
 
       if (!lb || !ub || !st)
         return;
