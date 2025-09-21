@@ -1,0 +1,14 @@
+// RUN: llc -mtriple=x86_64 -O0 -start-after=isel -stop-before=virtregrewriter -run-pass=cc-remove-copy -o - %s | FileCheck %s
+
+# Machine code for function foo: Isel output
+---
+name:            foo
+tracksRegLiveness: true
+body:             |
+  bb.0:
+    %0:vgpr = COPY %0:vgpr            ; redundant copy, same src/dst
+    %1:vgpr = COPY %0:vgpr            ; real copy
+    RET 0
+...
+# CHECK: %1:vgpr = COPY %0:vgpr
+# CHECK-NOT: %0:vgpr = COPY %0:vgpr
