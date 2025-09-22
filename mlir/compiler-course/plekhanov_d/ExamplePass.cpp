@@ -22,8 +22,8 @@ int computeMaxNestingInRegion(mlir::Region &region) {
                     mlir::affine::AffineIfOp>(&op)) {
         depthForOp = 1;
         for (mlir::Region &subRegion : op.getRegions()) {
-          depthForOp = std::max(depthForOp,
-                                1 + computeMaxNestingInRegion(subRegion));
+          depthForOp = 
+              std::max(depthForOp, 1 + computeMaxNestingInRegion(subRegion));
         }
       }
 
