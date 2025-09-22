@@ -5,13 +5,17 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
+#include <functional>
+#include <optional>
+#include <sstream>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace {
 
-static std::string accessToString(clang::AccessSpecifier AS) {
+static std::optional<std::string> accessToString(clang::AccessSpecifier AS) {
   switch (AS) {
   case clang::AS_public:
     return "public";
@@ -20,9 +24,9 @@ static std::string accessToString(clang::AccessSpecifier AS) {
   case clang::AS_private:
     return "private";
   case clang::AS_none:
-    return "none";
+    return std::nullopt;
   }
-  return "none";
+  return std::nullopt;
 }
 
 static clang::AccessSpecifier normalizeBaseAS(clang::AccessSpecifier AS) {
@@ -113,9 +117,9 @@ private:
       if (BS.isVirtual()) {
         llvm::outs() << "virtual ";
       }
-      std::string accStr = accessToString(BS.getAccessSpecifier());
-      if (accStr != "none") {
-        llvm::outs() << accStr << " ";
+      auto accOpt = accessToString(BS.getAccessSpecifier());
+      if (accOpt) {
+        llvm::outs() << *accOpt << " ";
       }
       llvm::outs() << BS.getType().getAsString(PP);
     }
@@ -131,12 +135,11 @@ private:
     }
   }
 
-  void traverseBases(
-      const clang::CXXRecordDecl *RD, std::vector<clang::AccessSpecifier> &path,
-      std::unordered_set<const clang::CXXRecordDecl *> &visited,
-      const std::function<void(const clang::CXXRecordDecl *,
-                               const std::vector<clang::AccessSpecifier> &)>
-          &fn) {
+  template <typename Fn>
+  void traverseBases(const clang::CXXRecordDecl *RD,
+                     std::vector<clang::AccessSpecifier> &path,
+                     std::unordered_set<const clang::CXXRecordDecl *> &visited,
+                     Fn &&fn) {
     for (const clang::CXXBaseSpecifier &BS : RD->bases()) {
       const clang::Type *BT = BS.getType().getTypePtrOrNull();
       if (!BT) {
@@ -151,8 +154,8 @@ private:
       }
       visited.insert(BD);
       path.push_back(normalizeBaseAS(BS.getAccessSpecifier()));
-      fn(BD, path);
-      traverseBases(BD, path, visited, fn);
+      std::forward<Fn>(fn)(BD, path);
+      traverseBases(BD, path, visited, std::forward<Fn>(fn));
       path.pop_back();
       visited.erase(BD);
     }
@@ -166,18 +169,26 @@ private:
     for (const clang::FieldDecl *FD : RD->fields()) {
       if (!FD->isImplicit()) {
         seen.insert(FD->getCanonicalDecl());
-        lines.push_back("| |_ " + FD->getNameAsString() + " (" +
-                        FD->getType().getAsString(PP) + "|" +
-                        accessToString(FD->getAccess()) + ")");
+        auto accStr = accessToString(FD->getAccess()).value_or("none");
+        {
+          std::ostringstream oss;
+          oss << "| |_ " << FD->getNameAsString() << " ("
+              << FD->getType().getAsString(PP) << "|" << accStr << ")";
+          lines.push_back(oss.str());
+        }
       }
     }
     for (const clang::Decl *D : RD->decls()) {
       if (const auto *VD = llvm::dyn_cast<clang::VarDecl>(D)) {
         if (VD->isStaticDataMember()) {
           seen.insert(VD->getCanonicalDecl());
-          lines.push_back("| |_ " + VD->getNameAsString() + " (" +
-                          VD->getType().getAsString(PP) + "|static|" +
-                          accessToString(VD->getAccess()) + ")");
+          auto accStr = accessToString(VD->getAccess()).value_or("none");
+          {
+            std::ostringstream oss;
+            oss << "| |_ " << VD->getNameAsString() << " ("
+                << VD->getType().getAsString(PP) << "|static|" << accStr << ")";
+            lines.push_back(oss.str());
+          }
         }
       }
     }
@@ -199,9 +210,13 @@ private:
               continue;
             }
             seen.insert(FD->getCanonicalDecl());
-            lines.push_back("| |_ " + FD->getNameAsString() + " (" +
-                            FD->getType().getAsString(PP) + "|" +
-                            accessToString(eff) + ")");
+            auto accStr = accessToString(eff).value_or("none");
+            {
+              std::ostringstream oss;
+              oss << "| |_ " << FD->getNameAsString() << " ("
+                  << FD->getType().getAsString(PP) << "|" << accStr << ")";
+              lines.push_back(oss.str());
+            }
           }
           for (const clang::Decl *D : BD->decls()) {
             if (const auto *VD = llvm::dyn_cast<clang::VarDecl>(D)) {
@@ -216,9 +231,14 @@ private:
                 continue;
               }
               seen.insert(VD->getCanonicalDecl());
-              lines.push_back("| |_ " + VD->getNameAsString() + " (" +
-                              VD->getType().getAsString(PP) + "|static|" +
-                              accessToString(eff) + ")");
+              auto accStr = accessToString(eff).value_or("none");
+              {
+                std::ostringstream oss;
+                oss << "| |_ " << VD->getNameAsString() << " ("
+                    << VD->getType().getAsString(PP) << "|static|" << accStr
+                    << ")";
+                lines.push_back(oss.str());
+              }
             }
           }
         };
@@ -248,7 +268,7 @@ private:
   }
 
   std::string methodAttrs(const clang::CXXMethodDecl *MD) {
-    std::string attrs = accessToString(MD->getAccess());
+    std::string attrs = accessToString(MD->getAccess()).value_or("none");
     if (MD->isStatic()) {
       attrs = "static|" + attrs;
     }
@@ -287,8 +307,12 @@ private:
       if (name.empty()) {
         name = "(anonymous)";
       }
-      lines.push_back("| |_ " + name + " (" + methodSignature(MD) + "|" +
-                      methodAttrs(MD) + ")");
+      {
+        std::ostringstream oss;
+        oss << "| |_ " << name << " (" << methodSignature(MD) << "|"
+            << methodAttrs(MD) << ")";
+        lines.push_back(oss.str());
+      }
     }
 
     std::vector<clang::AccessSpecifier> path;
@@ -315,7 +339,7 @@ private:
             if (name.empty()) {
               name = "(anonymous)";
             }
-            std::string attrs = accessToString(eff);
+            std::string attrs = accessToString(eff).value_or("none");
             if (MD->isStatic()) {
               attrs = "static|" + attrs;
             }
@@ -331,8 +355,12 @@ private:
               attrs += "|constexpr";
             }
             seen.insert(Canon);
-            lines.push_back("| |_ " + name + " (" + methodSignature(MD) + "|" +
-                            attrs + ")");
+            {
+              std::ostringstream oss;
+              oss << "| |_ " << name << " (" << methodSignature(MD) << "|"
+                  << attrs << ")";
+              lines.push_back(oss.str());
+            }
           }
         };
     traverseBases(RD, path, visited, collectMethodsFromBase);
@@ -365,10 +393,8 @@ protected:
     return std::make_unique<PrintTypesConsumer>(&CI.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &CI,
-                 const std::vector<std::string> &args) override {
-    (void)CI;
-    (void)args;
+  bool ParseArgs(const clang::CompilerInstance &,
+                 const std::vector<std::string> &) override {
     return true;
   }
 };
