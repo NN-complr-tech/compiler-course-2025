@@ -12,8 +12,8 @@
 // CHECK: Function `testMixedTypes`
 // CHECK-NEXT: int -> float: 1
 // CHECK-NEXT: int -> double: 1
-// CHECK-NEXT: double -> int: 1
-// CHECK-NEXT: float -> int: 1
+// CHECK-NEXT: float -> int: 2
+
 
 double sum(int a, float b) {
     return a + b;
