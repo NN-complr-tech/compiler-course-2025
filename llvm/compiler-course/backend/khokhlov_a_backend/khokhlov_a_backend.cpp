@@ -58,14 +58,16 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
     if (MulOpcode != X86::MULSSrr && MulOpcode != X86::MULSDrr &&
         MulOpcode != X86::VMULSSrr && MulOpcode != X86::VMULSDrr &&
         MulOpcode != X86::VMULPSrr && MulOpcode != X86::VMULPDrr) {
-      LLVM_DEBUG(dbgs() << "Skipping non-multiply instruction: " << MulInstr << "\n");
+      LLVM_DEBUG(dbgs() << "Skipping non-multiply instruction: " << MulInstr
+                        << "\n");
       continue;
     }
 
     // Проверяем, что результат умножения используется один раз
     Register MulOutput = MulInstr.getOperand(0).getReg();
     if (!RegInfo.hasOneUse(MulOutput)) {
-      LLVM_DEBUG(dbgs() << "Multiply result has multiple uses: " << MulOutput << "\n");
+      LLVM_DEBUG(dbgs() << "Multiply result has multiple uses: " << MulOutput
+                        << "\n");
       continue;
     }
 
@@ -83,28 +85,33 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
       if (IsSub || IsAdd) {
         if (SubInstr.getOperand(1).getReg() == MulOutput ||
             SubInstr.getOperand(2).getReg() == MulOutput) {
-          LLVM_DEBUG(dbgs() << "Found matching subtract/add instruction: " << SubInstr << "\n");
+          LLVM_DEBUG(dbgs() << "Found matching subtract/add instruction: "
+                            << SubInstr << "\n");
           break;
         }
       }
     }
 
     if (NextInstr == End) {
-      LLVM_DEBUG(dbgs() << "No suitable subtract/add instruction found for: " << MulInstr << "\n");
+      LLVM_DEBUG(dbgs() << "No suitable subtract/add instruction found for: "
+                        << MulInstr << "\n");
       continue;
     }
     MachineInstr &SubInstr = *NextInstr;
 
     // Проверяем корректность использования регистров
     if (!verifyRegisterUsage(MulInstr, SubInstr, MulResultOnLeft)) {
-      LLVM_DEBUG(dbgs() << "Invalid register usage for: " << MulInstr << " and " << SubInstr << "\n");
+      LLVM_DEBUG(dbgs() << "Invalid register usage for: " << MulInstr << " and "
+                        << SubInstr << "\n");
       continue;
     }
 
     // Выбираем подходящий FMA opcode
-    auto FMAOpcode = pickFMAOpcode(MulOpcode, SubInstr.getOpcode(), MulResultOnLeft);
+    auto FMAOpcode =
+        pickFMAOpcode(MulOpcode, SubInstr.getOpcode(), MulResultOnLeft);
     if (!FMAOpcode) {
-      LLVM_DEBUG(dbgs() << "No suitable FMA opcode found for: " << MulInstr << " and " << SubInstr << "\n");
+      LLVM_DEBUG(dbgs() << "No suitable FMA opcode found for: " << MulInstr
+                        << " and " << SubInstr << "\n");
       continue;
     }
 
@@ -113,7 +120,8 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
     Register COperand = SubInstr.getOperand(CIndex).getReg();
 
     // Создаем новую FMA-инструкцию
-    LLVM_DEBUG(dbgs() << "Creating FMA instruction with opcode: " << *FMAOpcode << "\n");
+    LLVM_DEBUG(dbgs() << "Creating FMA instruction with opcode: " << *FMAOpcode
+                      << "\n");
     BuildMI(BasicBlock, SubInstr, SubInstr.getDebugLoc(),
             InstrDesc->get(*FMAOpcode), SubInstr.getOperand(0).getReg())
         .addReg(MulInstr.getOperand(1).getReg(),
