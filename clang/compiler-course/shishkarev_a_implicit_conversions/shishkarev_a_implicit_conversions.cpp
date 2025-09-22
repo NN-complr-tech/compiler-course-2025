@@ -5,6 +5,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <algorithm>
+#include <map>
 #include <set>
 #include <string>
 #include <utility>
@@ -25,24 +26,20 @@ public:
       TraverseStmt(Func->getBody());
     }
 
-    MConversions.erase(
-        std::remove_if(MConversions.begin(), MConversions.end(),
-                       [](const std::pair<std::string, std::string> &Conv) {
-                         return Conv.first == Conv.second;
-                       }),
-        MConversions.end());
+    std::map<std::pair<std::string, std::string>, int> conversionCounts;
+    
+    for (const auto &conv : MConversions) {
+      if (conv.first != conv.second) {
+        conversionCounts[conv]++;
+      }
+    }
 
-    std::set<std::pair<std::string, std::string>> UniqueConversions;
-    MConversions.erase(
-        std::remove_if(MConversions.begin(), MConversions.end(),
-                       [&UniqueConversions](
-                           const std::pair<std::string, std::string> &Conv) {
-                         return !UniqueConversions.insert(Conv).second;
-                       }),
-        MConversions.end());
-
-    for (auto It = MConversions.rbegin(); It != MConversions.rend(); ++It) {
-      llvm::outs() << It->first << " -> " << It->second << ": 1\n";
+    std::set<std::pair<std::string, std::string>> seenConversions;
+    for (const auto &conv : MConversions) {
+      if (conv.first != conv.second && seenConversions.insert(conv).second) {
+        llvm::outs() << conv.first << " -> " << conv.second << ": " 
+                     << conversionCounts[conv] << "\n";
+      }
     }
 
     return true;
@@ -52,8 +49,8 @@ public:
     auto FromType = Expr->getSubExpr()->getType().getAsString();
     auto ToType = Expr->getType().getAsString();
 
-    FromType = normalizeType(FromType, ToType);
-    ToType = normalizeType(ToType, FromType);
+    FromType = normalizeType(FromType);
+    ToType = normalizeType(ToType);
 
     MConversions.emplace_back(FromType, ToType);
 
@@ -64,30 +61,28 @@ private:
   clang::ASTContext *MContext;
   std::vector<std::pair<std::string, std::string>> MConversions;
 
-  std::string normalizeType(const std::string &Type,
-                            const std::string &OtherType) {
+  std::string normalizeType(const std::string &Type) {
     std::string Normalized = Type;
-
-    size_t PtrPos = Normalized.find("(*)");
-    if (PtrPos != std::string::npos) {
-      Normalized.erase(PtrPos, 3); // Удаляем "(*)"
-    }
-
-    std::string WithoutModifiers = Normalized;
-    WithoutModifiers.erase(
-        std::remove(WithoutModifiers.begin(), WithoutModifiers.end(), '&'),
-        WithoutModifiers.end());
-    WithoutModifiers.erase(
-        std::remove(WithoutModifiers.begin(), WithoutModifiers.end(), '*'),
-        WithoutModifiers.end());
-
-    if (WithoutModifiers == OtherType) {
-      Normalized = WithoutModifiers;
-    }
 
     Normalized.erase(std::remove(Normalized.begin(), Normalized.end(), ' '),
                      Normalized.end());
 
+    if (Normalized == "int") return "int";
+    if (Normalized == "float") return "float";
+    if (Normalized == "double") return "double";
+    if (Normalized == "char") return "char";
+    if (Normalized == "short") return "short";
+    if (Normalized == "long") return "long";
+
+    if (Normalized.find('*') != std::string::npos) {
+      size_t pos = Normalized.find('*');
+      return normalizeType(Normalized.substr(0, pos));
+    }
+    if (Normalized.find('&') != std::string::npos) {
+      size_t pos = Normalized.find('&');
+      return normalizeType(Normalized.substr(0, pos));
+    }
+    
     return Normalized;
   }
 };
