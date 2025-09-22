@@ -77,12 +77,12 @@ public:
         Loc = InsertPos->getDebugLoc();
 
       BuildMI(Block, InsertPos, Loc, InstrInfo->get(X86::ADD64mi32))
-          .addReg(X86::RIP)               
-          .addImm(1)                       
-          .addReg(0)                      
-          .addGlobalAddress(CounterVar)    
-          .addReg(0)                       
-          .addImm(VectorInstrs);           
+          .addReg(X86::RIP, RegState::Implicit)
+          .addImm(1)
+          .addReg(0, RegState::Implicit)
+          .addGlobalAddress(CounterVar)
+          .addReg(0, RegState::Implicit)
+          .addImm(VectorInstrs);
 
       Modified = true;
     }
@@ -96,5 +96,5 @@ char SimdInstrCounterPass::ID = 0;
 } // namespace
 
 static RegisterPass<SimdInstrCounterPass>
-    X("simd-counter", "Counts SIMD instructions and instruments counter",
+    X("simd-counter", "Counts SIMD instructions",
       false, false);
