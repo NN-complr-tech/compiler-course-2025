@@ -29,14 +29,14 @@ public:
 
     std::map<std::pair<std::string, std::string>, int> conversionCounts;
     for (const auto &conv : MConversions) {
-      if (conv.first != conv.second) {
+      if (conv.first != conv.second && isValidConversion(conv)) {
         conversionCounts[conv]++;
       }
     }
 
     std::set<std::pair<std::string, std::string>> seen;
     for (const auto &conv : MConversionOrder) {
-      if (conv.first != conv.second && seen.insert(conv).second) {
+      if (conv.first != conv.second && isValidConversion(conv) && seen.insert(conv).second) {
         llvm::outs() << conv.first << " -> " << conv.second << ": " 
                      << conversionCounts[conv] << "\n";
       }
@@ -46,6 +46,12 @@ public:
   }
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *Expr) {
+    if (Expr->getCastKind() == clang::CK_FunctionToPointerDecay ||
+        Expr->getCastKind() == clang::CK_ArrayToPointerDecay ||
+        Expr->getCastKind() == clang::CK_LValueToRValue) {
+      return RecursiveASTVisitor::VisitImplicitCastExpr(Expr);
+    }
+
     auto FromType = Expr->getSubExpr()->getType().getAsString();
     auto ToType = Expr->getType().getAsString();
 
@@ -65,37 +71,37 @@ private:
   std::vector<std::pair<std::string, std::string>> MConversions;
   std::vector<std::pair<std::string, std::string>> MConversionOrder;
 
+  bool isValidConversion(const std::pair<std::string, std::string> &conv) {
+    const std::set<std::string> numericTypes = {"int", "float", "double", "char", "short", "long"};
+    
+    return numericTypes.count(conv.first) > 0 && numericTypes.count(conv.second) > 0;
+  }
+
   std::string normalizeType(const std::string &Type) {
     std::string Normalized = Type;
 
     Normalized.erase(std::remove(Normalized.begin(), Normalized.end(), ' '),
                      Normalized.end());
 
-    if (Normalized == "int") return "int";
+    if (Normalized == "int" || Normalized == "unsignedint") return "int";
     if (Normalized == "float") return "float";
     if (Normalized == "double") return "double";
-    if (Normalized == "char") return "char";
-    if (Normalized == "short") return "short";
-    if (Normalized == "long") return "long";
+    if (Normalized == "char" || Normalized == "unsignedchar") return "char";
+    if (Normalized == "short" || Normalized == "unsignedshort") return "short";
+    if (Normalized == "long" || Normalized == "unsignedlong") return "long";
 
-    size_t ptrPos = Normalized.find('*');
-    size_t refPos = Normalized.find('&');
-    if (ptrPos != std::string::npos || refPos != std::string::npos) {
-      size_t pos = std::min(ptrPos, refPos);
-      if (pos == std::string::npos) pos = std::max(ptrPos, refPos);
-      return normalizeType(Normalized.substr(0, pos));
+    if (Normalized.find("const") == 0) {
+      return normalizeType(Normalized.substr(5));
+    }
+    if (Normalized.find("unsigned") == 0) {
+      return normalizeType(Normalized.substr(8));
     }
 
-    if (Normalized.find("const") != std::string::npos) {
-      std::string withoutConst = Normalized;
-      size_t constPos = withoutConst.find("const");
-      if (constPos != std::string::npos) {
-        withoutConst.erase(constPos, 5);
-        while (!withoutConst.empty() && withoutConst[0] == ' ') {
-          withoutConst.erase(0, 1);
-        }
-        return normalizeType(withoutConst);
-      }
+    if (Normalized.find('(') != std::string::npos ||
+        Normalized.find(')') != std::string::npos ||
+        Normalized.find('*') != std::string::npos ||
+        Normalized.find('&') != std::string::npos) {
+      return "";
     }
     
     return Normalized;
