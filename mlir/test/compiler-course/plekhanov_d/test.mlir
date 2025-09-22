@@ -15,7 +15,7 @@ func.func @no_loops() {
 // CHECK-NEXT:     %c0 = arith.constant 0 : index
 // CHECK-NEXT:     %c10 = arith.constant 10 : index
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
-// CHECK-NEXT:     scf.for %arg0 = %c0 to %c10 step %c1 {
+// CHECK-NEXT:     scf.for {{%.*}} = %c0 to %c10 step %c1 {
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return
 // CHECK-NEXT:   }
@@ -29,7 +29,7 @@ func.func @simple_scf_for() {
 }
 
 // CHECK-LABEL:  func.func @simple_affine_for() attributes {my_loop_depths = [1]} {
-// CHECK-NEXT:     affine.for %arg0 = 0 to 10 {
+// CHECK-NEXT:     affine.for {{%.*}} = 0 to 10 {
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return
 // CHECK-NEXT:   }
@@ -43,9 +43,9 @@ func.func @simple_affine_for() {
 // CHECK-NEXT:     %c0 = arith.constant 0 : index
 // CHECK-NEXT:     %c10 = arith.constant 10 : index
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
-// CHECK-NEXT:     %true = arith.constant true
-// CHECK-NEXT:     scf.for %arg0 = %c0 to %c10 step %c1 {
-// CHECK-NEXT:       scf.if %true {
+// CHECK-NEXT:     {{%.*}} = arith.constant true
+// CHECK-NEXT:     scf.for {{%.*}} = %c0 to %c10 step %c1 {
+// CHECK-NEXT:       scf.if {{%.*}} {
 // CHECK-NEXT:       }
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return
@@ -67,8 +67,8 @@ func.func @scf_for_with_if() {
 // CHECK-NEXT:     %c10 = arith.constant 10 : index
 // CHECK-NEXT:     %c5 = arith.constant 5 : index
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
-// CHECK-NEXT:     scf.for %arg0 = %c0 to %c10 step %c1 {
-// CHECK-NEXT:       scf.for %arg1 = %c0 to %c5 step %c1 {
+// CHECK-NEXT:     scf.for {{%.*}} = %c0 to %c10 step %c1 {
+// CHECK-NEXT:       scf.for {{%.*}} = %c0 to %c5 step %c1 {
 // CHECK-NEXT:       }
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return
@@ -89,11 +89,11 @@ func.func @nested_scf_for() {
 // CHECK-NEXT:     %c0 = arith.constant 0 : index
 // CHECK-NEXT:     %c10 = arith.constant 10 : index
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
-// CHECK-NEXT:     %true = arith.constant true
-// CHECK-NEXT:     scf.for %arg0 = %c0 to %c10 step %c1 {
-// CHECK-NEXT:       scf.if %true {
-// CHECK-NEXT:         scf.if %true {
-// CHECK-NEXT:           scf.if %true {
+// CHECK-NEXT:     {{%.*}} = arith.constant true
+// CHECK-NEXT:     scf.for {{%.*}} = %c0 to %c10 step %c1 {
+// CHECK-NEXT:       scf.if {{%.*}} {
+// CHECK-NEXT:         scf.if {{%.*}} {
+// CHECK-NEXT:           scf.if {{%.*}} {
 // CHECK-NEXT:           }
 // CHECK-NEXT:         }
 // CHECK-NEXT:       }
@@ -120,12 +120,12 @@ func.func @deeply_nested_if_in_for() {
 // CHECK-NEXT:     %c0 = arith.constant 0 : index
 // CHECK-NEXT:     %c10 = arith.constant 10 : index
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
-// CHECK-NEXT:     %true = arith.constant true
-// CHECK-NEXT:     scf.for %arg0 = %c0 to %c10 step %c1 {
-// CHECK-NEXT:       scf.if %true {
+// CHECK-NEXT:     {{%.*}} = arith.constant true
+// CHECK-NEXT:     scf.for {{%.*}} = %c0 to %c10 step %c1 {
+// CHECK-NEXT:       scf.if {{%.*}} {
 // CHECK-NEXT:       }
 // CHECK-NEXT:     }
-// CHECK-NEXT:     affine.for %arg0 = 0 to 5 {
+// CHECK-NEXT:     affine.for {{%.*}} = 0 to 5 {
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return
 // CHECK-NEXT:   }
@@ -147,10 +147,10 @@ func.func @two_independent_loops() {
 // CHECK-NEXT:     %c0 = arith.constant 0 : index
 // CHECK-NEXT:     %c10 = arith.constant 10 : index
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
-// CHECK-NEXT:     %true = arith.constant true
-// CHECK-NEXT:     scf.for %arg0 = %c0 to %c10 step %c1 {
-// CHECK-NEXT:       scf.if %true {
-// CHECK-NEXT:         affine.for %arg1 = 0 to 5 {
+// CHECK-NEXT:     {{%.*}} = arith.constant true
+// CHECK-NEXT:     scf.for {{%.*}} = %c0 to %c10 step %c1 {
+// CHECK-NEXT:       scf.if {{%.*}} {
+// CHECK-NEXT:         affine.for {{%.*}} = 0 to 5 {
 // CHECK-NEXT:         }
 // CHECK-NEXT:       }
 // CHECK-NEXT:     }

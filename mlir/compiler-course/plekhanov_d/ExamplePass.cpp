@@ -37,7 +37,7 @@ class RegionNestingAnalysisPass
     : public mlir::PassWrapper<RegionNestingAnalysisPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
 public:
-  mlir::StringRef getArgument() const override { return "region-nesting-depth"; }
+  mlir::StringRef getArgument() const override { return "my-loop-depth-pass"; }
   mlir::StringRef getDescription() const override {
     return "Computes maximum nesting depth of regions inside loops";
   }
@@ -63,7 +63,7 @@ public:
 
       if (!loopDepths.empty()) {
         mlir::ArrayAttr depthsAttr = builder.getI64ArrayAttr(loopDepths);
-        funcOp->setAttr("region_nesting_depths", depthsAttr);
+        funcOp->setAttr("my_loop_depths", depthsAttr);
 
         llvm::outs() << "Function '" << funcOp.getName()
                      << "': processed. Loop depths: ";
