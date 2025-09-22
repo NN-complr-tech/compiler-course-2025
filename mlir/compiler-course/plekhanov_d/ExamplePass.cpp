@@ -81,7 +81,7 @@ public:
 
 static mlir::PassPluginLibraryInfo getMyLoopDepthPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "MyLoopDepthPlugin", "1.0",
-          []() { mlir::PassRegistration<MyLoopDepthPass>(); }};
+          []() { mlir::PassRegistration<RegionNestingAnalysisPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
