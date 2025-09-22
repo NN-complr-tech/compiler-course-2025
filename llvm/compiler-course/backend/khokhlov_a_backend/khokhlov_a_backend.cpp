@@ -6,6 +6,9 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/Pass.h"
+#include "llvm/Support/Debug.h"
+
+#define DEBUG_TYPE "fused-mul-sub-khokhlov"
 
 using namespace llvm;
 
@@ -54,13 +57,17 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
     // Проверяем, является ли инструкция умножением
     if (MulOpcode != X86::MULSSrr && MulOpcode != X86::MULSDrr &&
         MulOpcode != X86::VMULSSrr && MulOpcode != X86::VMULSDrr &&
-        MulOpcode != X86::VMULPSrr && MulOpcode != X86::VMULPDrr)
+        MulOpcode != X86::VMULPSrr && MulOpcode != X86::VMULPDrr) {
+      LLVM_DEBUG(dbgs() << "Skipping non-multiply instruction: " << MulInstr << "\n");
       continue;
+    }
 
     // Проверяем, что результат умножения используется один раз
     Register MulOutput = MulInstr.getOperand(0).getReg();
-    if (!RegInfo.hasOneUse(MulOutput))
+    if (!RegInfo.hasOneUse(MulOutput)) {
+      LLVM_DEBUG(dbgs() << "Multiply result has multiple uses: " << MulOutput << "\n");
       continue;
+    }
 
     // Ищем инструкцию вычитания или сложения
     bool MulResultOnLeft = false;
@@ -69,35 +76,44 @@ bool FusedMulSubPass::transformBlock(MachineBasicBlock &BasicBlock) {
       MachineInstr &SubInstr = *NextInstr;
       unsigned SubOpcode = SubInstr.getOpcode();
       bool IsSub = SubOpcode == X86::SUBSSrr || SubOpcode == X86::SUBSDrr ||
-                   SubOpcode == X86::VSUBSSrr || SubOpcode == X86::VSUBSDrr;
+                   SubOpcode == X86::VSUBSSrr || SubOpcode == X86::VSUBSDrr ||
+                   SubOpcode == X86::VSUBPSrr;
       bool IsAdd = SubOpcode == X86::VADDSSrr || SubOpcode == X86::VADDSDrr;
 
       if (IsSub || IsAdd) {
         if (SubInstr.getOperand(1).getReg() == MulOutput ||
-            SubInstr.getOperand(2).getReg() == MulOutput)
+            SubInstr.getOperand(2).getReg() == MulOutput) {
+          LLVM_DEBUG(dbgs() << "Found matching subtract/add instruction: " << SubInstr << "\n");
           break;
+        }
       }
     }
 
-    if (NextInstr == End)
+    if (NextInstr == End) {
+      LLVM_DEBUG(dbgs() << "No suitable subtract/add instruction found for: " << MulInstr << "\n");
       continue;
+    }
     MachineInstr &SubInstr = *NextInstr;
 
     // Проверяем корректность использования регистров
-    if (!verifyRegisterUsage(MulInstr, SubInstr, MulResultOnLeft))
+    if (!verifyRegisterUsage(MulInstr, SubInstr, MulResultOnLeft)) {
+      LLVM_DEBUG(dbgs() << "Invalid register usage for: " << MulInstr << " and " << SubInstr << "\n");
       continue;
+    }
 
     // Выбираем подходящий FMA opcode
-    auto FMAOpcode =
-        pickFMAOpcode(MulOpcode, SubInstr.getOpcode(), MulResultOnLeft);
-    if (!FMAOpcode)
+    auto FMAOpcode = pickFMAOpcode(MulOpcode, SubInstr.getOpcode(), MulResultOnLeft);
+    if (!FMAOpcode) {
+      LLVM_DEBUG(dbgs() << "No suitable FMA opcode found for: " << MulInstr << " and " << SubInstr << "\n");
       continue;
+    }
 
     // Определяем индекс регистра для операнда C
     unsigned CIndex = MulResultOnLeft ? 2 : 1;
     Register COperand = SubInstr.getOperand(CIndex).getReg();
 
     // Создаем новую FMA-инструкцию
+    LLVM_DEBUG(dbgs() << "Creating FMA instruction with opcode: " << *FMAOpcode << "\n");
     BuildMI(BasicBlock, SubInstr, SubInstr.getDebugLoc(),
             InstrDesc->get(*FMAOpcode), SubInstr.getOperand(0).getReg())
         .addReg(MulInstr.getOperand(1).getReg(),
@@ -165,13 +181,17 @@ bool FusedMulSubPass::verifyRegisterUsage(const MachineInstr &MulInstruction,
   }
 
   // Случай вычитания: tmp - c или c - tmp
-  if (LeftOp == MulOutput) {
-    MulResultOnLeft = true;
-    return true;
-  }
-  if (RightOp == MulOutput) {
-    MulResultOnLeft = false;
-    return true;
+  if (SubOpcode == X86::SUBSSrr || SubOpcode == X86::SUBSDrr ||
+      SubOpcode == X86::VSUBSSrr || SubOpcode == X86::VSUBSDrr ||
+      SubOpcode == X86::VSUBPSrr) {
+    if (LeftOp == MulOutput) {
+      MulResultOnLeft = true;
+      return true;
+    }
+    if (RightOp == MulOutput) {
+      MulResultOnLeft = false;
+      return true;
+    }
   }
   return false;
 }

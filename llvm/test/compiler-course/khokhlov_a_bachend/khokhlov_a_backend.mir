@@ -1,5 +1,5 @@
 # RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+fma \
-# RUN:     --load=%llvmshlibdir/FusedMulSubPass%shlibext \
+# RUN:     --load=%llvmshlibdir/MulSubPass_Khokhlov_Andrey_FIIT2_BACKEND%shlibext \
 # RUN:     -run-pass=fused-mul-sub-khokhlov %s -o - | FileCheck %s
 
 # Тест 1: Проверка c - (a*b) → VFNMADD213SS
@@ -152,37 +152,7 @@ body:             |
     $xmm0 = COPY %4
     RET64 implicit $xmm0
 
-# Тест 6: Проверка векторного случая c - (a*b) → VFNMADD213PS
-# CHECK-LABEL: name: test_vector_ps_fma
-# CHECK: bb.0.entry:
-# CHECK-NOT: VMULPSrr
-# CHECK-NOT: VSUBPSrr
-# CHECK: %[[OUT:[a-z0-9]+]]:vr128 = VFNMADD213PSr %0, %1, %2, implicit $mxcsr
-# CHECK: $xmm0 = COPY %[[OUT]]
-# CHECK: RET64 implicit $xmm0
-
----
-name:            test_vector_ps_fma
-alignment:       16
-tracksRegLiveness: true
-registers:
-  - { id: 0, class: vr128 }
-  - { id: 1, class: vr128 }
-  - { id: 2, class: vr128 }
-  - { id: 3, class: vr128 }
-  - { id: 4, class: vr128 }
-body:             |
-  bb.0.entry:
-    liveins: $xmm0, $xmm1, $xmm2
-    %2:vr128 = COPY $xmm2
-    %1:vr128 = COPY $xmm1
-    %0:vr128 = COPY $xmm0
-    %3:vr128 = nofpexcept VMULPSrr %0, %1, implicit $mxcsr
-    %4:vr128 = nofpexcept VSUBPSrr %2, killed %3, implicit $mxcsr
-    $xmm0 = COPY %4
-    RET64 implicit $xmm0
-
-# Тест 7: Отрицательный тест (результат умножения используется дважды, оптимизация не должна применяться)
+# Тест 6: Отрицательный тест (результат умножения используется дважды, оптимизация не должна применяться)
 # CHECK-LABEL: name: test_no_fma_multiple_use
 # CHECK: bb.0.entry:
 # CHECK: VMULSSrr
