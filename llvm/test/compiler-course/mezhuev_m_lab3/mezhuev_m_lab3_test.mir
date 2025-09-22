@@ -32,7 +32,6 @@ body:             |
     %4:fr32 = nofpexcept VSUBSSrr %2, killed %3, implicit $mxcsr
     $xmm0 = COPY %4
     RET64 implicit $xmm0
-
 ...
 
 # Тест 2: Обратный порядок - произведение минус значение
@@ -65,7 +64,6 @@ body:             |
     %4:fr32 = nofpexcept VSUBSSrr killed %3, %2, implicit $mxcsr
     $xmm0 = COPY %4
     RET64 implicit $xmm0
-
 ...
 
 # Тест 3: Двойная точность с оптимизацией
@@ -98,7 +96,6 @@ body:             |
     %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr
     $xmm0 = COPY %4
     RET64 implicit $xmm0
-
 ...
 
 # Тест 4: Негативный случай - неподдерживаемая операция
@@ -130,7 +127,6 @@ body:             |
     %4:fr32 = nofpexcept VADDSSrr %2, killed %3, implicit $mxcsr
     $xmm0 = COPY %4
     RET64 implicit $xmm0
-
 ...
 
 # Тест 5: Комплексный случай с разными типами регистров
@@ -162,4 +158,135 @@ body:             |
     %3:fr64 = nofpexcept VMULSDrr %1, %2, implicit $mxcsr
     %4:fr64 = nofpexcept VSUBSDrr killed %3, %0, implicit $mxcsr
     $xmm0 = COPY %4
+    RET64 implicit $xmm0
+...
+
+# Тест 6: Одинарная точность — значение минус произведение (альтернативная форма)
+# CHECK-LABEL: name: test_single_alt_form
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr32 = VFNMADD213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_single_alt_form
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+...
+
+# Тест 7: Двойная точность — произведение минус значение
+# CHECK-LABEL: name: test_double_reverse
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSDrr
+# CHECK-NOT: VSUBSDrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr64 = VFMSUB213SDr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_double_reverse
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr64 }
+  - { id: 1, class: fr64 }
+  - { id: 2, class: fr64 }
+  - { id: 3, class: fr64 }
+  - { id: 4, class: fr64 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %0:fr64 = COPY $xmm0
+    %1:fr64 = COPY $xmm1
+    %2:fr64 = COPY $xmm2
+    %3:fr64 = nofpexcept VMULSDrr %0, %1, implicit $mxcsr
+    %4:fr64 = nofpexcept VSUBSDrr killed %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+...
+
+# Тест 8: Негативный случай — деление вместо вычитания
+# CHECK-LABEL: name: test_division_not_fused
+# CHECK: bb.0.entry:
+# CHECK: %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+# CHECK: %4:fr32 = nofpexcept VDIVSSrr %2, killed %3, implicit $mxcsr
+# CHECK: $xmm0 = COPY %4
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_division_not_fused
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VDIVSSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+...
+
+# Тест 9: Цепочка операций — только первая часть фьюзится
+# CHECK-LABEL: name: test_chain_partial_fusion
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[FMA:[a-z0-9]+]]:fr32 = VFNMADD213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: %[[RES:[a-z0-9]+]]:fr32 = nofpexcept VADDSSrr %[[FMA]], %3, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_chain_partial_fusion
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+  - { id: 5, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2, $xmm3
+
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %2:fr32 = COPY $xmm2
+    %3:fr32 = COPY $xmm3
+    %4:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %5:fr32 = nofpexcept VSUBSSrr %2, killed %4, implicit $mxcsr
+    %6:fr32 = nofpexcept VADDSSrr %5, %3, implicit $mxcsr
+    $xmm0 = COPY %6
     RET64 implicit $xmm0

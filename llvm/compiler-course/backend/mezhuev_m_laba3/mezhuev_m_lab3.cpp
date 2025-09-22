@@ -28,10 +28,10 @@ private:
   bool processMachineBlock(MachineBasicBlock &MBB);
   unsigned selectFusedOperation(unsigned multiplicationOp,
                                 unsigned arithmeticOp,
-                                bool multiplicationFirst) const;
+                                bool mulIsArithOp1) const;
   bool validateOperandPattern(const MachineInstr &mulInstr,
                               const MachineInstr &arithInstr,
-                              bool &mulOperandFirst) const;
+                              bool &mulIsArithOp1) const;
 };
 
 char ArithmeticFusionOptimizer::ID = 0;
@@ -72,9 +72,7 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
       continue;
     }
 
-    bool multiplicationIsFirstOperand = false;
     auto arithmeticIter = std::next(instIter);
-
     for (; arithmeticIter != endIter; ++arithmeticIter) {
       MachineInstr &arithmeticInstr = *arithmeticIter;
       unsigned arithmeticOp = arithmeticInstr.getOpcode();
@@ -96,19 +94,19 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
 
     MachineInstr &arithmeticInstr = *arithmeticIter;
 
-    if (!validateOperandPattern(currentInstr, arithmeticInstr,
-                                multiplicationIsFirstOperand)) {
+    bool mulIsArithOp1 = false;
+    if (!validateOperandPattern(currentInstr, arithmeticInstr, mulIsArithOp1)) {
       continue;
     }
 
     unsigned fusedOpcode =
         selectFusedOperation(currentOpcode, arithmeticInstr.getOpcode(),
-                             multiplicationIsFirstOperand);
+                             mulIsArithOp1);
 
     if (fusedOpcode == 0)
       continue;
 
-    unsigned otherOperandIdx = multiplicationIsFirstOperand ? 2 : 1;
+    unsigned otherOperandIdx = mulIsArithOp1 ? 2 : 1;
     Register otherOperandReg =
         arithmeticInstr.getOperand(otherOperandIdx).getReg();
 
@@ -139,22 +137,30 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
 
 unsigned ArithmeticFusionOptimizer::selectFusedOperation(
     unsigned multiplicationOp, unsigned arithmeticOp,
-    bool multiplicationFirst) const {
+    bool mulIsArithOp1) const {
+
+  auto isSub = [&](unsigned op) {
+    return (op == X86::SUBSSrr || op == X86::SUBSDrr ||
+            op == X86::VSUBSSrr || op == X86::VSUBSDrr);
+  };
+
+  if (!isSub(arithmeticOp))
+    return 0;
 
   switch (multiplicationOp) {
   case X86::MULSSrr:
   case X86::VMULSSrr:
-    return multiplicationFirst ? X86::VFMSUB213SSr : X86::VFNMADD213SSr;
+    return mulIsArithOp1 ? X86::VFMSUB213SSr : X86::VFNMADD213SSr;
 
   case X86::MULSDrr:
   case X86::VMULSDrr:
-    return multiplicationFirst ? X86::VFMSUB213SDr : X86::VFNMADD213SDr;
+    return mulIsArithOp1 ? X86::VFMSUB213SDr : X86::VFNMADD213SDr;
 
   case X86::VMULPSrr:
-    return multiplicationFirst ? X86::VFMSUB213PSr : X86::VFNMADD213PSr;
+    return mulIsArithOp1 ? X86::VFMSUB213PSr : X86::VFNMADD213PSr;
 
   case X86::VMULPDrr:
-    return multiplicationFirst ? X86::VFMSUB213PDr : X86::VFNMADD213PDr;
+    return mulIsArithOp1 ? X86::VFMSUB213PDr : X86::VFNMADD213PDr;
 
   default:
     return 0;
@@ -163,19 +169,19 @@ unsigned ArithmeticFusionOptimizer::selectFusedOperation(
 
 bool ArithmeticFusionOptimizer::validateOperandPattern(
     const MachineInstr &mulInstr, const MachineInstr &arithInstr,
-    bool &mulOperandFirst) const {
+    bool &mulIsArithOp1) const {
 
   Register mulResult = mulInstr.getOperand(0).getReg();
   Register arithOp1 = arithInstr.getOperand(1).getReg();
   Register arithOp2 = arithInstr.getOperand(2).getReg();
 
   if (arithOp1 == mulResult) {
-    mulOperandFirst = true;
+    mulIsArithOp1 = true;
     return true;
   }
 
   if (arithOp2 == mulResult) {
-    mulOperandFirst = false;
+    mulIsArithOp1 = false;
     return true;
   }
 
