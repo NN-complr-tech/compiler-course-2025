@@ -34,12 +34,8 @@ public:
       }
     }
 
-    std::set<std::pair<std::string, std::string>> seenConversions;
-    for (const auto &conv : MConversions) {
-      if (conv.first != conv.second && seenConversions.insert(conv).second) {
-        llvm::outs() << conv.first << " -> " << conv.second << ": " 
-                     << conversionCounts[conv] << "\n";
-      }
+    for (const auto &[conv, count] : conversionCounts) {
+      llvm::outs() << conv.first << " -> " << conv.second << ": " << count << "\n";
     }
 
     return true;
@@ -52,7 +48,9 @@ public:
     FromType = normalizeType(FromType);
     ToType = normalizeType(ToType);
 
-    MConversions.emplace_back(FromType, ToType);
+    if (FromType != ToType) {
+      MConversions.emplace_back(FromType, ToType);
+    }
 
     return RecursiveASTVisitor::VisitImplicitCastExpr(Expr);
   }
@@ -74,13 +72,24 @@ private:
     if (Normalized == "short") return "short";
     if (Normalized == "long") return "long";
 
-    if (Normalized.find('*') != std::string::npos) {
-      size_t pos = Normalized.find('*');
+    size_t ptrPos = Normalized.find('*');
+    size_t refPos = Normalized.find('&');
+    if (ptrPos != std::string::npos || refPos != std::string::npos) {
+      size_t pos = std::min(ptrPos, refPos);
+      if (pos == std::string::npos) pos = std::max(ptrPos, refPos);
       return normalizeType(Normalized.substr(0, pos));
     }
-    if (Normalized.find('&') != std::string::npos) {
-      size_t pos = Normalized.find('&');
-      return normalizeType(Normalized.substr(0, pos));
+
+    if (Normalized.find("const") != std::string::npos) {
+      std::string withoutConst = Normalized;
+      size_t constPos = withoutConst.find("const");
+      if (constPos != std::string::npos) {
+        withoutConst.erase(constPos, 5);
+        while (!withoutConst.empty() && withoutConst[0] == ' ') {
+          withoutConst.erase(0, 1);
+        }
+        return normalizeType(withoutConst);
+      }
     }
     
     return Normalized;
