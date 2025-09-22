@@ -21,21 +21,25 @@ public:
   bool VisitFunctionDecl(clang::FunctionDecl *Func) {
     llvm::outs() << "Function `" << Func->getName() << "`\n";
     MConversions.clear();
+    MConversionOrder.clear();
 
     if (Func->hasBody()) {
       TraverseStmt(Func->getBody());
     }
 
     std::map<std::pair<std::string, std::string>, int> conversionCounts;
-    
     for (const auto &conv : MConversions) {
       if (conv.first != conv.second) {
         conversionCounts[conv]++;
       }
     }
 
-    for (const auto &[conv, count] : conversionCounts) {
-      llvm::outs() << conv.first << " -> " << conv.second << ": " << count << "\n";
+    std::set<std::pair<std::string, std::string>> seen;
+    for (const auto &conv : MConversionOrder) {
+      if (conv.first != conv.second && seen.insert(conv).second) {
+        llvm::outs() << conv.first << " -> " << conv.second << ": " 
+                     << conversionCounts[conv] << "\n";
+      }
     }
 
     return true;
@@ -50,6 +54,7 @@ public:
 
     if (FromType != ToType) {
       MConversions.emplace_back(FromType, ToType);
+      MConversionOrder.emplace_back(FromType, ToType);
     }
 
     return RecursiveASTVisitor::VisitImplicitCastExpr(Expr);
@@ -58,6 +63,7 @@ public:
 private:
   clang::ASTContext *MContext;
   std::vector<std::pair<std::string, std::string>> MConversions;
+  std::vector<std::pair<std::string, std::string>> MConversionOrder;
 
   std::string normalizeType(const std::string &Type) {
     std::string Normalized = Type;
