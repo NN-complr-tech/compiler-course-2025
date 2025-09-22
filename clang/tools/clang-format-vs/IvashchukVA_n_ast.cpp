@@ -104,5 +104,5 @@ private:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<MaybeUnusedAction>
-    X("IvashchukVA_n_ast",
+    X("IvashchukVA_ast",
       "Marks unused parameters/variables with [[maybe_unused]] attribute");
