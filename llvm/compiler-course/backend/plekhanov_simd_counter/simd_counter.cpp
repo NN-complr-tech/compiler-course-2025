@@ -96,5 +96,4 @@ char SimdInstrCounterPass::ID = 0;
 } // namespace
 
 static RegisterPass<SimdInstrCounterPass>
-    X("simd-counter", "Counts SIMD instructions",
-      false, false);
+    X("simd-counter", "Counts SIMD instructions", false, false);
