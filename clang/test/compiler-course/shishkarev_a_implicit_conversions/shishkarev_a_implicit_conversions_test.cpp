@@ -9,10 +9,21 @@
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: double -> int: 1
 
+// CHECK: Function `testMixedTypes`
+// CHECK-NEXT: int -> float: 2
+// CHECK-NEXT: float -> double: 1
+// CHECK-NEXT: double -> int: 1
+
 double sum(int a, float b) {
     return a + b;
 }
 
 int mul(float a, float b) {
-    return a + sum(a, b);
+    return a + sum(a, (int)b);
+}
+
+int testMixedTypes(int x, float y, double z) {
+    float result = x + y;      // int -> float
+    int intResult = x + z;     // int -> double, double -> int
+    return intResult + y;      // float -> int
 }
