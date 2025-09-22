@@ -99,9 +99,8 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
       continue;
     }
 
-    unsigned fusedOpcode =
-        selectFusedOperation(currentOpcode, arithmeticInstr.getOpcode(),
-                             mulIsArithOp1);
+    unsigned fusedOpcode = selectFusedOperation(
+        currentOpcode, arithmeticInstr.getOpcode(), mulIsArithOp1);
 
     if (fusedOpcode == 0)
       continue;
@@ -135,13 +134,14 @@ bool ArithmeticFusionOptimizer::processMachineBlock(MachineBasicBlock &MBB) {
   return modified;
 }
 
-unsigned ArithmeticFusionOptimizer::selectFusedOperation(
-    unsigned multiplicationOp, unsigned arithmeticOp,
-    bool mulIsArithOp1) const {
+unsigned
+ArithmeticFusionOptimizer::selectFusedOperation(unsigned multiplicationOp,
+                                                unsigned arithmeticOp,
+                                                bool mulIsArithOp1) const {
 
   auto isSub = [&](unsigned op) {
-    return (op == X86::SUBSSrr || op == X86::SUBSDrr ||
-            op == X86::VSUBSSrr || op == X86::VSUBSDrr);
+    return (op == X86::SUBSSrr || op == X86::SUBSDrr || op == X86::VSUBSSrr ||
+            op == X86::VSUBSDrr);
   };
 
   if (!isSub(arithmeticOp))
