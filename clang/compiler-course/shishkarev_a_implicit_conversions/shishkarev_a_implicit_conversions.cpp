@@ -29,6 +29,11 @@ public:
         castKind == clang::CK_FunctionToPointerDecay) {
       return true;
     }
+
+    if (ICE->isPartOfExplicitCast()) {
+        return true;
+    }
+
     clang::QualType SourceType = ICE->getSubExpr()->getType();
     clang::QualType TargetType = ICE->getType();
 
