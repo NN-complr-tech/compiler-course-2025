@@ -1,5 +1,12 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/Data_types_Dudchenko_Olesya_FIIT2_ClangAST%pluginext -plugin type_info_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
+// Сначала проверяем отладочный вывод
+// CHECK-DAG: DEBUG: ParseArgs called
+// CHECK-DAG: DEBUG: Creating AST consumer
+// CHECK-DAG: DEBUG: TypeInfoConsumer created
+// CHECK-DAG: DEBUG: TypeInfoVisitor created
+// CHECK-DAG: DEBUG: Handling translation unit
+
 // CHECK: Human
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ age (unsigned int|public)

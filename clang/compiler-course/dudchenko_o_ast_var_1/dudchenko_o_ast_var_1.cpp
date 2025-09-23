@@ -6,13 +6,28 @@
 
 namespace {
 class TypeInfoVisitor : public clang::RecursiveASTVisitor<TypeInfoVisitor> {
+private:
+  clang::ASTContext *m_context;
+
 public:
-  explicit TypeInfoVisitor(clang::ASTContext *context) {}
+  explicit TypeInfoVisitor(clang::ASTContext *context) : m_context(context) {
+    llvm::errs() << "DEBUG: TypeInfoVisitor created\n";
+  }
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
+    llvm::errs() << "DEBUG: Visiting record: " 
+                 << (record->getIdentifier() ? record->getName() : "(anonymous)")
+                 << "\n";
+
     auto &outs = llvm::outs();
 
-    if (record->isImplicit() || !record->getIdentifier()) {
+    if (record->isImplicit()) {
+      llvm::errs() << "DEBUG: Skipping implicit record\n";
+      return true;
+    }
+    
+    if (!record->getIdentifier()) {
+      llvm::errs() << "DEBUG: Skipping anonymous record\n";
       return true;
     }
 
@@ -26,7 +41,7 @@ public:
           outs << ", ";
         }
         auto *baseDecl = base.getType()->getAsCXXRecordDecl();
-        if (baseDecl && !baseDecl->getName().empty()) {
+        if (baseDecl && baseDecl->getIdentifier()) {
           outs << baseDecl->getName();
         } else {
           outs << base.getType().getAsString();
@@ -115,10 +130,14 @@ private:
 
 class TypeInfoConsumer : public clang::ASTConsumer {
 public:
-  explicit TypeInfoConsumer(clang::ASTContext *context) : m_visitor(context) {}
+  explicit TypeInfoConsumer(clang::ASTContext *context) : m_visitor(context) {
+    llvm::errs() << "DEBUG: TypeInfoConsumer created\n";
+  }
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
+    llvm::errs() << "DEBUG: Handling translation unit\n";
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
+    llvm::errs() << "DEBUG: Finished traversal\n";
   }
 
 private:
@@ -129,16 +148,18 @@ class TypeInfoAction : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+    llvm::errs() << "DEBUG: Creating AST consumer\n";
     return std::make_unique<TypeInfoConsumer>(&ci.getASTContext());
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
+    llvm::errs() << "DEBUG: ParseArgs called\n";
     return true;
   }
 
   PluginASTAction::ActionType getActionType() override {
-    return AddAfterMainAction;
+    return CmdlineBeforeMainAction;
   }
 };
 } // namespace
