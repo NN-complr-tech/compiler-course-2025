@@ -1,0 +1,155 @@
+; RUN: opt -load-pass-plugin %llvmshlibdir/DivToBitwiseShiftPass_Dormidontov_Egor_FIIT2_LLVM_IR%pluginext \
+; RUN: -passes=div-to-shift -S %s | FileCheck %s
+
+; ###Проверка замены деления на степень двойки (8) на сдвиг вправо
+; ###Вход:  return value / 8;
+; ###После пасса:  return value >> 3;
+; CHECK-LABEL: @divide_by_eight
+; CHECK: ashr i32 %{{[^,]+}}, 3
+
+define i32 @divide_by_eight(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 8
+  ret i32 %div
+}
+
+; ###Проверка, что деление на не-степень двойки (5) НЕ заменяется
+; ###Вход:  return value / 5;
+; ###После пасса:  return value / 5;  //никаких сдвигов
+; CHECK-LABEL: @divide_by_five
+; CHECK: sdiv i32 %{{[^,]+}}, 5
+
+define i32 @divide_by_five(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 5
+  ret i32 %div
+}
+
+; ###Проверка замены беззнакового деления на степень двойки (16) на логический сдвиг вправо 
+; ###Вход:  return value / 16;   //где value - unsigned
+; ###После пасса:  return value >> 4;
+; CHECK-LABEL: @udivide_by_sixteen
+; CHECK: lshr i32 %{{[^,]+}}, 4
+
+define i32 @udivide_by_sixteen(i32 %val) {
+entry:
+  %div = udiv i32 %val, 16
+  ret i32 %div
+}
+
+; ###Проверка, что посторонние инструкции (умножение) не затрагиваются пассом
+; ###Вход:  return value * 2;
+; ###После пасса:  return value * 2; //никаких сдвигов, никаких изменений
+; CHECK-LABEL: @multiply_by_two
+; CHECK: mul i32 %{{[^,]+}}, 2
+
+define i32 @multiply_by_two(i32 %val) {
+entry:
+  %mul = mul i32 %val, 2
+  ret i32 %mul
+}
+
+; ###Проверка, что деление на не-степень двойки (17) НЕ заменяется
+; ###Вход:  return value / 17;
+; ###После пасса:  return value / 17;  // никаких сдвигов
+; CHECK-LABEL: @divide_by_seventeen
+; CHECK: sdiv i32 %{{[^,]+}}, 17
+
+define i32 @divide_by_seventeen(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 17
+  ret i32 %div
+}
+
+; ###Проверка, что деление на не-степень двойки (3) НЕ заменяется
+; ###Вход:  return value / 3;
+; ###После пасса:  return value / 3;  // никаких сдвигов
+; CHECK-LABEL: @divide_by_three
+; CHECK: sdiv i32 %{{[^,]+}}, 3
+
+define i32 @divide_by_three(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 3
+    ret i32 %div
+}
+
+; ###Проверка замены деления на степень двойки (16) на сдвиг вправо
+; ###Вход:  return value / 16;
+; ###После пасса:  return value >> 4;
+; CHECK-LABEL: @divide_by_sixteen
+; CHECK: ashr i32 %{{[^,]+}}, 4
+
+define i32 @divide_by_sixteen(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 16
+  ret i32 %div
+}
+
+; ###Проверка замены деления на степень двойки (2) на сдвиг вправо
+; ###Вход:  return value / 2;
+; ###После пасса:  return value >> 1;
+; CHECK-LABEL: @divide_by_two
+; CHECK: ashr i32 %{{[^,]+}}, 1
+
+define i32 @divide_by_two(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 2
+  ret i32 %div
+}
+
+; ###Проверка: деление на 0 (деление на 0 запрещено, оптимизации не будет, оставляем как есть)
+; ###Вход:  return value / 0;
+; CHECK-LABEL: @divide_by_zero
+; CHECK: sdiv i32 %{{[^,]+}}, 0
+
+define i32 @divide_by_zero(i32 %val) {
+entry:
+  %div = sdiv i32 %val, 0
+  ret i32 %div
+}
+
+; ###Проверка: деление на 1 (обычно оптимизируется в сдвиг на 0 или просто %val)
+; CHECK-LABEL: @divide_by_one
+; CHECK: ashr i32 %val, 0
+
+define i32 @divide_by_one(i32 %val) {
+entry:
+  %div2shift = ashr i32 %val, 0
+  ret i32 %div2shift
+}
+
+; ###Проверка: деление на переменную (никакой оптимизации, т.к. делитель неизвестен на этапе компиляции)
+; ###Вход:  return value / divisor;
+; CHECK-LABEL: @divide_by_variable
+; CHECK: sdiv i32 %{{[^,]+}}, %{{[^,]+}}
+
+define i32 @divide_by_variable(i32 %val, i32 %divisor) {
+entry:
+  %div = sdiv i32 %val, %divisor
+  ret i32 %div
+}
+
+; ###Проверка: деление на -4 (отрицательная степень двойки, ожидается оптимизация)
+; ###Вход:  return value / -4;
+; ###После пасса:  return -(value >> 2);
+; CHECK-LABEL: @divide_by_minus_four
+; CHECK: %div2shift = ashr i32 %val, 2
+; CHECK: %neg = sub i32 0, %div2shift
+; CHECK: ret i32 %neg
+
+define i32 @divide_by_minus_four(i32 %val) {
+entry:
+  %div = sdiv i32 %val, -4
+  ret i32 %div
+}
+
+; ###Проверка: деление на -11 (не степень двойки, оптимизации не будет, оставляем как есть)
+; ###Вход:  return value / -11;
+; CHECK-LABEL: @divide_by_minus_eleven
+; CHECK: sdiv i32 %{{[^,]+}}, -11
+
+define i32 @divide_by_minus_eleven(i32 %val) {
+entry:
+  %div = sdiv i32 %val, -11
+  ret i32 %div
+}

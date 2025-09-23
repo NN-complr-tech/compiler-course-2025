@@ -1,0 +1,409 @@
+#  RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+#  RUN:     --load=%llvmshlibdir/BackEndFMAPass_ShulpinIlya_FIIT1_BACKEND%shlibext \
+#  RUN:     -run-pass=fma-decompose-x86 %s -o - | FileCheck %s
+
+# test-fma.cpp
+#
+# #include <immintrin.h>
+# 
+# // packed single-precision fma
+# __m128 test_packed_single(__m128 a, __m128 b, __m128 c) {
+#     // should lower to vfmadd132ps
+#     return _mm_fmadd_ps(a, b, c);
+# }
+# 
+# // packed double-precision fma
+# __m128d test_packed_double(__m128d a, __m128d b, __m128d c) {
+#     // should lower to vfmadd132pd
+#     return _mm_fmadd_pd(a, b, c);
+# }
+# 
+# // scalar single-precision fma
+# float test_scalar_single(float a, float b, float c) {
+#     // builtin_fmaf maps to fma scalar single
+#     return __builtin_fmaf(a, b, c);
+# }
+# 
+# // scalar double-precision fma
+# double test_scalar_double(double a, double b, double c) {
+#     // builtin_fma maps to fma scalar double
+#     return __builtin_fma(a, b, c);
+# }
+
+--- |
+  ; ModuleID = 'fma.ll'
+  source_filename = "test-fma.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <4 x float> @_Z18test_packed_singleDv4_fS_S_(<4 x float> noundef %0, <4 x float> noundef %1, <4 x float> noundef %2) local_unnamed_addr #0 {
+    %4 = tail call noundef <4 x float> @llvm.fma.v4f32(<4 x float> %0, <4 x float> %1, <4 x float> %2)
+    ret <4 x float> %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef <2 x double> @_Z18test_packed_doubleDv2_dS_S_(<2 x double> noundef %0, <2 x double> noundef %1, <2 x double> noundef %2) local_unnamed_addr #0 {
+    %4 = tail call noundef <2 x double> @llvm.fma.v2f64(<2 x double> %0, <2 x double> %1, <2 x double> %2)
+    ret <2 x double> %4
+  }
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef float @_Z18test_scalar_singlefff(float noundef %0, float noundef %1, float noundef %2) local_unnamed_addr #1 {
+    %4 = tail call float @llvm.fma.f32(float %0, float %1, float %2)
+    ret float %4
+  }
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare float @llvm.fma.f32(float, float, float) #2
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef double @_Z18test_scalar_doubleddd(double noundef %0, double noundef %1, double noundef %2) local_unnamed_addr #1 {
+    %4 = tail call double @llvm.fma.f64(double %0, double %1, double %2)
+    ret double %4
+  }
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare double @llvm.fma.f64(double, double, double) #2
+  
+  ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable
+  define dso_local noundef i32 @main() local_unnamed_addr #0 {
+    ret i32 0
+  }
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare <4 x float> @llvm.fma.v4f32(<4 x float>, <4 x float>, <4 x float>) #2
+  
+  ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+  declare <2 x double> @llvm.fma.v2f64(<2 x double>, <2 x double>, <2 x double>) #2
+  
+  attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "tune-cpu"="generic" }
+  attributes #1 = { mustprogress nofree norecurse nosync nounwind willreturn memory(none) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+avx,+cmov,+crc32,+cx8,+fma,+fxsr,+mmx,+popcnt,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave" "tune-cpu"="generic" }
+  attributes #2 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) "target-cpu"="haswell" }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 2}
+  !4 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
+
+...
+---
+# CHECK-LABEL: name:            _Z18test_packed_singleDv4_fS_S_
+name:            _Z18test_packed_singleDv4_fS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %4:vr128 = MULPSrr %0, %1, implicit $mxcsr
+    ; CHECK-NEXT: %3:vr128 = ADDPSrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = nofpexcept VFMADD132PSr %0, %2, %1, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z18test_packed_doubleDv2_dS_S_
+name:            _Z18test_packed_doubleDv2_dS_S_
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: vr128, preferred-register: '' }
+  - { id: 1, class: vr128, preferred-register: '' }
+  - { id: 2, class: vr128, preferred-register: '' }
+  - { id: 3, class: vr128, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %4:vr128 = MULPDrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:vr128 = ADDPDrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = nofpexcept VFMADD213PDr %1, %0, %2, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z18test_scalar_singlefff
+name:            _Z18test_scalar_singlefff
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr32, preferred-register: '' }
+  - { id: 1, class: fr32, preferred-register: '' }
+  - { id: 2, class: fr32, preferred-register: '' }
+  - { id: 3, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ; CHECK: %2:fr32 = COPY $xmm2
+    ; CHECK-NEXT: %1:fr32 = COPY $xmm1
+    ; CHECK-NEXT: %0:fr32 = COPY $xmm0
+    ; CHECK-NEXT: %4:fr32 = MULSSrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:fr32 = ADDSSrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VFMADD231SSr %2, %1, %0, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name:            _Z18test_scalar_doubleddd
+name:            _Z18test_scalar_doubleddd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: fr64, preferred-register: '' }
+  - { id: 1, class: fr64, preferred-register: '' }
+  - { id: 2, class: fr64, preferred-register: '' }
+  - { id: 3, class: fr64, preferred-register: '' }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.3):
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ; CHECK: %2:fr64 = COPY $xmm2
+    ; CHECK-NEXT: %1:fr64 = COPY $xmm1
+    ; CHECK-NEXT: %0:fr64 = COPY $xmm0
+    ; CHECK-NEXT: %4:fr64 = MULSDrr %1, %0, implicit $mxcsr
+    ; CHECK-NEXT: %3:fr64 = ADDSDrr %2, %4, implicit $mxcsr
+    ; CHECK-NEXT: $xmm0 = COPY %3
+    ; CHECK-NEXT: RET 0, $xmm0
+  
+    %2:fr64 = COPY $xmm2
+    %1:fr64 = COPY $xmm1
+    %0:fr64 = COPY $xmm0
+    %3:fr64 = nofpexcept VFMADD213SDr %1, %0, %2, implicit $mxcsr
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
