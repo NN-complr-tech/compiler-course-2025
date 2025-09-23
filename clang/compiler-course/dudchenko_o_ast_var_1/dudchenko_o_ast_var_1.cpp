@@ -15,8 +15,8 @@ public:
   }
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
-    llvm::errs() << "DEBUG: Visiting record: " 
-                 << (record->getIdentifier() ? record->getName() : "(anonymous)")
+    llvm::errs() << "DEBUG: Visiting record: "
+                 << (record->getIdentifier() ? record->getNameAsString() : "(anonymous)")
                  << "\n";
 
     auto &outs = llvm::outs();
@@ -25,13 +25,13 @@ public:
       llvm::errs() << "DEBUG: Skipping implicit record\n";
       return true;
     }
-    
+
     if (!record->getIdentifier()) {
       llvm::errs() << "DEBUG: Skipping anonymous record\n";
       return true;
     }
 
-    outs << record->getName();
+    outs << record->getNameAsString();
 
     if (record->getNumBases() > 0) {
       outs << " -> ";
@@ -42,7 +42,7 @@ public:
         }
         auto *baseDecl = base.getType()->getAsCXXRecordDecl();
         if (baseDecl && baseDecl->getIdentifier()) {
-          outs << baseDecl->getName();
+          outs << baseDecl->getNameAsString();
         } else {
           outs << base.getType().getAsString();
         }
@@ -84,8 +84,11 @@ public:
             methodName = "(anonymous)";
           }
 
+          llvm::StringRef retType =
+              llvm::StringRef(method->getReturnType().getAsString()).trim();
+
           outs << "| |_ " << methodName << " ("
-               << method->getReturnType().getAsString() << "()|"
+               << retType << "()|"
                << getAccessSpecifierString(method->getAccess());
 
           bool isVirtualMethod = method->isVirtual();
