@@ -8,6 +8,8 @@
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 2
+// CHECK-NEXT: int -> float: 1
+
 
 // CHECK: Function `one`
 // CHECK-NEXT: int -> bool: 1
