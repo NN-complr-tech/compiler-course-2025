@@ -46,8 +46,7 @@ void replaceCeil(ModuleOp module) {
 }
 
 class ReplaceMathCeil
-    : public PassWrapper<ReplaceMathCeil,
-                         OperationPass<ModuleOp>> {
+    : public PassWrapper<ReplaceMathCeil, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
     return "ReplaceMathCeil_Dudchenko_Olesya_FIIT2_MLIR";
