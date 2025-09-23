@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/variable_prefixer_SdobnovV_FIIT2_ClangAST%pluginext variable_prefixer -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/variable_prefixer_SdobnovV_FIIT2_ClangAST%pluginext -plugin variable_prefixer -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: double static global_Value = 3.14;
 // CHECK-NEXT: extern char global_Symbol;
