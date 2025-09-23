@@ -12,7 +12,8 @@ using namespace mlir;
 namespace {
 class LoopTracingPass : public PassWrapper<LoopTracingPass, OperationPass<ModuleOp>> {
 private:
-  void instrumentLoopBody(Operation* loopOp, Block* bodyBlock, ValueRange inductionVars, OpBuilder& rewriter) {
+  void instrumentLoopBody(Operation *loopOp, Block *bodyBlock,
+                          ValueRange inductionVars, OpBuilder &rewriter) {
     Location opLocation = loopOp->getLoc();
     size_t varCount = inductionVars.size();
 
@@ -26,18 +27,21 @@ private:
     rewriter.create<func::CallOp>(opLocation, loopEndMarker, TypeRange{}, inductionVars);
   }
 
-  void handleForLikeLoop(Operation* forOp, OpBuilder& rewriter) {
+  void handleForLikeLoop(Operation *forOp, OpBuilder &rewriter) {
     if (auto affineFor = dyn_cast<affine::AffineForOp>(forOp)) {
-      instrumentLoopBody(affineFor, affineFor.getBody(), ValueRange{affineFor.getInductionVar()}, rewriter);
+      instrumentLoopBody(affineFor, affineFor.getBody(),
+                         ValueRange{affineFor.getInductionVar()}, rewriter);
     } else if (auto scfFor = dyn_cast<scf::ForOp>(forOp)) {
-      instrumentLoopBody(scfFor, scfFor.getBody(), ValueRange{scfFor.getInductionVar()}, rewriter);
+      instrumentLoopBody(scfFor, scfFor.getBody(),
+                         ValueRange{scfFor.getInductionVar()}, rewriter);
     } else if (auto affineParallel = dyn_cast<affine::AffineParallelOp>(forOp)) {
-      instrumentLoopBody(affineParallel, affineParallel.getBody(), affineParallel.getIVs(), rewriter);
+      instrumentLoopBody(affineParallel, affineParallel.getBody(),
+                         affineParallel.getIVs(), rewriter);
     }
   }
 
-  void handleWhileLoop(scf::WhileOp whileOp, OpBuilder& rewriter) {
-    Block& afterBlock = whileOp.getAfter().front();
+  void handleWhileLoop(scf::WhileOp whileOp, OpBuilder &rewriter) {
+    Block &afterBlock = whileOp.getAfter().front();
     ValueRange beforeArgs = whileOp.getBeforeArguments();
     ValueRange afterArgs = whileOp.getAfterArguments();
 
@@ -58,7 +62,7 @@ public:
   StringRef getArgument() const final {
     return "mlirtraceloop_Anikin_Maksim_FIIT2_MLIR";
   }
-  
+
   StringRef getDescription() const final {
     return "Instruments loop operations with tracing function calls. "
            "Inserts @trace_loop_iter_begin_* at loop entry and "
@@ -70,12 +74,15 @@ public:
     ModuleOp module = getOperation();
     OpBuilder instrumentationBuilder(module);
 
-    auto loopInstrumentation = [&](Operation* op) {
-      TypeSwitch<Operation*>(op)
+    auto loopInstrumentation = [&](Operation *op) {
+      TypeSwitch<Operation *>(op)
           .Case<affine::AffineForOp, affine::AffineParallelOp, scf::ForOp>(
-              [&](auto loopOp) { handleForLikeLoop(loopOp, instrumentationBuilder); })
-          .Case<scf::WhileOp>([&](scf::WhileOp whileOp) { 
-              handleWhileLoop(whileOp, instrumentationBuilder); })
+              [&](auto loopOp) {
+                handleForLikeLoop(loopOp, instrumentationBuilder);
+              })
+          .Case<scf::WhileOp>([&](scf::WhileOp whileOp) {
+            handleWhileLoop(whileOp, instrumentationBuilder);
+          })
           .Default([](auto) {});
     };
 
@@ -97,7 +104,6 @@ PassPluginLibraryInfo getLoopTracingPluginInfo() {
   };
 }
 
-extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo
-mlirGetPassPluginInfo() {
+extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo mlirGetPassPluginInfo() {
   return getLoopTracingPluginInfo();
 }
