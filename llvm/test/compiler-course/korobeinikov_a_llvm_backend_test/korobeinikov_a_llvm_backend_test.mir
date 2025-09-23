@@ -1,0 +1,157 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+fma \
+# RUN:     --load=%llvmshlibdir/FuseMulSubPass_Korobeinikov_Arseny_FIIT1_BACKEND%shlibext \
+# RUN:     -run-pass=korobeinikov-fuse-mul-sub %s -o - | FileCheck %s
+
+# Проверка базового случая: c - (a*b) → VFNMADD213SS
+# CHECK-LABEL: name: korobeinikov_ss_fma_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr32 = VFNMADD213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            korobeinikov_ss_fma_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Проверка случая с fneg + fadd: (-(a*b)) + c → тоже VFNMADD213SS
+# CHECK-LABEL: name: korobeinikov_ss_neg_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VADDSSrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr32 = VFNMADD213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            korobeinikov_ss_neg_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VADDSSrr killed %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Проверка случая с double: c - (a*b) → VFNMADD213SD
+# CHECK-LABEL: name: korobeinikov_sd_fma_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSDrr
+# CHECK-NOT: VSUBSDrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr64 = VFNMADD213SDr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            korobeinikov_sd_fma_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr64 }
+  - { id: 1, class: fr64 }
+  - { id: 2, class: fr64 }
+  - { id: 3, class: fr64 }
+  - { id: 4, class: fr64 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %2:fr64 = COPY $xmm2
+    %1:fr64 = COPY $xmm1
+    %0:fr64 = COPY $xmm0
+    %3:fr64 = nofpexcept VMULSDrr %0, %1, implicit $mxcsr
+    %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Проверка случая (a*b) - c → VFMSUB213SS
+# CHECK-LABEL: name: korobeinikov_ss_fmsub_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[RES:[a-z0-9]+]]:fr32 = VFMSUB213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            korobeinikov_ss_fmsub_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr killed %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Проверка случая с порядком 132: c  (a*b) → VFNMADD132SS
+# CHECK-LABEL: name: korobeinikov_ss_fma132_add_test
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VADDSSrr
+# CHECK: %[[RES:[a-z0-9]]]:fr32 = VFNMADD132SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RES]]
+# CHECK: RET64 implicit $xmm0
+---
+name:            korobeinikov_ss_fma132_add_test
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %2:fr32 = COPY $xmm2      ; c
+    %0:fr32 = COPY $xmm0      ; a
+    %1:fr32 = COPY $xmm1      ; b
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr  ; tmp = a * b
+    %4:fr32 = nofpexcept VADDSSrr %2, killed %3, implicit $mxcsr  ; c  tmp
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
