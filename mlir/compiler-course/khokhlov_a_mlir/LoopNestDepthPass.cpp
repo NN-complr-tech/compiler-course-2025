@@ -10,11 +10,11 @@
 
 namespace {
 
-int computeRegionNestingDepth(mlir::Region &region) {
-  int maxDepth = 0;
+int computeRegionNestingDepth(mlir::Region &Region) {
+  int MaxDepth = 0;
 
   // Обходим все блоки в регионе
-  for (mlir::Block &block : region) {
+  for (mlir::Block &block : Region) {
     for (mlir::Operation &op : block) {
       // Проверяем, является ли операция циклом или условным оператором
       if (op.hasTrait<mlir::OpTrait::IsTerminator>() ||
@@ -38,10 +38,10 @@ int computeRegionNestingDepth(mlir::Region &region) {
       opDepth += maxSubRegionDepth;
 
       // Обновляем максимальную глубину
-      maxDepth = std::max(maxDepth, opDepth);
+      MaxDepth = std::max(MaxDepth, opDepth);
     }
   }
-  return maxDepth;
+  return MaxDepth;
 }
 
 class LoopNestDepthPass
@@ -57,41 +57,41 @@ public:
   }
 
   void runOnOperation() override {
-    mlir::ModuleOp module = getOperation();
-    mlir::OpBuilder builder(module.getContext());
+    mlir::ModuleOp Module = getOperation();
+    mlir::OpBuilder Builder(Module.getContext());
 
     // Обходим все функции в модуле
-    module.walk([&](mlir::func::FuncOp func) {
-      llvm::SmallVector<int64_t> loopDepths;
+    Module.walk([&](mlir::func::FuncOp Func) {
+      llvm::SmallVector<int64_t> LoopDepths;
 
       // Обходим все операции в функции
-      func.walk([&](mlir::Operation *op) {
+      Func.walk([&](mlir::Operation *Op) {
         if (mlir::isa<mlir::scf::ForOp, mlir::scf::WhileOp,
-                      mlir::affine::AffineForOp>(op)) {
+                      mlir::affine::AffineForOp>(Op)) {
           // Начальная глубина цикла = 1
-          int depth = 1;
+          int Depth = 1;
 
           // Проверяем вложенные регионы
-          int maxNestedDepth = 0;
-          for (mlir::Region &region : op->getRegions()) {
-            int regionDepth = computeRegionNestingDepth(region);
-            maxNestedDepth = std::max(maxNestedDepth, regionDepth);
+          int MaxNestedDepth = 0;
+          for (mlir::Region &Region : Op->getRegions()) {
+            int regionDepth = computeRegionNestingDepth(Region);
+            MaxNestedDepth = std::max(MaxNestedDepth, regionDepth);
           }
 
           // Общая глубина = 1 + максимальная глубина вложенных регионов
-          loopDepths.push_back(depth + maxNestedDepth);
+          LoopDepths.push_back(Depth + MaxNestedDepth);
         }
       });
 
       // Устанавливаем атрибут, если найдены циклы
-      if (!loopDepths.empty()) {
-        func->setAttr("my_loop_depths", builder.getI64ArrayAttr(loopDepths));
-        llvm::outs() << "Function '" << func.getName()
+      if (!LoopDepths.empty()) {
+        Func->setAttr("my_loop_depths", Builder.getI64ArrayAttr(LoopDepths));
+        llvm::outs() << "Function '" << Func.getName()
                      << "': processed. Loop depths: ";
-        llvm::interleaveComma(loopDepths, llvm::outs());
+        llvm::interleaveComma(LoopDepths, llvm::outs());
         llvm::outs() << "\n";
       } else {
-        llvm::outs() << "Function '" << func.getName() << "': no loops found\n";
+        llvm::outs() << "Function '" << Func.getName() << "': no loops found\n";
       }
     });
   }
