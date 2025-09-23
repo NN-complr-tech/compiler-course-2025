@@ -20,7 +20,7 @@ std::string parseSpecifier(clang::AccessSpecifier AS_tmp) {
 
 bool checkForFields(const clang::CXXRecordDecl *record) {
   for (const auto *Decl : record->decls()) {
-    if (llvm::isa<clang::FieldDecl>(Decl)) 
+    if (llvm::isa<clang::FieldDecl>(Decl))
       return true;
     if (const auto *Var = llvm::dyn_cast<clang::VarDecl>(Decl))
       return true;
@@ -144,7 +144,8 @@ private:
 
 class DataTypesAction final : public clang::PluginASTAction {
 public:
-  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+  std::unique_ptr<clang::ASTConsumer>
+  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     return std::make_unique<DataTypesConsumer>(&ci.getASTContext());
   }
   bool ParseArgs(const clang::CompilerInstance &ci,
