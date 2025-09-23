@@ -52,7 +52,7 @@ struct FmaPass : llvm::PassInfoMixin<FmaPass> {
         llvm::Value *FMulAdd = Builder.CreateIntrinsic(
             llvm::Intrinsic::fmuladd, Info.FMul->getType(),
             {Info.FMul->getOperand(0), Info.FMul->getOperand(1),
-             Info.OtherOperand});
+             Info.Other});
 
         Info.FAdd->replaceAllUsesWith(FMulAdd);
         Info.FAdd->eraseFromParent();
