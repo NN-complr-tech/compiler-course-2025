@@ -6,21 +6,21 @@
 
 namespace agafeev_ast_1 {
 std::string parseSpecifier(clang::AccessSpecifier AS_tmp) {
-  switch (AS_tmp){
-    case clang::AS_public:
-      return "public";
-    case clang::AS_private:
-      return "private";
-    case clang::AS_protected:
-      return "protected";
-    default:
-      return "";
+  switch (AS_tmp) {
+  case clang::AS_public:
+    return "public";
+  case clang::AS_private:
+    return "private";
+  case clang::AS_protected:
+    return "protected";
+  default:
+    return "";
   }
 }
 
 bool checkForFields(const clang::CXXRecordDecl *record) {
   for (const auto *Decl : record->decls()) {
-    if (llvm::isa<clang::FieldDecl>(Decl))
+    if (llvm::isa<clang::FieldDecl>(Decl)) 
       return true;
     if (const auto *Var = llvm::dyn_cast<clang::VarDecl>(Decl))
       return true;
@@ -46,8 +46,12 @@ void handleFields(const clang::CXXRecordDecl *record,
   }
 }
 
-void handleMethods(const clang::CXXRecordDecl *record, llvm::raw_ostream &output) {
-  if (std::none_of(record->method_begin(), record->method_end(), [](const clang::CXXMethodDecl *method) {return !method->isImplicit();})) {
+void handleMethods(const clang::CXXRecordDecl *record,
+                   llvm::raw_ostream &output) {
+  if (std::none_of(record->method_begin(), record->method_end(),
+                   [](const clang::CXXMethodDecl *method) {
+                     return !method->isImplicit();
+                   })) {
     output << "| |_ (has no methods)\n";
     return;
   }
@@ -58,21 +62,21 @@ void handleMethods(const clang::CXXRecordDecl *record, llvm::raw_ostream &output
     output << "| |_ " << method->getNameAsString() << " ("
            << method->getReturnType().getAsString();
     output << "(";
-    llvm::interleaveComma(
-      method->parameters(), 
-      output, 
-      [](const clang::ParmVarDecl *param) 
-      {llvm::outs() << param->getType().getAsString();}
-    );
+    llvm::interleaveComma(method->parameters(), output,
+                          [](const clang::ParmVarDecl *param) {
+                            llvm::outs() << param->getType().getAsString();
+                          });
     output << ")";
     if (method->isStatic())
       output << "|static";
     output << "|" << parseSpecifier(method->getAccess());
-    if (record && std::any_of(record->friends().begin(), record->friends().end(), [method](const clang::FriendDecl *friendD) {
-      if (const auto *FD = friendD->getFriendDecl())
-        return FD == method;
-      return false;
-    }))
+    if (record &&
+        std::any_of(record->friends().begin(), record->friends().end(),
+                    [method](const clang::FriendDecl *friendD) {
+                      if (const auto *FD = friendD->getFriendDecl())
+                        return FD == method;
+                      return false;
+                    }))
       output << "|friend";
     if (method->hasAttr<clang::OverrideAttr>())
       output << "|override";
@@ -103,9 +107,11 @@ public:
       }
       if (record->getNumBases()) {
         output << " -> ";
-        llvm::interleaveComma(record->bases(), output, [&](const clang::CXXBaseSpecifier &base) {
-          output<< parseSpecifier(base.getAccessSpecifier())<< " " << base.getType().getAsString();
-        });
+        llvm::interleaveComma(
+            record->bases(), output, [&](const clang::CXXBaseSpecifier &base) {
+              output << parseSpecifier(base.getAccessSpecifier()) << " "
+                     << base.getType().getAsString();
+            });
       }
       output << "\n";
     }
@@ -138,8 +144,7 @@ private:
 
 class DataTypesAction final : public clang::PluginASTAction {
 public:
-  std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
     return std::make_unique<DataTypesConsumer>(&ci.getASTContext());
   }
   bool ParseArgs(const clang::CompilerInstance &ci,

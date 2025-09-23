@@ -1,4 +1,6 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/DataTypesPlugin_Agafeev_Sergey_FIIT3_ClangAST%pluginext -plugin AgafeevPlugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load
+// %llvmshlibdir/DataTypesPlugin_Agafeev_Sergey_FIIT3_ClangAST%pluginext -plugin
+// AgafeevPlugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: testClass(class|template)
 // CHECK-NEXT: |_Fields
@@ -6,7 +8,8 @@
 // CHECK-NEXT: | |_ value (int|private)
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ (has no methods)
-template <class Type> class testClass {
+template <class Type>
+class testClass {
   Type a;
   int value;
 };
@@ -15,7 +18,8 @@ template <class Type> class testClass {
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ abc (TypeClass|private)
 // CHECK-NEXT: | |_ def (Name|private)
-template <class TypeClass, typename Name> class testTemplatesClass {
+template <class TypeClass, typename Name>
+class testTemplatesClass {
   TypeClass abc;
   Name def;
 };
@@ -71,7 +75,7 @@ class testPrivateClass : private testBaseClass {};
 struct testPublicPrivate {
   long long ll;
 
-private:
+ private:
   float af;
 };
 
