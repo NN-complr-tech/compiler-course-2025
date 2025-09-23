@@ -31,7 +31,7 @@ public:
     }
 
     if (ICE->isPartOfExplicitCast()) {
-        return true;
+      return true;
     }
 
     clang::QualType SourceType = ICE->getSubExpr()->getType();
