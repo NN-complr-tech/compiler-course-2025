@@ -30,7 +30,7 @@ struct FmaPass : llvm::PassInfoMixin<FmaPass> {
       std::vector<FmaReplace> ReplaceVector;
 
       auto CheckOperand = [](llvm::Value *Operand, llvm::Value *OtherOperand)
-          -> llvm::BinaryOperator * { isFmulInstruction(Operand) };
+          -> llvm::BinaryOperator * { isFmulInstruction(Operand); };
 
       for (llvm::Instruction &Inst : BB) {
         if (auto *FAdd = llvm::dyn_cast<llvm::BinaryOperator>(&Inst)) {
@@ -51,8 +51,7 @@ struct FmaPass : llvm::PassInfoMixin<FmaPass> {
         llvm::IRBuilder<> Builder(Info.FAdd);
         llvm::Value *FMulAdd = Builder.CreateIntrinsic(
             llvm::Intrinsic::fmuladd, Info.FMul->getType(),
-            {Info.FMul->getOperand(0), Info.FMul->getOperand(1),
-             Info.Other});
+            {Info.FMul->getOperand(0), Info.FMul->getOperand(1), Info.Other});
 
         Info.FAdd->replaceAllUsesWith(FMulAdd);
         Info.FAdd->eraseFromParent();
