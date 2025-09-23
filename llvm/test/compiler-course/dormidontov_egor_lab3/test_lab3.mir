@@ -44,7 +44,12 @@
 ...
 ---
 # CHECK-LABEL: name:            _Z6mulsubfff
-# CHECK: VFMSUB213SSr
+# CHECK: %2:fr32 = COPY $xmm2
+# CHECK-NEXT: %1:fr32 = COPY $xmm1
+# CHECK-NEXT: %0:fr32 = COPY $xmm0
+# CHECK-NEXT: %{{[0-9]+}}:fr32 = {{(nofpexcept )?}}VFMSUB213SSr {{(killed )?}}%0, {{(killed )?}}%1, {{(killed )?}}%2, implicit $mxcsr
+# CHECK-NOT: MULSSrr
+# CHECK-NOT: SUBSSrr
 
 name:            _Z6mulsubfff
 alignment:       16
@@ -119,7 +124,12 @@ body:             |
 ...
 ---
 # CHECK-LABEL: name:            _Z6submulfff
-# CHECK: VFNMADD213SSr
+# CHECK: %2:fr32 = COPY $xmm2
+# CHECK-NEXT: %1:fr32 = COPY $xmm1
+# CHECK-NEXT: %0:fr32 = COPY $xmm0
+# CHECK-NEXT: %{{[0-9]+}}:fr32 = {{(nofpexcept )?}}VFNMADD213SSr {{(killed )?}}%0, {{(killed )?}}%1, {{(killed )?}}%2, implicit $mxcsr
+# CHECK-NOT: MULSSrr
+# CHECK-NOT: SUBSSrr
 
 name:            _Z6submulfff
 alignment:       16
@@ -194,7 +204,12 @@ body:             |
 ...
 ---
 # CHECK-LABEL: name:            _Z9negmuladdfff
-# CHECK: VFNMADD213SSr
+# CHECK: %2:fr32 = COPY $xmm2
+# CHECK-NEXT: %1:fr32 = COPY $xmm1
+# CHECK-NEXT: %0:fr32 = COPY $xmm0
+# CHECK-NEXT: %{{[0-9]+}}:fr32 = {{(nofpexcept )?}}VFNMADD213SSr {{(killed )?}}%0, {{(killed )?}}%1, {{(killed )?}}%2, implicit $mxcsr
+# CHECK-NOT: MULSSrr
+# CHECK-NOT: XORPSrr
 
 name:            _Z9negmuladdfff
 alignment:       16
