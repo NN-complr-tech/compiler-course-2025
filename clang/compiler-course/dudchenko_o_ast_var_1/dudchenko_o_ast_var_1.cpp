@@ -39,7 +39,7 @@ public:
     if (record->field_begin() != record->field_end()) {
       outs << "|_Fields\n";
       for (const auto *field : record->fields()) {
-        std::string fieldName = field->getName();
+        std::string fieldName = field->getName().str();
         if (fieldName.empty()) {
           fieldName = "(anonymous)";
         }
