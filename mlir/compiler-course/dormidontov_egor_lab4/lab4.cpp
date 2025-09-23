@@ -50,8 +50,6 @@ public:
       int maxDepth = computeMaxLoopDepth(funcOp);
       funcOp->setAttr("max_loop_region_depth",
                       builder.getI32IntegerAttr(maxDepth));
-      llvm::outs() << "Func " << funcOp.getName()
-                   << ": max_loop_region_depth = " << maxDepth << "\n";
     });
   }
 };
