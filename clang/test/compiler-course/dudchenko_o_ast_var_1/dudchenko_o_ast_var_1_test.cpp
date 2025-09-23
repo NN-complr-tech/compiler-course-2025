@@ -4,10 +4,10 @@
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ age (unsigned int|public)
 // CHECK-NEXT: | |_ height (unsigned int|public)
-// CHECK-NEXT: |
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ sleep (void()|public|virtual|pure)
 // CHECK-NEXT: | |_ eat (void()|public|virtual|pure)
+// CHECK-NEXT: |
 struct Human {
   unsigned age;
   unsigned height;
@@ -18,14 +18,38 @@ struct Human {
 // CHECK: Engineer -> Human
 // CHECK-NEXT: |_Fields
 // CHECK-NEXT: | |_ salary (unsigned int|public)
-// CHECK-NEXT: |
 // CHECK-NEXT: |_Methods
 // CHECK-NEXT: | |_ sleep (void()|public|override)
 // CHECK-NEXT: | |_ eat (void()|public|override)
 // CHECK-NEXT: | |_ work (void()|public)
+// CHECK-NEXT: |
 struct Engineer : Human {
   unsigned salary;
   void sleep() override { /* something */ }
   void eat() override { /* something */ }
   void work() { /* something */ }
+};
+
+// ДОБАВЛЕННЫЕ ТЕСТЫ из ревью:
+
+// CHECK: A
+// CHECK-NEXT: |
+struct A {};
+
+// CHECK: B
+// CHECK-NEXT: |
+struct B {
+  struct A {};
+};
+
+// CHECK: EmptyClass
+// CHECK-NEXT: |
+struct EmptyClass {};
+
+// CHECK: WithNested
+// CHECK-NEXT: |_Fields
+// CHECK-NEXT: | |_ nested (B::A|public)
+// CHECK-NEXT: |
+struct WithNested {
+  B::A nested;
 };

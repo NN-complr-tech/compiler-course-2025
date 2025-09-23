@@ -10,70 +10,96 @@ public:
   explicit TypeInfoVisitor(clang::ASTContext *context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
-    if (record->isImplicit()) {
+    auto &outs = llvm::outs();  // Убрали дублирование кода
+    
+    if (record->isImplicit() || record->getName().empty()) {
       return true;
     }
 
-    llvm::outs() << record->getName();
-
+    // Print class name and inheritance
+    outs << record->getName();
+    
     if (record->getNumBases() > 0) {
-      llvm::outs()
-          << " -> "
-          << record->bases_begin()->getType()->getAsCXXRecordDecl()->getName();
+      outs << " -> ";
+      bool firstBase = true;
+      for (const auto &base : record->bases()) {
+        if (!firstBase) {
+          outs << ", ";
+        }
+        auto *baseDecl = base.getType()->getAsCXXRecordDecl();
+        if (baseDecl && !baseDecl->getName().empty()) {
+          outs << baseDecl->getName();
+        } else {
+          outs << base.getType().getAsString();
+        }
+        firstBase = false;
+      }
     }
+    outs << "\n";
 
-    llvm::outs() << " \n";
-
+    // Print fields
     if (record->field_begin() != record->field_end()) {
-      llvm::outs() << "|_Fields\n";
+      outs << "|_Fields\n";
       for (const auto *field : record->fields()) {
-        llvm::outs() << "| |_ " << field->getName() << " ("
-                     << field->getType().getAsString() << "|"
-                     << getAccessSpecifierString(field->getAccess()) << ")\n";
+        std::string fieldName = field->getName();
+        if (fieldName.empty()) {
+          fieldName = "(anonymous)";
+        }
+        outs << "| |_ " << fieldName << " ("
+           << field->getType().getAsString() << "|"
+           << getAccessSpecifierString(field->getAccess()) << ")\n";
       }
     }
 
-    llvm::outs() << "|\n";
-
+    // Print methods
     if (record->method_begin() != record->method_end()) {
-      llvm::outs() << "|_Methods\n";
-      bool firstMethod = true;
+      bool hasExplicitMethods = false;
       for (const auto *method : record->methods()) {
-        if (method->isImplicit() || method->isDefaulted()) {
-          continue;
+        if (!method->isImplicit() && !method->isDefaulted()) {
+          hasExplicitMethods = true;
+          break;
         }
+      }
 
-        if (firstMethod) {
-          firstMethod = false;
-        }
+      if (hasExplicitMethods) {
+        outs << "|_Methods\n";
+        for (const auto *method : record->methods()) {
+          if (method->isImplicit() || method->isDefaulted()) {
+            continue;
+          }
 
-        llvm::outs() << "| |_ " << method->getNameAsString() << " ("
-                     << method->getReturnType().getAsString() << "()|"
-                     << getAccessSpecifierString(method->getAccess());
+          std::string methodName = method->getNameAsString();
+          if (methodName.empty()) {
+            methodName = "(anonymous)";
+          }
 
-        bool isVirtualMethod = method->isVirtual();
-        bool isPureVirtual = method->isPureVirtual();
-        bool hasOverride = method->size_overridden_methods() > 0;
+          outs << "| |_ " << methodName << " ("
+             << method->getReturnType().getAsString() << "()|"
+             << getAccessSpecifierString(method->getAccess());
 
-        if (isVirtualMethod) {
-          if (hasOverride) {
-            llvm::outs() << "|override";
-          } else {
-            llvm::outs() << "|virtual";
-            if (isPureVirtual) {
-              llvm::outs() << "|pure";
+          bool isVirtualMethod = method->isVirtual();
+          bool isPureVirtual = method->isPureVirtual();
+          bool hasOverride = method->size_overridden_methods() > 0;
+
+          // ИСПРАВЛЕННАЯ ЛОГИКА: не-virtual метод не может быть pure
+          if (isVirtualMethod) {
+            if (hasOverride) {
+              outs << "|override";
+            } else {
+              outs << "|virtual";
+              if (isPureVirtual) {
+                outs << "|pure";
+              }
             }
           }
-        } else {
-          if (isPureVirtual) {
-            llvm::outs() << "|pure";
-          }
-        }
+          // Убрана некорректная ветка для не-virtual pure методов
 
-        llvm::outs() << ")\n";
+          outs << ")\n";
+        }
       }
     }
 
+    outs << "|\n";
     return true;
   }
 
@@ -115,6 +141,10 @@ public:
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
     return true;
+  }
+
+  PluginASTAction::ActionType getActionType() override {
+    return AddAfterMainAction;
   }
 };
 } // namespace
