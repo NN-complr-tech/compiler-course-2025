@@ -29,9 +29,8 @@ struct FmaPass : llvm::PassInfoMixin<FmaPass> {
     for (llvm::BasicBlock &BB : Func) {
       std::vector<FmaReplace> ReplaceVector;
 
-      auto CheckOperand =
-          [](llvm::Value *Operand,
-             llvm::Value *OtherOperand) -> llvm::BinaryOperator * {isFmulInstruction(Operand)};
+      auto CheckOperand = [](llvm::Value *Operand, llvm::Value *OtherOperand)
+            -> llvm::BinaryOperator * {isFmulInstruction(Operand)};
 
       for (llvm::Instruction &Inst : BB) {
         if (auto *FAdd = llvm::dyn_cast<llvm::BinaryOperator>(&Inst)) {
@@ -76,8 +75,7 @@ struct FmaPass : llvm::PassInfoMixin<FmaPass> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "FmaPass", "0.1",
-          [](llvm::PassBuilder &PB) {
+  return {LLVM_PLUGIN_API_VERSION, "FmaPass", "0.1", [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
