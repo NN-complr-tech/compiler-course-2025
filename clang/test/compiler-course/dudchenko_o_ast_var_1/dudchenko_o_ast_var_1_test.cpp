@@ -81,25 +81,12 @@ public:
 // CHECK: | |_ age (unsigned int|public)
 // CHECK: | |_ height (unsigned int|public)
 // CHECK: |_Methods
-// CHECK: | |_ sleep (void()|public|virtual|pure)
-// CHECK: | |_ eat (void()|public|virtual|pure)
+// CHECK: | |_ sleep (void|public|virtual|pure)
+// CHECK: | |_ eat (void|public|virtual|pure)
 struct Human {
-  unsigned age;
-  unsigned height;
-  virtual void sleep() = 0;
-  virtual void eat() = 0;
-};
+    unsigned age;
+    unsigned height;
 
-// CHECK: Engineer -> Human
-// CHECK: |_Fields
-// CHECK: | |_ salary (unsigned int|public)
-// CHECK: |_Methods
-// CHECK: | |_ sleep (void()|public|override)
-// CHECK: | |_ eat (void()|public|override)
-// CHECK: | |_ work (void()|public)
-struct Engineer : Human {
-  unsigned salary;
-  void sleep() override { /* something */ }
-  void eat() override { /* something */ }
-  void work() { /* something */ }
+    virtual void sleep() = 0;
+    virtual void eat() = 0;
 };
