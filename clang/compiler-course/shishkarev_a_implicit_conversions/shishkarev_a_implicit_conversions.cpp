@@ -13,8 +13,8 @@ class ImplicitConvVisitor
 
 private:
   clang::ASTContext *m_context;
-  std::map<const clang::FunctionDecl *,
-           std::map<std::pair<std::string, std::string>, int>>
+  llvm::MapVector<const clang::FunctionDecl *,
+                  std::map<std::pair<std::string, std::string>, int>>
       m_functionStats;
   int m_totalConversions = 0;
 
@@ -23,16 +23,15 @@ public:
       : m_context(context) {}
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
-
     auto castKind = ICE->getCastKind();
     if (castKind == clang::CK_LValueToRValue || castKind == clang::CK_NoOp ||
         castKind == clang::CK_FunctionToPointerDecay) {
       return true;
     }
 
-    if (ICE->isPartOfExplicitCast()) {
-      return true;
-    }
+    // if (ICE->isPartOfExplicitCast()) {
+    //   return true;
+    // }
 
     clang::QualType SourceType = ICE->getSubExpr()->getType();
     clang::QualType TargetType = ICE->getType();
@@ -41,22 +40,42 @@ public:
       return true;
     }
 
+    const clang::FunctionDecl *containingFunction = nullptr;
     auto Parents = m_context->getParents(*ICE);
+    
     while (!Parents.empty()) {
       if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
-        recordConversion(FD, SourceType, TargetType);
+        containingFunction = FD;
         break;
       } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
         if (const auto *CallOp = Lambda->getCallOperator()) {
-          recordConversion(CallOp, SourceType, TargetType);
+          containingFunction = CallOp;
           break;
         }
       } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
-        recordConversion(ME, SourceType, TargetType);
+        containingFunction = ME;
         break;
+      } else if (const auto *VD = Parents[0].get<clang::VarDecl>()) {
+        Parents = m_context->getParents(*VD);
+        continue;
+      } else if (const auto *RS = Parents[0].get<clang::ReturnStmt>()) {
+        Parents = m_context->getParents(*RS);
+        continue;
+      } else if (const auto *DS = Parents[0].get<clang::DeclStmt>()) {
+        Parents = m_context->getParents(*DS);
+        continue;
+      } else if (const auto *IS = Parents[0].get<clang::IfStmt>()) {
+        Parents = m_context->getParents(*IS);
+        continue;
       }
+      
       Parents = m_context->getParents(Parents[0]);
     }
+
+    if (containingFunction) {
+      recordConversion(containingFunction, SourceType, TargetType);
+    }
+
     return true;
   }
 
