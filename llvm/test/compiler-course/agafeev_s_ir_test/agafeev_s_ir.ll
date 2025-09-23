@@ -1,5 +1,5 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/FmaPass_Agafeev_Sergey_FIIT3_LLVM_IR%pluginext \
-; RUN: -passes="FmulFaddMergePass" -S %s | FileCheck %s
+; RUN: -passes="FmaPass" -S %s | FileCheck %s
 
 ; CHECK-LABEL: @fmaDouble
 ; CHECK: call double @llvm.fmuladd.f64(double %A, double %B, double %C)
