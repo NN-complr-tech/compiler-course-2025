@@ -10,15 +10,14 @@ public:
   explicit TypeInfoVisitor(clang::ASTContext *context) {}
 
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
-    auto &outs = llvm::outs();  // Убрали дублирование кода
-    
+    auto &outs = llvm::outs();
+
     if (record->isImplicit() || record->getName().empty()) {
       return true;
     }
 
-    // Print class name and inheritance
     outs << record->getName();
-    
+
     if (record->getNumBases() > 0) {
       outs << " -> ";
       bool firstBase = true;
@@ -37,7 +36,6 @@ public:
     }
     outs << "\n";
 
-    // Print fields
     if (record->field_begin() != record->field_end()) {
       outs << "|_Fields\n";
       for (const auto *field : record->fields()) {
@@ -45,13 +43,11 @@ public:
         if (fieldName.empty()) {
           fieldName = "(anonymous)";
         }
-        outs << "| |_ " << fieldName << " ("
-           << field->getType().getAsString() << "|"
-           << getAccessSpecifierString(field->getAccess()) << ")\n";
+        outs << "| |_ " << fieldName << " (" << field->getType().getAsString()
+          << "|" << getAccessSpecifierString(field->getAccess()) << ")\n";
       }
     }
 
-    // Print methods
     if (record->method_begin() != record->method_end()) {
       bool hasExplicitMethods = false;
       for (const auto *method : record->methods()) {
@@ -74,14 +70,13 @@ public:
           }
 
           outs << "| |_ " << methodName << " ("
-             << method->getReturnType().getAsString() << "()|"
-             << getAccessSpecifierString(method->getAccess());
+              << method->getReturnType().getAsString() << "()|"
+              << getAccessSpecifierString(method->getAccess());
 
           bool isVirtualMethod = method->isVirtual();
           bool isPureVirtual = method->isPureVirtual();
           bool hasOverride = method->size_overridden_methods() > 0;
 
-          // ИСПРАВЛЕННАЯ ЛОГИКА: не-virtual метод не может быть pure
           if (isVirtualMethod) {
             if (hasOverride) {
               outs << "|override";
@@ -92,7 +87,6 @@ public:
               }
             }
           }
-          // Убрана некорректная ветка для не-virtual pure методов
 
           outs << ")\n";
         }
