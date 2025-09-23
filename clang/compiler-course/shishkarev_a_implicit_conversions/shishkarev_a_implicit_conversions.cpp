@@ -8,8 +8,8 @@
 
 namespace {
 
-class ImplicitConvVisitor
-    : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
+class ImplicitConversionCounterVisitor
+    : public clang::RecursiveASTVisitor<ImplicitConversionCounterVisitor> {
 
 private:
   clang::ASTContext *m_context;
@@ -19,20 +19,16 @@ private:
   int m_totalConversions = 0;
 
 public:
-  explicit ImplicitConvVisitor(clang::ASTContext *context)
+  explicit ImplicitConversionCounterVisitor(clang::ASTContext *context)
       : m_context(context) {}
 
   bool VisitImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
+
     auto castKind = ICE->getCastKind();
     if (castKind == clang::CK_LValueToRValue || castKind == clang::CK_NoOp ||
         castKind == clang::CK_FunctionToPointerDecay) {
       return true;
     }
-
-    // if (ICE->isPartOfExplicitCast()) {
-    //   return true;
-    // }
-
     clang::QualType SourceType = ICE->getSubExpr()->getType();
     clang::QualType TargetType = ICE->getType();
 
@@ -40,47 +36,27 @@ public:
       return true;
     }
 
-    const clang::FunctionDecl *containingFunction = nullptr;
     auto Parents = m_context->getParents(*ICE);
-    
     while (!Parents.empty()) {
       if (const auto *FD = Parents[0].get<clang::FunctionDecl>()) {
-        containingFunction = FD;
+        recordConversion(FD, SourceType, TargetType);
         break;
       } else if (const auto *Lambda = Parents[0].get<clang::LambdaExpr>()) {
         if (const auto *CallOp = Lambda->getCallOperator()) {
-          containingFunction = CallOp;
+          recordConversion(CallOp, SourceType, TargetType);
           break;
         }
       } else if (const auto *ME = Parents[0].get<clang::CXXMethodDecl>()) {
-        containingFunction = ME;
+        recordConversion(ME, SourceType, TargetType);
         break;
-      } else if (const auto *VD = Parents[0].get<clang::VarDecl>()) {
-        Parents = m_context->getParents(*VD);
-        continue;
-      } else if (const auto *RS = Parents[0].get<clang::ReturnStmt>()) {
-        Parents = m_context->getParents(*RS);
-        continue;
-      } else if (const auto *DS = Parents[0].get<clang::DeclStmt>()) {
-        Parents = m_context->getParents(*DS);
-        continue;
-      } else if (const auto *IS = Parents[0].get<clang::IfStmt>()) {
-        Parents = m_context->getParents(*IS);
-        continue;
       }
-      
       Parents = m_context->getParents(Parents[0]);
     }
-
-    if (containingFunction) {
-      recordConversion(containingFunction, SourceType, TargetType);
-    }
-
     return true;
   }
 
   std::string normalizeTypeName(std::string typeName) {
-    const std::vector<std::string> prefixes = {"struct ", "class "};
+    const std::vector<std::string> prefixes = {"struct ", "class ", "enum "};
     for (const auto &prefix : prefixes) {
       size_t pos = typeName.find(prefix);
       if (pos == 0) {
@@ -88,8 +64,10 @@ public:
         break;
       }
     }
-    typeName.erase(std::remove_if(typeName.begin(), typeName.end(), ::isspace),
-                   typeName.end());
+    typeName.erase(
+        std::remove_if(typeName.begin(), typeName.end(),
+                       [](unsigned char c) { return std::isspace(c); }),
+        typeName.end());
     size_t pos;
     while ((pos = typeName.find("_Bool")) != std::string::npos) {
       typeName.replace(pos, 5, "bool");
@@ -117,13 +95,13 @@ public:
   }
 };
 
-class ImplicitConvConsumer : public clang::ASTConsumer {
+class ImplicitConversionCounterConsumer : public clang::ASTConsumer {
 
 private:
-  ImplicitConvVisitor m_visitor;
+  ImplicitConversionCounterVisitor m_visitor;
 
 public:
-  explicit ImplicitConvConsumer(clang::ASTContext *context)
+  explicit ImplicitConversionCounterConsumer(clang::ASTContext *context)
       : m_visitor(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
@@ -132,11 +110,11 @@ public:
   }
 };
 
-class ImplicitConvAction : public clang::PluginASTAction {
+class ImplicitConversionCounterAction : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ImplicitConvConsumer>(&ci.getASTContext());
+    return std::make_unique<ImplicitConversionCounterConsumer>(&ci.getASTContext());
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
@@ -147,5 +125,5 @@ public:
 
 } // namespace
 
-static clang::FrontendPluginRegistry::Add<ImplicitConvAction>
-    X("ImplicitConvPlugin", "Count implicit type conversions");
+static clang::FrontendPluginRegistry::Add<ImplicitConversionCounterAction>
+    X("ImplicitConversionCounterPlugin", "Count implicit type conversions");
