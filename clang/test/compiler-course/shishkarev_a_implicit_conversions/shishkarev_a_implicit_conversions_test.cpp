@@ -9,11 +9,11 @@
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: float -> int: 1
 
-// CHECK: Function `testMixedTypes`
-// CHECK-NEXT: int -> float: 1
-// CHECK-NEXT: int -> double: 1
-// CHECK-NEXT: float -> int: 2
+// CHECK: Function `one`
+// CHECK-NEXT: int -> bool: 1
 
+// CHECK: Function `two`
+// CHECK-NEXT: int* -> bool: 1
 
 double sum(int a, float b) {
     return a + b;
@@ -23,8 +23,11 @@ int mul(float a, float b) {
     return a + sum(a, (int)b);
 }
 
-int testMixedTypes(int x, float y, double z) {
-    float result = x + y;
-    int intResult = x + z;
-    return intResult + y;
+void one() {
+    int x = 7;
+    bool y = x;
+}
+
+void two(int* x){
+    if(x){}
 }
