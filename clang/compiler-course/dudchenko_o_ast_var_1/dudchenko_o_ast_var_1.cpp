@@ -44,7 +44,7 @@ public:
           fieldName = "(anonymous)";
         }
         outs << "| |_ " << fieldName << " (" << field->getType().getAsString()
-          << "|" << getAccessSpecifierString(field->getAccess()) << ")\n";
+             << "|" << getAccessSpecifierString(field->getAccess()) << ")\n";
       }
     }
 
@@ -70,8 +70,8 @@ public:
           }
 
           outs << "| |_ " << methodName << " ("
-              << method->getReturnType().getAsString() << "()|"
-              << getAccessSpecifierString(method->getAccess());
+               << method->getReturnType().getAsString() << "()|"
+               << getAccessSpecifierString(method->getAccess());
 
           bool isVirtualMethod = method->isVirtual();
           bool isPureVirtual = method->isPureVirtual();
