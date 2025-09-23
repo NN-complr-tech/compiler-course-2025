@@ -7,7 +7,7 @@
 // CHECK: Function `mul`
 // CHECK-NEXT: double -> int: 1
 // CHECK-NEXT: float -> double: 1
-// CHECK-NEXT: float -> int: 2
+// CHECK-NEXT: float -> int: 1
 // CHECK-NEXT: int -> float: 1
 
 
