@@ -77,12 +77,12 @@ public:
 };
 
 // CHECK: Human
-// CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ age (unsigned int|public)
-// CHECK-NEXT: | |_ height (unsigned int|public)
-// CHECK-NEXT: |_Methods
-// CHECK-NEXT: | |_ sleep (void()|public|virtual|pure)
-// CHECK-NEXT: | |_ eat (void()|public|virtual|pure)
+// CHECK: |_Fields
+// CHECK: | |_ age (unsigned int|public)
+// CHECK: | |_ height (unsigned int|public)
+// CHECK: |_Methods
+// CHECK: | |_ sleep (void()|public|virtual|pure)
+// CHECK: | |_ eat (void()|public|virtual|pure)
 struct Human {
   unsigned age;
   unsigned height;
@@ -91,12 +91,12 @@ struct Human {
 };
 
 // CHECK: Engineer -> Human
-// CHECK-NEXT: |_Fields
-// CHECK-NEXT: | |_ salary (unsigned int|public)
-// CHECK-NEXT: |_Methods
-// CHECK-NEXT: | |_ sleep (void()|public|override)
-// CHECK-NEXT: | |_ eat (void()|public|override)
-// CHECK-NEXT: | |_ work (void()|public)
+// CHECK: |_Fields
+// CHECK: | |_ salary (unsigned int|public)
+// CHECK: |_Methods
+// CHECK: | |_ sleep (void()|public|override)
+// CHECK: | |_ eat (void()|public|override)
+// CHECK: | |_ work (void()|public)
 struct Engineer : Human {
   unsigned salary;
   void sleep() override { /* something */ }
