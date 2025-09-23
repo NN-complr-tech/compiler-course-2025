@@ -1,6 +1,4 @@
-// RUN: %clang_cc1 -load
-// %llvmshlibdir/DataTypesPlugin_Agafeev_Sergey_FIIT3_ClangAST%pluginext -plugin
-// AgafeevPlugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/DataTypesPlugin_Agafeev_Sergey_FIIT3_ClangAST%pluginext -plugin AgafeevPlugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: testClass(class|template)
 // CHECK-NEXT: |_Fields
