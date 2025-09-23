@@ -130,4 +130,4 @@ private:
 
 static clang::FrontendPluginRegistry::Add<PrefixAction>
     X("VarPrefixPlugin_VasenkovAndrey_FIIT1_ClangAST",
-      "Adds appropriate prefixes to objects and parameters")
+      "Adds appropriate prefixes to objects and parameters");
