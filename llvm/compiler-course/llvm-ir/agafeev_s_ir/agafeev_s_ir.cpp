@@ -30,7 +30,7 @@ struct FmaPass : llvm::PassInfoMixin<FmaPass> {
       std::vector<FmaReplace> ReplaceVector;
 
       auto CheckOperand = [](llvm::Value *Operand, llvm::Value *OtherOperand)
-            -> llvm::BinaryOperator * {isFmulInstruction(Operand)};
+          -> llvm::BinaryOperator * { isFmulInstruction(Operand) };
 
       for (llvm::Instruction &Inst : BB) {
         if (auto *FAdd = llvm::dyn_cast<llvm::BinaryOperator>(&Inst)) {
