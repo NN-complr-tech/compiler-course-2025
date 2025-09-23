@@ -37,4 +37,4 @@ void three() {
     bool y = x;
 }
 
-// CHECK: Total implicit conversions: 10
+// CHECK: Total implicit conversions: 8

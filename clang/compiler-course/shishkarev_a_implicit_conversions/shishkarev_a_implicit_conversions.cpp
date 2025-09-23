@@ -114,7 +114,8 @@ class ImplicitConversionCounterAction : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    return std::make_unique<ImplicitConversionCounterConsumer>(&ci.getASTContext());
+    return std::make_unique<ImplicitConversionCounterConsumer>(
+        &ci.getASTContext());
   }
 
   bool ParseArgs(const clang::CompilerInstance &ci,
