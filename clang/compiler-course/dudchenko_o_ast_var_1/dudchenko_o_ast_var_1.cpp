@@ -12,7 +12,7 @@ public:
   bool VisitCXXRecordDecl(clang::CXXRecordDecl *record) {
     auto &outs = llvm::outs();
 
-    if (record->isImplicit() || record->getName().empty()) {
+    if (record->isImplicit() || !record->getIdentifier()) {
       return true;
     }
 
