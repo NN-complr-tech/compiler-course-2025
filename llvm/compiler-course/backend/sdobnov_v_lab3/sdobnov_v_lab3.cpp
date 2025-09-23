@@ -13,9 +13,9 @@ namespace {
 
 class FloatingPointFusionPass : public MachineFunctionPass {
 public:
-  static char Identifier;
+  static char ID;
 
-  FloatingPointFusionPass() : MachineFunctionPass(Identifier) {}
+  FloatingPointFusionPass() : MachineFunctionPass(ID) {}
 
   bool runOnMachineFunction(MachineFunction &MF) override;
 
@@ -31,7 +31,7 @@ private:
                               bool &isOperandOrderReversed) const;
 };
 
-char FloatingPointFusionPass::Identifier = 0;
+char FloatingPointFusionPass::ID = 0;
 
 bool FloatingPointFusionPass::runOnMachineFunction(MachineFunction &MF) {
   const auto &targetSubsystem = MF.getSubtarget<X86Subtarget>();
@@ -58,7 +58,6 @@ bool FloatingPointFusionPass::processBasicBlock(MachineBasicBlock &Block) {
     MachineInstr &multiplicationInstruction = *currentInstruction;
     unsigned multiplicationOpcode = multiplicationInstruction.getOpcode();
 
-    // Identify floating-point multiplication operations
     if (multiplicationOpcode != X86::MULSSrr &&
         multiplicationOpcode != X86::MULSDrr &&
         multiplicationOpcode != X86::VMULSSrr &&
@@ -67,13 +66,11 @@ bool FloatingPointFusionPass::processBasicBlock(MachineBasicBlock &Block) {
         multiplicationOpcode != X86::VMULPDrr)
       continue;
 
-    // Verify single use of multiplication result
     Register multiplicationResult =
         multiplicationInstruction.getOperand(0).getReg();
     if (!registerInformation.hasOneUse(multiplicationResult))
       continue;
 
-    // Locate subsequent arithmetic operation (subtraction or addition)
     bool isOperandOrderReversed = false;
     auto arithmeticInstructionIterator = std::next(currentInstruction);
 
@@ -91,7 +88,6 @@ bool FloatingPointFusionPass::processBasicBlock(MachineBasicBlock &Block) {
                         arithmeticOpcode == X86::VADDSDrr;
 
       if (isSubtraction || isAddition) {
-        // Check if multiplication result is used as operand
         if (arithmeticInstruction.getOperand(1).getReg() ==
                 multiplicationResult ||
             arithmeticInstruction.getOperand(2).getReg() ==
@@ -105,24 +101,20 @@ bool FloatingPointFusionPass::processBasicBlock(MachineBasicBlock &Block) {
 
     MachineInstr &arithmeticInstruction = *arithmeticInstructionIterator;
 
-    // Validate operand usage pattern
     if (!validateOperandPattern(multiplicationInstruction,
                                 arithmeticInstruction, isOperandOrderReversed))
       continue;
 
-    // Determine appropriate fused multiply-add instruction
     auto fusedOpcode = determineFusedOpcode(multiplicationOpcode,
                                             arithmeticInstruction.getOpcode(),
                                             isOperandOrderReversed);
     if (!fusedOpcode)
       continue;
 
-    // Select constant register index based on operand order
     unsigned constantOperandIndex = isOperandOrderReversed ? 2 : 1;
     Register constantRegister =
         arithmeticInstruction.getOperand(constantOperandIndex).getReg();
 
-    // Construct fused instruction
     BuildMI(Block, arithmeticInstruction, arithmeticInstruction.getDebugLoc(),
             InstructionInfo->get(*fusedOpcode),
             arithmeticInstruction.getOperand(0).getReg())
@@ -138,7 +130,6 @@ bool FloatingPointFusionPass::processBasicBlock(MachineBasicBlock &Block) {
     blockModified = true;
   }
 
-  // Remove original instructions in reverse order
   for (auto *instruction : reverse(instructionsToRemove))
     instruction->eraseFromParent();
 
@@ -148,13 +139,11 @@ bool FloatingPointFusionPass::processBasicBlock(MachineBasicBlock &Block) {
 std::optional<unsigned> FloatingPointFusionPass::determineFusedOpcode(
     unsigned multiplicationOpcode, unsigned arithmeticOpcode,
     bool isOperandOrderReversed) const {
-  // Handle addition case: -(a*b) + c transformation
   if (arithmeticOpcode == X86::VADDSSrr)
     return isOperandOrderReversed ? X86::VFNMADD213SSr : X86::VFNMADD132SSr;
   if (arithmeticOpcode == X86::VADDSDrr)
     return isOperandOrderReversed ? X86::VFNMADD213SDr : X86::VFNMADD132SDr;
 
-  // Handle subtraction case based on operand order
   bool multiplicationResultIsFirstOperand = isOperandOrderReversed;
 
   switch (multiplicationOpcode) {
@@ -193,7 +182,6 @@ bool FloatingPointFusionPass::validateOperandPattern(
   Register secondOperand = arithmeticInstruction.getOperand(2).getReg();
 
   if (arithmeticOpcode == X86::VADDSSrr || arithmeticOpcode == X86::VADDSDrr) {
-    // Addition patterns: -(tmp) + c or c + tmp
     if (firstOperand == multiplicationResult) {
       isOperandOrderReversed = true;
       return true;
@@ -205,7 +193,6 @@ bool FloatingPointFusionPass::validateOperandPattern(
     return false;
   }
 
-  // Subtraction patterns: tmp - c or c - tmp
   if (firstOperand == multiplicationResult) {
     isOperandOrderReversed = true;
     return true;
