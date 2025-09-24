@@ -86,12 +86,13 @@ public:
       // Устанавливаем атрибут, если найдены циклы
       if (!LoopDepths.empty()) {
         Func->setAttr("my_loop_depths", Builder.getI64ArrayAttr(LoopDepths));
-        llvm::outs() << "Function '" << Func.getName()
+        auto &os = llvm::outs();
+        os << "Function '" << Func.getName()
                      << "': processed. Loop depths: ";
-        llvm::interleaveComma(LoopDepths, llvm::outs());
-        llvm::outs() << "\n";
+        llvm::interleaveComma(LoopDepths, os);
+        os << "\n";
       } else {
-        llvm::outs() << "Function '" << Func.getName() << "': no loops found\n";
+        os << "Function '" << Func.getName() << "': no loops found\n";
       }
     });
   }
