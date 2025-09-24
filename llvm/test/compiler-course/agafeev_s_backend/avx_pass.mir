@@ -1,0 +1,174 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+# RUN:     -load %llvmshlibdir/AVXPass_Agafeev_Sergey_FIIT3_BACKEND%shlibext \
+# RUN:     -run-pass=AVXPass_Agafeev_Sergey_FIIT3_BACKEND %s -o - | FileCheck %s
+---
+|
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+
+  define <4 x i32> @test_and_or_chain(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c) {
+  entry:
+    %and = and <4 x i32> %a, %b
+    %or = or <4 x i32> %and, %c
+    ret <4 x i32> %or
+  }
+
+  define <4 x i32> @test_simple_and(<4 x i32> %a, <4 x i32> %b) {
+  entry:
+    %and = and <4 x i32> %a, %b
+    ret <4 x i32> %and
+  }
+
+  define <4 x i32> @test_xor_self_change(<4 x i32> %a) {
+  entry:
+    %xor = xor <4 x i32> %a, %a
+    ret <4 x i32> %xor
+  }
+
+  define <4 x i32> @test_and_self(<4 x i32> %a) {
+  entry:
+    %and = and <4 x i32> %a, %a
+    ret <4 x i32> %and
+  }
+
+  define <4 x i32> @test_zero_and(<4 x i32> %a) {
+  entry:
+    %zero = xor <4 x i32> %a, %a
+    %and = and <4 x i32> %a, %zero
+    ret <4 x i32> %and
+  }
+
+  define <4 x i32> @test_and_or_and(<4 x i32> %a, <4 x i32> %b, <4 x i32> %c, <4 x i32> %d) {
+  entry:
+    %and1 = and <4 x i32> %a, %b
+    %and2 = and <4 x i32> %c, %d
+    %or = or <4 x i32> %and1, %and2
+    ret <4 x i32> %or
+  }
+---
+# Test AND -> OR chain
+# CHECK-LABEL: name: test_and_or_chain
+name: test_and_or_chain
+body: |
+  bb.0:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %3:vr128 = VPANDNrr %2, %1
+    ; CHECK-NEXT: %4:vr128 = VPORrr %3, %0
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET64 implicit $xmm0
+
+    %0:vr128 = COPY $xmm0    ; a
+    %1:vr128 = COPY $xmm1    ; b
+    %2:vr128 = COPY $xmm2    ; c
+    %3:vr128 = PANDrr %0, %1
+    %4:vr128 = PORrr %3, %2
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+---
+# Test simple AND
+# CHECK-LABEL: name: test_simple_and
+name: test_simple_and
+body: |
+  bb.0:
+    liveins: $xmm0, $xmm1
+
+    ; CHECK: %0:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPANDrr %0, %1
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET64 implicit $xmm0
+
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %7:vr128 = PANDrr %1, %0
+    $xmm0 = COPY %7
+    RET64 implicit $xmm0
+
+---
+# Test XOR x, x
+# CHECK-LABEL: name: test_xor_self_change
+name: test_xor_self_change
+body: |
+  bb.0:
+    liveins: $xmm0
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %1:vr128 = VPXORrr %0, %0
+    ; CHECK-NEXT: $xmm0 = COPY %1
+    ; CHECK-NEXT: RET64 implicit $xmm0
+
+    %0:vr128 = COPY $xmm0
+    %5:vr128 = PXORrr %0, %0
+    $xmm0 = COPY %5
+    RET64 implicit $xmm0
+
+---
+# Test AND x, x
+# CHECK-LABEL: name: test_and_self
+name: test_and_self
+body: |
+  bb.0:
+    liveins: $xmm0
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %1:vr128 = COPY %0
+    ; CHECK-NEXT: $xmm0 = COPY %1
+    ; CHECK-NEXT: RET64 implicit $xmm0
+
+    %0:vr128 = COPY $xmm0
+    %5:vr128 = PANDrr %0, %0
+    $xmm0 = COPY %5
+    RET64 implicit $xmm0
+
+---
+# Test AND with zero
+# CHECK-LABEL: name: test_zero_and
+name: test_zero_and
+body: |
+  bb.0:
+    liveins: $xmm0
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPXORrr %2, %2
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET64 implicit $xmm0
+
+    %0:vr128 = COPY $xmm0
+    %7:vr128 = PXORrr %0, %0
+    %6:vr128 = PANDrr %0, %7
+    $xmm0 = COPY %6
+    RET64 implicit $xmm0
+---
+# Test AND with OR with AND
+# CHECK-LABEL: name: test_and_or_and
+name: test_and_or_and
+body: |
+  bb.0:
+    liveins: $xmm0, $xmm1, $xmm2, $xmm3
+
+    ; CHECK: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %3:vr128 = COPY $xmm3
+    ; CHECK-NEXT: %4:vr128 = VPANDrr %0, %1
+    ; CHECK-NEXT: %5:vr128 = VPANDrr %2, %3
+    ; CHECK-NEXT: %6:vr128 = VPORrr  %4, %5
+    ; CHECK-NEXT: $xmm0 = COPY %6
+    ; CHECK-NEXT: RET64 implicit $xmm0
+
+    %0:vr128 = COPY $xmm0        ; A
+    %1:vr128 = COPY $xmm1        ; B
+    %2:vr128 = COPY $xmm2        ; C
+    %3:vr128 = COPY $xmm3        ; D
+
+    %4:vr128 = PANDrr %0, %1     ; A & B
+    %5:vr128 = PANDrr %2, %3     ; C & D
+    %6:vr128 = PORrr  %4, %5     ; (A & B) | (C & D)
+
+    $xmm0 = COPY %6
+    RET64 implicit $xmm0
