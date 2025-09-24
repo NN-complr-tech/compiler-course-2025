@@ -9,6 +9,7 @@
 using namespace mlir;
 
 namespace {
+
 class TraceLoopPass
     : public PassWrapper<TraceLoopPass, OperationPass<ModuleOp>> {
   template <typename LoopOperation>
