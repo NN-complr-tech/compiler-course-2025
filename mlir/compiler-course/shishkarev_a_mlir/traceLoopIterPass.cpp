@@ -25,26 +25,26 @@ struct TraceLoopPass
   }
 
 private:
-  void createTraceFunction(ModuleOp module, OpBuilder &builder, 
-                          StringRef functionName) {
+  void createTraceFunction(ModuleOp module, OpBuilder &builder,
+                           StringRef functionName) {
     if (!module.lookupSymbol<func::FuncOp>(functionName)) {
       Location loc = module.getLoc();
       builder.setInsertionPointToStart(module.getBody());
-      auto func = builder.create<func::FuncOp>(
-          loc, functionName, builder.getFunctionType({}, {}));
+      auto func = builder.create<func::FuncOp>(loc, functionName,
+                                               builder.getFunctionType({}, {}));
       func.setSymVisibility("private");
     }
   }
 
   void instrumentLoopBody(OpBuilder &builder, Block &body, Location loopLoc) {
     builder.setInsertionPointToStart(&body);
-    builder.create<func::CallOp>(loopLoc, "trace_loop_iter_begin",
-                                 TypeRange{}, ValueRange{});
-    
+    builder.create<func::CallOp>(loopLoc, "trace_loop_iter_begin", TypeRange{},
+                                 ValueRange{});
+
     Operation *term = body.getTerminator();
     builder.setInsertionPoint(term);
-    builder.create<func::CallOp>(loopLoc, "trace_loop_iter_end",
-                                 TypeRange{}, ValueRange{});
+    builder.create<func::CallOp>(loopLoc, "trace_loop_iter_end", TypeRange{},
+                                 ValueRange{});
   }
 
 public:
@@ -57,7 +57,7 @@ public:
 
     module.walk([&](Operation *op) {
       OpBuilder::InsertionGuard guard(builder);
-      
+
       if (auto forOp = dyn_cast<affine::AffineForOp>(op)) {
         instrumentLoopBody(builder, *forOp.getBody(), op->getLoc());
       } else if (auto scfFor = dyn_cast<scf::ForOp>(op)) {
