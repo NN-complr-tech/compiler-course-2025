@@ -33,64 +33,95 @@ body:             |
     $xmm0 = COPY %4
     RET64 implicit $xmm0
 
-# Тест оптимизации для packed single precision: c - (a * b) → VFNMADD213PS
-# CHECK-LABEL: name: test_packed_single_precision_fusion
+# Тест оптимизации для double precision: c - (a * b) → VFNMADD213SD
+# CHECK-LABEL: name: test_double_precision_fusion
 # CHECK: bb.0.entry:
-# CHECK-NOT: VMULPSrr
-# CHECK-NOT: VSUBPSrr
-# CHECK: %[[RESULT:[a-z0-9]+]]:vr128x = VFNMADD213PSr %0, %1, %2, implicit $mxcsr
+# CHECK-NOT: VMULSDrr
+# CHECK-NOT: VSUBSDrr
+# CHECK: %[[RESULT:[a-z0-9]+]]:fr64 = VFNMADD213SDr %0, %1, %2, implicit $mxcsr
 # CHECK: $xmm0 = COPY %[[RESULT]]
 # CHECK: RET64 implicit $xmm0
 
 ---
-name:            test_packed_single_precision_fusion
+name:            test_double_precision_fusion
 alignment:       16
 tracksRegLiveness: true
 registers:
-  - { id: 0, class: vr128x }
-  - { id: 1, class: vr128x }
-  - { id: 2, class: vr128x }
-  - { id: 3, class: vr128x }
-  - { id: 4, class: vr128x }
+  - { id: 0, class: fr64 }
+  - { id: 1, class: fr64 }
+  - { id: 2, class: fr64 }
+  - { id: 3, class: fr64 }
+  - { id: 4, class: fr64 }
 body:             |
   bb.0.entry:
     liveins: $xmm0, $xmm1, $xmm2
 
-    %2:vr128x = COPY $xmm2
-    %1:vr128x = COPY $xmm1
-    %0:vr128x = COPY $xmm0
-    %3:vr128x = nofpexcept VMULPSrr %0, %1, implicit $mxcsr
-    %4:vr128x = nofpexcept VSUBPSrr %2, killed %3, implicit $mxcsr
+    %2:fr64 = COPY $xmm2
+    %1:fr64 = COPY $xmm1
+    %0:fr64 = COPY $xmm0
+    %3:fr64 = nofpexcept VMULSDrr %0, %1, implicit $mxcsr
+    %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr
     $xmm0 = COPY %4
     RET64 implicit $xmm0
 
-# Тест оптимизации для packed double precision: (a * b) - c → VFMSUB213PD
-# CHECK-LABEL: name: test_packed_double_precision_fusion
+# Тест оптимизации умножения-вычитания: (a * b) - c → VFMSUB213SS
+# CHECK-LABEL: name: test_multiplication_subtraction_fusion
 # CHECK: bb.0.entry:
-# CHECK-NOT: VMULPDrr
-# CHECK-NOT: VSUBPDrr
-# CHECK: %[[RESULT:[a-z0-9]+]]:vr128x = VFMSUB213PDr %0, %1, %2, implicit $mxcsr
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[RESULT:[a-z0-9]+]]:fr32 = VFMSUB213SSr %0, %1, %2, implicit $mxcsr
 # CHECK: $xmm0 = COPY %[[RESULT]]
 # CHECK: RET64 implicit $xmm0
 
 ---
-name:            test_packed_double_precision_fusion
+name:            test_multiplication_subtraction_fusion
 alignment:       16
 tracksRegLiveness: true
 registers:
-  - { id: 0, class: vr128x }
-  - { id: 1, class: vr128x }
-  - { id: 2, class: vr128x }
-  - { id: 3, class: vr128x }
-  - { id: 4, class: vr128x }
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
 body:             |
   bb.0.entry:
     liveins: $xmm0, $xmm1, $xmm2
 
-    %2:vr128x = COPY $xmm2
-    %1:vr128x = COPY $xmm1
-    %0:vr128x = COPY $xmm0
-    %3:vr128x = nofpexcept VMULPDrr %0, %1, implicit $mxcsr
-    %4:vr128x = nofpexcept VSUBPDrr killed %3, %2, implicit $mxcsr
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr killed %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Тест оптимизации с порядком операндов 132: c + (a * b) → VFNMADD132SS
+# CHECK-LABEL: name: test_operand_order_132_fusion
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VADDSSrr
+# CHECK: %[[RESULT:[a-z0-9]+]]:fr32 = VFNMADD132SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[RESULT]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_operand_order_132_fusion
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+
+    %2:fr32 = COPY $xmm2
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VADDSSrr %2, killed %3, implicit $mxcsr
     $xmm0 = COPY %4
     RET64 implicit $xmm0
