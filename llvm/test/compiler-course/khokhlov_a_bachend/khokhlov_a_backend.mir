@@ -1,0 +1,184 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+fma \
+# RUN:     --load=%llvmshlibdir/MulSubPass_Khokhlov_Andrey_FIIT2_BACKEND%shlibext \
+# RUN:     -run-pass=fused-mul-sub-khokhlov %s -o - | FileCheck %s
+
+# Тест 1: Проверка c - (a*b) → VFNMADD213SS
+# CHECK-LABEL: name: test_scalar_ss_fma
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[OUT:[a-z0-9]+]]:fr32 = VFNMADD213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[OUT]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_scalar_ss_fma
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Тест 2: Проверка (-(a*b)) + c → VFNMADD213SS
+# CHECK-LABEL: name: test_scalar_ss_neg_add
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VADDSSrr
+# CHECK: %[[OUT:[a-z0-9]+]]:fr32 = VFNMADD213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[OUT]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_scalar_ss_neg_add
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VADDSSrr killed %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Тест 3: Проверка c - (a*b) → VFNMADD213SD (double)
+# CHECK-LABEL: name: test_scalar_sd_fma
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSDrr
+# CHECK-NOT: VSUBSDrr
+# CHECK: %[[OUT:[a-z0-9]+]]:fr64 = VFNMADD213SDr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[OUT]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_scalar_sd_fma
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr64 }
+  - { id: 1, class: fr64 }
+  - { id: 2, class: fr64 }
+  - { id: 3, class: fr64 }
+  - { id: 4, class: fr64 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %2:fr64 = COPY $xmm2
+    %1:fr64 = COPY $xmm1
+    %0:fr64 = COPY $xmm0
+    %3:fr64 = nofpexcept VMULSDrr %0, %1, implicit $mxcsr
+    %4:fr64 = nofpexcept VSUBSDrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Тест 4: Проверка (a*b) - c → VFMSUB213SS
+# CHECK-LABEL: name: test_scalar_ss_fmsub
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VSUBSSrr
+# CHECK: %[[OUT:[a-z0-9]+]]:fr32 = VFMSUB213SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[OUT]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_scalar_ss_fmsub
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr killed %3, %2, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Тест 5: Проверка c + (a*b) → VFNMADD132SS
+# CHECK-LABEL: name: test_scalar_ss_fma132
+# CHECK: bb.0.entry:
+# CHECK-NOT: VMULSSrr
+# CHECK-NOT: VADDSSrr
+# CHECK: %[[OUT:[a-z0-9]+]]:fr32 = VFNMADD132SSr %0, %1, %2, implicit $mxcsr
+# CHECK: $xmm0 = COPY %[[OUT]]
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_scalar_ss_fma132
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2
+    %2:fr32 = COPY $xmm2
+    %0:fr32 = COPY $xmm0
+    %1:fr32 = COPY $xmm1
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VADDSSrr %2, killed %3, implicit $mxcsr
+    $xmm0 = COPY %4
+    RET64 implicit $xmm0
+
+# Тест 6: Отрицательный тест (результат умножения используется дважды, оптимизация не должна применяться)
+# CHECK-LABEL: name: test_no_fma_multiple_use
+# CHECK: bb.0.entry:
+# CHECK: VMULSSrr
+# CHECK: VSUBSSrr
+# CHECK: VADDSSrr
+# CHECK: RET64 implicit $xmm0
+
+---
+name:            test_no_fma_multiple_use
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: fr32 }
+  - { id: 1, class: fr32 }
+  - { id: 2, class: fr32 }
+  - { id: 3, class: fr32 }
+  - { id: 4, class: fr32 }
+  - { id: 5, class: fr32 }
+body:             |
+  bb.0.entry:
+    liveins: $xmm0, $xmm1, $xmm2, $xmm3
+    %2:fr32 = COPY $xmm2
+    %1:fr32 = COPY $xmm1
+    %0:fr32 = COPY $xmm0
+    %3:fr32 = nofpexcept VMULSSrr %0, %1, implicit $mxcsr
+    %4:fr32 = nofpexcept VSUBSSrr %2, %3, implicit $mxcsr
+    %5:fr32 = nofpexcept VADDSSrr %3, %4, implicit $mxcsr
+    $xmm0 = COPY %5
+    RET64 implicit $xmm0
