@@ -1,0 +1,271 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/X86LogicOptimizer_Anikin_Maksim_FIIT2_BACKEND%shlibext \
+# RUN: -run-pass=x86-logic-combine  %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'vector_logic_test.ll'
+  source_filename = "test.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-unknown-linux-gnu"
+
+  ; Test case 1: Basic vector AND operation
+  define dso_local <4 x float> @test_vector_and(<4 x float> %a, <4 x float> %b) {
+    %a_int = bitcast <4 x float> %a to <4 x i32>
+    %b_int = bitcast <4 x float> %b to <4 x i32>
+    %result_int = and <4 x i32> %a_int, %b_int
+    %result = bitcast <4 x i32> %result_int to <4 x float>
+    ret <4 x float> %result
+  }
+
+  ; Test case 2: OR after AND pattern
+  define dso_local <4 x float> @test_and_or_pattern(<4 x float> %x, <4 x float> %y, <4 x float> %z) {
+    %x_int = bitcast <4 x float> %x to <4 x i32>
+    %y_int = bitcast <4 x float> %y to <4 x i32>
+    %z_int = bitcast <4 x float> %z to <4 x i32>
+    %and_temp = and <4 x i32> %x_int, %y_int
+    %or_result = or <4 x i32> %and_temp, %z_int
+    %result = bitcast <4 x i32> %or_result to <4 x float>
+    ret <4 x float> %result
+  }
+
+  ; Test case 3: XOR chain with multiple operations
+  define dso_local <4 x float> @test_xor_chain(<4 x float> %v1, <4 x float> %v2, <4 x float> %v3) {
+    %v1_int = bitcast <4 x float> %v1 to <4 x i32>
+    %v2_int = bitcast <4 x float> %v2 to <4 x i32>
+    %v3_int = bitcast <4 x float> %v3 to <4 x i32>
+    %xor1 = xor <4 x i32> %v1_int, %v2_int
+    %xor2 = xor <4 x i32> %xor1, %v3_int
+    %result = bitcast <4 x i32> %xor2 to <4 x float>
+    ret <4 x float> %result
+  }
+
+  ; Test case 4: Complex logic expression
+  define dso_local <4 x float> @test_complex_expression(<4 x float> %a, <4 x float> %b, <4 x float> %c, <4 x float> %d) {
+    %a_int = bitcast <4 x float> %a to <4 x i32>
+    %b_int = bitcast <4 x float> %b to <4 x i32>
+    %c_int = bitcast <4 x float> %c to <4 x i32>
+    %d_int = bitcast <4 x float> %d to <4 x i32>
+    %and1 = and <4 x i32> %a_int, %b_int
+    %or1 = or <4 x i32> %and1, %c_int
+    %xor1 = xor <4 x i32> %or1, %d_int
+    %result = bitcast <4 x i32> %xor1 to <4 x float>
+    ret <4 x float> %result
+  }
+
+  ; Test case 5: Double precision operations
+  define dso_local <2 x double> @test_double_ops(<2 x double> %x, <2 x double> %y) {
+    %x_int = bitcast <2 x double> %x to <2 x i64>
+    %y_int = bitcast <2 x double> %y to <2 x i64>
+    %and_result = and <2 x i64> %x_int, %y_int
+    %result = bitcast <2 x i64> %and_result to <2 x double>
+    ret <2 x double> %result
+  }
+
+  ; Test case 6: NOT operation pattern
+  define dso_local <2 x i64> @test_not_and(<2 x i64> %val1, <2 x i64> %val2) {
+    %not_val = xor <2 x i64> %val1, <i64 -1, i64 -1>
+    %result = and <2 x i64> %not_val, %val2
+    ret <2 x i64> %result
+  }
+
+...
+---
+
+# CHECK-LABEL: name: test_vector_and
+name:            test_vector_and
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: vr128 }
+  - { id: 1, class: vr128 }
+  - { id: 2, class: vr128 }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1
+    
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VANDPSrr %0, %1
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
+    
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %2:vr128 = ANDPSrr %0, %1
+    $xmm0 = COPY %2
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: test_and_or_pattern
+name:            test_and_or_pattern
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: vr128 }
+  - { id: 1, class: vr128 }
+  - { id: 2, class: vr128 }
+  - { id: 3, class: vr128 }
+  - { id: 4, class: vr128 }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+    
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %3:vr128 = VANDPSrr %0, %1
+    ; CHECK-NEXT: %4:vr128 = VORPSrr %3, %2
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET 0, $xmm0
+    
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = ANDPSrr %0, %1
+    %4:vr128 = ORPSrr %3, %2
+    $xmm0 = COPY %4
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: test_xor_chain
+name:            test_xor_chain
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: vr128 }
+  - { id: 1, class: vr128 }
+  - { id: 2, class: vr128 }
+  - { id: 3, class: vr128 }
+  - { id: 4, class: vr128 }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2
+    
+    ; CHECK: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %3:vr128 = VXORPSrr %0, %1
+    ; CHECK-NEXT: %4:vr128 = VXORPSrr %3, %2
+    ; CHECK-NEXT: $xmm0 = COPY %4
+    ; CHECK-NEXT: RET 0, $xmm0
+    
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %3:vr128 = XORPSrr %0, %1
+    %4:vr128 = XORPSrr %3, %2
+    $xmm0 = COPY %4
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: test_complex_expression
+name:            test_complex_expression
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: vr128 }
+  - { id: 1, class: vr128 }
+  - { id: 2, class: vr128 }
+  - { id: 3, class: vr128 }
+  - { id: 4, class: vr128 }
+  - { id: 5, class: vr128 }
+  - { id: 6, class: vr128 }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+  - { reg: '$xmm2', virtual-reg: '%2' }
+  - { reg: '$xmm3', virtual-reg: '%3' }
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1, $xmm2, $xmm3
+    
+    ; CHECK: %3:vr128 = COPY $xmm3
+    ; CHECK-NEXT: %2:vr128 = COPY $xmm2
+    ; CHECK-NEXT: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %4:vr128 = VANDPSrr %0, %1
+    ; CHECK-NEXT: %5:vr128 = VORPSrr %4, %2
+    ; CHECK-NEXT: %6:vr128 = VXORPSrr %5, %3
+    ; CHECK-NEXT: $xmm0 = COPY %6
+    ; CHECK-NEXT: RET 0, $xmm0
+    
+    %3:vr128 = COPY $xmm3
+    %2:vr128 = COPY $xmm2
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %4:vr128 = ANDPSrr %0, %1
+    %5:vr128 = ORPSrr %4, %2
+    %6:vr128 = XORPSrr %5, %3
+    $xmm0 = COPY %6
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: test_double_ops
+name:            test_double_ops
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: vr128 }
+  - { id: 1, class: vr128 }
+  - { id: 2, class: vr128 }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1
+    
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VANDPDrr %0, %1
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
+    
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %2:vr128 = ANDPDrr %0, %1
+    $xmm0 = COPY %2
+    RET 0, $xmm0
+
+...
+---
+# CHECK-LABEL: name: test_not_and
+name:            test_not_and
+alignment:       16
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: vr128 }
+  - { id: 1, class: vr128 }
+  - { id: 2, class: vr128 }
+liveins:
+  - { reg: '$xmm0', virtual-reg: '%0' }
+  - { reg: '$xmm1', virtual-reg: '%1' }
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $xmm0, $xmm1
+    
+    ; CHECK: %1:vr128 = COPY $xmm1
+    ; CHECK-NEXT: %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT: %2:vr128 = VPANDNrr %0, %1
+    ; CHECK-NEXT: $xmm0 = COPY %2
+    ; CHECK-NEXT: RET 0, $xmm0
+    
+    %1:vr128 = COPY $xmm1
+    %0:vr128 = COPY $xmm0
+    %2:vr128 = PANDNrr %0, %1
+    $xmm0 = COPY %2
+    RET 0, $xmm0
