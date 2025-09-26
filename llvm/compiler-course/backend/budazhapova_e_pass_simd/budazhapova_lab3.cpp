@@ -35,13 +35,9 @@ bool SIMDCounterMachinePass::doInitialization(Module &M) {
   simdCounterVar = M.getGlobalVariable("simd_counter");
   if (!simdCounterVar) {
     simdCounterVar = new GlobalVariable(
-        M, 
-        Type::getInt64Ty(M.getContext()), 
-        false, 
+        M, Type::getInt64Ty(M.getContext()), false,
         GlobalValue::ExternalLinkage,
-        ConstantInt::get(Type::getInt64Ty(M.getContext()), 0),
-        "simd_counter"
-    );
+        ConstantInt::get(Type::getInt64Ty(M.getContext()), 0), "simd_counter");
   }
   return true;
 }
@@ -76,7 +72,6 @@ void SIMDCounterMachinePass::insertCounterUpdate(
 
   auto insertAfter = std::next(MI);
 
-
   BuildMI(MBB, insertAfter, DL, TII->get(X86::MOV64rm), X86::RAX)
       .addGlobalAddress(simdCounterVar)
       .addReg(0)
@@ -85,11 +80,9 @@ void SIMDCounterMachinePass::insertCounterUpdate(
       .addImm(0)
       .addReg(0);
 
-
   BuildMI(MBB, insertAfter, DL, TII->get(X86::ADD64ri32), X86::RAX)
       .addReg(X86::RAX)
       .addImm(1);
-
 
   BuildMI(MBB, insertAfter, DL, TII->get(X86::MOV64mr))
       .addGlobalAddress(simdCounterVar)
