@@ -23,18 +23,16 @@ void replaceCeil(ModuleOp module) {
         auto type = input.getType();
 
         if (auto vectorType = type.dyn_cast<VectorType>()) {
-          if (!vectorType.getElementType().isa<FloatType>())
+          if (!isa<FloatType>(vectorType.getElementType()))
             return;
-        } else if (!type.isa<FloatType>()) {
+        } else if (!isa<FloatType>(type)) {
           return;
         }
 
         OpBuilder builder(ceilOp);
 
         auto neg1 = builder.create<arith::NegFOp>(loc, type, input);
-
         auto floorNeg = builder.create<math::FloorOp>(loc, type, neg1);
-
         auto neg2 = builder.create<arith::NegFOp>(loc, type, floorNeg);
 
         ceilOp->replaceAllUsesWith(neg2);

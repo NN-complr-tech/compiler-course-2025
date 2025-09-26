@@ -13,7 +13,7 @@ func.func @test_simple(%arg0: f32) -> f32 {
   return %0 : f32
 }
 
-//CHECK: func.func @test_single_arg(%arg0: f32) -> f32 {
+//CHECK-LABEL: func.func @test_single_arg(%arg0: f32) -> f32 {
 //CHECK-NEXT: %0 = arith.negf %arg0 : f32
 //CHECK-NEXT: %1 = math.floor %0 : f32
 //CHECK-NEXT: %2 = arith.negf %1 : f32
