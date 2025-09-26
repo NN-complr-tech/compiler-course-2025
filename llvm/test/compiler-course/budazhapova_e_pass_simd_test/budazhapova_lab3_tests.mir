@@ -1,0 +1,129 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+# RUN:     --load=%llvmshlibdir/SIMDCounter_Budazhapova_Ekaterina_FIIT3_BACKEND%shlibext \
+# RUN:     -run-pass=simd-counter-machine %s -o /dev/null 2>&1 | FileCheck %s
+
+# CHECK: Found SIMD instruction: %3:vr256 = nomerge VMOVAPSYrm
+# CHECK: Found SIMD instruction: %4:vr256 = nomerge VMULPSYrm
+# CHECK: Found SIMD instruction: nomerge VMOVAPSYmr
+# CHECK: Found SIMD instruction: nomerge RET 0
+
+# CHECK: Found SIMD instruction: %3:vr256 = nomerge VMOVAPDYrm
+# CHECK: Found SIMD instruction: %4:vr256 = nomerge VADDPDYrm
+# CHECK: Found SIMD instruction: nomerge VMOVAPDYmr
+# CHECK: Found SIMD instruction: nomerge RET 0
+
+# CHECK: Found SIMD instruction: %3:vr128 = nomerge VMOVAPSrm
+# CHECK: Found SIMD instruction: %4:vr128 = nomerge VSUBPSrm
+# CHECK: Found SIMD instruction: nomerge VMOVAPSmr
+# CHECK: Found SIMD instruction: nomerge RET 0
+
+# CHECK: Found SIMD instruction: %3:vr128 = nomerge VMOVAPDrm
+# CHECK: Found SIMD instruction: %4:vr128 = nomerge VADDPDrm
+# CHECK: Found SIMD instruction: nomerge VMOVAPDmr
+# CHECK: Found SIMD instruction: nomerge RET 0
+
+
+--- |
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-unknown-linux-gnu"
+
+  define void @avx_float_mul(ptr %dst, ptr %src1, ptr %src2) {
+    %a = load <8 x float>, ptr %src1
+    %b = load <8 x float>, ptr %src2
+    %r = fmul <8 x float> %a, %b
+    store <8 x float> %r, ptr %dst
+    ret void
+  }
+
+  define void @avx_double_add(ptr %dst, ptr %src1, ptr %src2) {
+    %a = load <4 x double>, ptr %src1
+    %b = load <4 x double>, ptr %src2
+    %r = fadd <4 x double> %a, %b
+    store <4 x double> %r, ptr %dst
+    ret void
+  }
+
+  define void @sse_float_sub(ptr %dst, ptr %a, ptr %b) {
+    %x = load <4 x float>, ptr %a
+    %y = load <4 x float>, ptr %b
+    %z = fsub <4 x float> %x, %y
+    store <4 x float> %z, ptr %dst
+    ret void
+  }
+
+  define void @sse_double_add(ptr %dst, ptr %a, ptr %b) {
+    %x = load <2 x double>, ptr %a
+    %y = load <2 x double>, ptr %b
+    %z = fadd <2 x double> %x, %y
+    store <2 x double> %z, ptr %dst
+    ret void
+  }
+
+...
+---
+name: avx_float_mul
+liveins:
+  - { reg: '$rdi' }
+  - { reg: '$rsi' }
+  - { reg: '$rdx' }
+body: |
+  bb.0:
+    liveins: $rdi, $rsi, $rdx
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:vr256 = VMOVAPSYrm %1, 1, $noreg, 0, $noreg
+    %4:vr256 = VMULPSYrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr
+    VMOVAPSYmr %0, 1, $noreg, 0, $noreg, %4
+    RET 0
+...
+---
+name: avx_double_add
+liveins:
+  - { reg: '$rdi' }
+  - { reg: '$rsi' }
+  - { reg: '$rdx' }
+body: |
+  bb.0:
+    liveins: $rdi, $rsi, $rdx
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:vr256 = VMOVAPDYrm %1, 1, $noreg, 0, $noreg
+    %4:vr256 = VADDPDYrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr
+    VMOVAPDYmr %0, 1, $noreg, 0, $noreg, %4
+    RET 0
+...
+---
+name: sse_float_sub
+liveins:
+  - { reg: '$rdi' }
+  - { reg: '$rsi' }
+  - { reg: '$rdx' }
+body: |
+  bb.0:
+    liveins: $rdi, $rsi, $rdx
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:vr128 = VMOVAPSrm %1, 1, $noreg, 0, $noreg
+    %4:vr128 = VSUBPSrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr
+    VMOVAPSmr %0, 1, $noreg, 0, $noreg, %4
+    RET 0
+...
+---
+name: sse_double_add
+liveins:
+  - { reg: '$rdi' }
+  - { reg: '$rsi' }
+  - { reg: '$rdx' }
+body: |
+  bb.0:
+    liveins: $rdi, $rsi, $rdx
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:vr128 = VMOVAPDrm %1, 1, $noreg, 0, $noreg
+    %4:vr128 = VADDPDrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr
+    VMOVAPDmr %0, 1, $noreg, 0, $noreg, %4
+    RET 0
