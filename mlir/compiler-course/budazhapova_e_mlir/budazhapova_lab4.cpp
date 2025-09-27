@@ -38,26 +38,18 @@ public:
       int64_t end = ub.value();
       int64_t step = st.value();
 
-      llvm::errs() << "Calculating trips: start=" << start << ", end=" << end
-                   << ", step=" << step << "\n";
-
       if (step == 0)
         return;
 
       int64_t trips = 0;
       if (step > 0 && start < end) {
         trips = (end - start + step - 1) / step;
-        llvm::errs() << "Positive step trips: " << trips << "\n";
       } else if (step < 0 && start > end) {
         trips = (start - end - step - 1) / (-step);
-        llvm::errs() << "Negative step trips: " << trips << "\n";
       }
-
-      llvm::errs() << "Final trips: " << trips << "\n";
 
       if (trips >= 0) {
         loopOp->setAttr("trip_count", builder.getI64IntegerAttr(trips));
-        llvm::errs() << "Added trip_count = " << trips << " to loop\n";
       }
     });
   }

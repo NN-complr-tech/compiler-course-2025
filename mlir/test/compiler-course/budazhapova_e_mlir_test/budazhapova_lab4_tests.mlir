@@ -1,4 +1,4 @@
-// RUN: mlir-opt -load-pass-plugin=/home/ka10nnn/compiler-course-2025/build/lib/TripCount_Budazhapova_Ekaterina_FIIT3_BACKEND.so --pass-pipeline="builtin.module(loop-iteration-marker)" %s | FileCheck %s
+// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/TripCount_Budazhapova_Ekaterina_FIIT3_BACKEND%shlibext --pass-pipeline="builtin.module(loop-iteration-marker)" %s | FileCheck %s
 
 module {
 func.func @simple_loop() {
