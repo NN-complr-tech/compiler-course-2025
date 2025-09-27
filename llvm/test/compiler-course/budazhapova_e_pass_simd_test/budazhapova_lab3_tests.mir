@@ -2,66 +2,6 @@
 # RUN:     --load=%llvmshlibdir/SIMDCounter_Budazhapova_Ekaterina_FIIT3_BACKEND%shlibext \
 # RUN:     -run-pass=simd-counter-machine %s -o - | FileCheck %s
 
-# CHECK-LABEL: name: avx_float_mul
-# CHECK: bb.0:
-# CHECK:   %3:vr256 = VMOVAPSYrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   %4:vr256 = VMULPSYrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   VMOVAPSYmr
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-
-# CHECK-LABEL: name: avx_double_add
-# CHECK: bb.0:
-# CHECK:   %3:vr256 = VMOVAPDYrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   %4:vr256 = VADDPDYrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   VMOVAPDYmr
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-
-# CHECK-LABEL: name: sse_float_sub
-# CHECK: bb.0:
-# CHECK:   %3:vr128 = VMOVAPSrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   %4:vr128 = VSUBPSrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   VMOVAPSmr
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-
-# CHECK-LABEL: name: sse_double_add
-# CHECK: bb.0:
-# CHECK:   %3:vr128 = VMOVAPDrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   %4:vr128 = VADDPDrm
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-# CHECK:   VMOVAPDmr
-# CHECK:   $rax = MOV64rm @simd_counter
-# CHECK:   $rax = ADD64ri32 $rax, 1
-# CHECK:   MOV64mr @simd_counter
-
 --- |
   target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
   target triple = "x86_64-unknown-linux-gnu"
@@ -100,6 +40,21 @@
 
 ...
 ---
+# CHECK-LABEL: name: avx_float_mul
+# CHECK: body:
+# CHECK: bb.0:
+# CHECK:   %3:vr256 = VMOVAPSYrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   %4:vr256 = VMULPSYrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   VMOVAPSYmr
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
 name: avx_float_mul
 liveins:
   - { reg: '$rdi' }
@@ -117,6 +72,21 @@ body: |
     RET 0
 ...
 ---
+# CHECK-LABEL: name: avx_double_add
+# CHECK: body:
+# CHECK: bb.0:
+# CHECK:   %3:vr256 = VMOVAPDYrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   %4:vr256 = VADDPDYrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   VMOVAPDYmr
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
 name: avx_double_add
 liveins:
   - { reg: '$rdi' }
@@ -134,6 +104,21 @@ body: |
     RET 0
 ...
 ---
+# CHECK-LABEL: name: sse_float_sub
+# CHECK: body:
+# CHECK: bb.0:
+# CHECK:   %3:vr128 = VMOVAPSrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   %4:vr128 = VSUBPSrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   VMOVAPSmr
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
 name: sse_float_sub
 liveins:
   - { reg: '$rdi' }
@@ -151,6 +136,21 @@ body: |
     RET 0
 ...
 ---
+# CHECK-LABEL: name: sse_double_add
+# CHECK: body:
+# CHECK: bb.0:
+# CHECK:   %3:vr128 = VMOVAPDrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   %4:vr128 = VADDPDrm
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
+# CHECK:   VMOVAPDmr
+# CHECK:   $rax = MOV64rm @simd_counter
+# CHECK:   $rax = ADD64ri32 $rax, 1
+# CHECK:   MOV64mr @simd_counter
 name: sse_double_add
 liveins:
   - { reg: '$rdi' }
@@ -166,4 +166,4 @@ body: |
     %4:vr128 = VADDPDrm %3, %2, 1, $noreg, 0, $noreg, implicit $mxcsr
     VMOVAPDmr %0, 1, $noreg, 0, $noreg, %4
     RET 0
-
+...

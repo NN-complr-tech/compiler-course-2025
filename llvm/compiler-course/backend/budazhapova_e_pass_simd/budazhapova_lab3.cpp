@@ -106,31 +106,22 @@ bool SIMDCounterMachinePass::isX86SIMDInstruction(const MachineInstr &MI) {
   if (Opcode >= X86::ADDPDrr && Opcode <= X86::XORPDrr)
     return true;
 
-  if (Opcode >= X86::VADDPSrr && Opcode <= X86::VXORPSrr)
+  switch (Opcode) {
+  case X86::ADDPSrr:
+  case X86::ADDPDrr:
+  case X86::VADDPSrr:
+  case X86::VADDPDrr:
+  case X86::VADDPSYrr:
+  case X86::VADDPDYrr:
+  case X86::MOVAPSrm:
+  case X86::MOVAPDrm:
+  case X86::VMOVAPSrm:
+  case X86::VMOVAPDrm:
+  case X86::VMOVAPSYrm:
+  case X86::VMOVAPDYrm:
     return true;
-  if (Opcode >= X86::VADDPDrr && Opcode <= X86::VXORPDrr)
-    return true;
-
-  if (Opcode >= X86::VADDPSYrr && Opcode <= X86::VXORPSYrr)
-    return true;
-  if (Opcode >= X86::VADDPDYrr && Opcode <= X86::VXORPDYrr)
-    return true;
-
-  if (Opcode >= X86::MMX_PADDBrr && Opcode <= X86::MMX_PXORrr)
-    return true;
-
-  if (Opcode >= X86::VADDPSZrr && Opcode <= X86::VXORPSZrr)
-    return true;
-  if (Opcode >= X86::VADDPDZrr && Opcode <= X86::VXORPDZrr)
-    return true;
-
-  if (Opcode == X86::MOVAPSrm || Opcode == X86::MOVAPSmr ||
-      Opcode == X86::MOVAPDrm || Opcode == X86::MOVAPDmr ||
-      Opcode == X86::VMOVAPSrm || Opcode == X86::VMOVAPSmr ||
-      Opcode == X86::VMOVAPDrm || Opcode == X86::VMOVAPDmr ||
-      Opcode == X86::VMOVAPSZrm || Opcode == X86::VMOVAPSZmr ||
-      Opcode == X86::VMOVAPDZrm || Opcode == X86::VMOVAPDZmr) {
-    return true;
+  default:
+    break;
   }
 
   for (const MachineOperand &MO : MI.operands()) {
@@ -142,14 +133,10 @@ bool SIMDCounterMachinePass::isX86SIMDInstruction(const MachineInstr &MI) {
         return true;
       if (X86::ZMM0 <= Reg && Reg <= X86::ZMM31)
         return true;
-      if (X86::MM0 <= Reg && Reg <= X86::MM7)
-        return true;
     }
   }
-
   return false;
 }
-
 } // namespace
 
 static RegisterPass<SIMDCounterMachinePass>
