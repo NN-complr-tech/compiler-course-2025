@@ -57,7 +57,8 @@ public:
             return true;
           }
 
-          if (auto *GV = dyn_cast<GlobalVariable>(LdInst->getPointerOperand())) {
+          if (auto *GV =
+                  dyn_cast<GlobalVariable>(LdInst->getPointerOperand())) {
             if (!GV->isConstant()) {
               return true;
             }
