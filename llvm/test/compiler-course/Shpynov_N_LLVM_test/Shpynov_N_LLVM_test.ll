@@ -1,6 +1,6 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/PureFunctionPass_Shpynov_Nikita_FIIT1_LLVM_IR%pluginext\
 ; RUN: -passes=purefunctionpass  -S %s | FileCheck %s
-; c++ tests: https://compiler-explorer.com/z/oG6da6dYj
+; c++ tests: https://compiler-explorer.com/z/nMhfz96oW
 
 module asm ".globl _ZSt21ios_base_library_initv"
 

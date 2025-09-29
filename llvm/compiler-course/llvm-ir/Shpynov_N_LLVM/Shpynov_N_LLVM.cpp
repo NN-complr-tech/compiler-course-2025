@@ -28,18 +28,15 @@ public:
   bool FoundSideEffects(Function &Foo) {
     for (auto &BaseBlock : Foo) {
       for (auto &Instruction : BaseBlock) {
-        llvm::errs() << "Checking instruction: " << Instruction << "\n";
         if (isa<StoreInst>(Instruction) || isa<AtomicRMWInst>(Instruction) ||
             isa<AtomicCmpXchgInst>(
                 Instruction)) { // Any memory write makes the function impure
-          llvm::errs() << Instruction << "is NOT pure\n";
           return true;
         }
 
         if (auto *CI = dyn_cast<CallBase>(&Instruction)) {
           Function *Callee = CI->getCalledFunction();
           if (!Callee) {
-            llvm::errs() << Instruction << "is NOT pure\n";
             return true;
           }
 
@@ -51,49 +48,24 @@ public:
                                              // unknown or not pure/readonly,
                                              // the current function as also
                                              // impure
-            llvm::errs() << Instruction << "is NOT pure\n";
             return true;
           }
         }
 
         if (auto *LdInst = dyn_cast<LoadInst>(&Instruction)) {
           if (LdInst->isVolatile()) {
-            llvm::errs() << Instruction << " is NOT pure (volatile load)\n";
             return true;
           }
-          // Проверяем, загружаем ли мы из неконстантной глобальной переменной
+
           if (auto *GV = dyn_cast<GlobalVariable>(LdInst->getPointerOperand())) {
             if (!GV->isConstant()) {
-              llvm::errs() << Instruction << " is NOT pure (load from non-constant global: " 
-                           << GV->getName() << ")\n";
               return true;
             }
           }
         }
-        /*
-                for (auto &Op : CI->args()) {
-                  if (auto *GV = dyn_cast<GlobalVariable>(Op)) {
-                    if (!GV->isConstant())
-                      llvm::errs() << Instruction << "is NOT pure\n";
-                    return true;
-                  }
-                }
-              }
-              if (auto *LdInst = dyn_cast<LoadInst>(&Instruction)) {
-                if (LdInst->isVolatile()) { // Volatile load operations
-                                            // also have side effects
-                  return true;
-                  if (auto *GV =
-                          dyn_cast<GlobalVariable>(LdInst->getPointerOperand()))
-           { llvm::errs() << Instruction << "is NOT pure\n"; return true;
-                  }
-                }
-              }
-        */
 
         if (isa<ResumeInst>(Instruction) || isa<CatchSwitchInst>(Instruction) ||
             isa<CatchPadInst>(Instruction)) {
-          llvm::errs() << Instruction << "is NOT pure\n";
           return true; // These instructions can affect the program's state
         }
       }
