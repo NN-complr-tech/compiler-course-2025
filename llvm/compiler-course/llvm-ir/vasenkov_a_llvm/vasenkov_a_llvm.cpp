@@ -13,15 +13,6 @@ using namespace llvm;
 namespace {
 
 class DivisionOptimizer : public PassInfoMixin<DivisionOptimizer> {
-private:
-  bool isPowerOfTwo(int64_t value) {
-    return value > 0 && (value & (value - 1)) == 0;
-  }
-
-  unsigned calculateLog2(int64_t value) {
-    return Log2_64(static_cast<uint64_t>(value));
-  }
-
 public:
   PreservedAnalyses run(Function &func, FunctionAnalysisManager &) {
     bool modified = false;
@@ -61,8 +52,8 @@ public:
         }
 
         int64_t absDivisor = std::abs(divisorValue);
-        if (isPowerOfTwo(absDivisor)) {
-          unsigned shiftBits = calculateLog2(absDivisor);
+        if (isPowerOf2_64(static_cast<uint64_t>(absDivisor))) {
+          unsigned shiftBits = Log2_64(static_cast<uint64_t>(absDivisor));
           auto *shiftAmount = ConstantInt::get(operandType, shiftBits);
 
           Value *shiftedValue = (opcode == Instruction::SDiv)
