@@ -1,6 +1,6 @@
 # RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/SIMDInstructionCounterPass_Shpynov_Nikita_FIIT1_BACKEND%shlibext \
 # RUN: -run-pass=simd-instrustion-counter-pass-x86  %s -o - | FileCheck %s
-# source: https://compiler-explorer.com/z/jMEKhs3nf
+# source: https://compiler-explorer.com/z/MKh7bonfP
 
 # #include <immintrin.h>
 # void NOT_SIMD_empty_array(int *a) {
