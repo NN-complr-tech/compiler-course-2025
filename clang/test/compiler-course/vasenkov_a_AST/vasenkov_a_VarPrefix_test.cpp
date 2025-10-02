@@ -1,4 +1,3 @@
-
 // RUN: %clang_cc1 -load %llvmshlibdir/VarPrefixPlugin_VasenkovAndrey_FIIT1_ClangAST%pluginext -plugin VarPrefixPlugin_VasenkovAndrey_FIIT1_ClangAST -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: int global_var1 = 10;
@@ -8,7 +7,7 @@
 // CHECK-NEXT:    ++local_var2;
 // CHECK-NEXT:    return param_a + param_b + local_var2 + static_var3;
 // CHECK-NEXT: }
-// CHECK-NEXT: static int global_var4 = foo(global_var1, 1);
+// CHECK-NEXT: static int static_global_var4 = foo(global_var1, 1);
 // CHECK-NEXT: extern double global_vard = 0;
 
 

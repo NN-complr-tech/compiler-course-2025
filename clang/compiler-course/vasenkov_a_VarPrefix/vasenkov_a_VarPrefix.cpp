@@ -9,7 +9,7 @@
 namespace {
 class PrefixVisitor : public clang::RecursiveASTVisitor<PrefixVisitor> {
 public:
-  explicit PrefixVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
+  PrefixVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
       : m_rewriter(rewriter) {}
 
   bool VisitVarDecl(clang::VarDecl *var) {
@@ -25,7 +25,11 @@ public:
     } else if (var->isLocalVarDecl()) {
       prefix = "local_";
     } else if (var->hasGlobalStorage()) {
-      prefix = "global_";
+      if (var->getStorageClass() == clang::SC_Static) {
+        prefix = "static_global_";
+      } else {
+        prefix = "global_";
+      }
     }
 
     if (!prefix.empty()) {
