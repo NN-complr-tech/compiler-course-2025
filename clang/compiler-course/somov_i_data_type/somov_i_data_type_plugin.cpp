@@ -2,10 +2,10 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
-#include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/STLExtras.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace {
 
@@ -158,5 +158,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<DataTypeAction>
-    Y("data_type_plugin",
-      "Prints information about user-defined data types: fields, methods, bases, nested types");
+    Y("data_type_plugin", "Prints information about user-defined data types: "
+                          "fields, methods, bases, nested types");
