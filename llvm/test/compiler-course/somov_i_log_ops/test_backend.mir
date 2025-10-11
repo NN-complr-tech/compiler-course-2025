@@ -1,0 +1,177 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/LogicalCombinerPass_Sozonov_Ilya_FIIT3_BACKEND%shlibext \
+# RUN: -run-pass=x86-and-or-fusion %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'llvm/test/compiler-course/sozonov_i_logical_combiner/test.ll'
+  source_filename = "llvm/test/compiler-course/sozonov_i_logical_combiner/test.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-unknown-linux-gnu"
+
+  ; Function Attrs: mustprogress noinline uwtable
+  define dso_local noundef zeroext i1 @_Z11any_nonzeroDv2_x(<2 x i64> noundef %v) #0 {
+  entry:
+    %call = call noundef i32 @llvm.x86.sse41.ptestz(<2 x i64> %v, <2 x i64> %v)
+    %tobool = icmp ne i32 %call, 0
+    %lnot = xor i1 %tobool, true
+    ret i1 %lnot
+  }
+
+  ; Function Attrs: mustprogress noinline uwtable
+  define dso_local noundef zeroext i1 @_Z16and_or_test_simdPKiS0_S0_(ptr noundef %a, ptr noundef %b, ptr noundef %c) #0 {
+  entry:
+    %va = load <2 x i64>, ptr %a, align 16
+    %vb = load <2 x i64>, ptr %b, align 16
+    %vc = load <2 x i64>, ptr %c, align 16
+    %tmp1 = and <2 x i64> %va, %vb
+    %tmp2 = or <2 x i64> %tmp1, %vc
+    %call = call noundef zeroext i1 @_Z11any_nonzeroDv2_x(<2 x i64> noundef %tmp2)
+    ret i1 %call
+  }
+
+  ; Function Attrs: mustprogress noinline uwtable
+  define dso_local noundef zeroext i1 @_Z16or_xor_test_simdPKiS0_S0_(ptr noundef %a, ptr noundef %b, ptr noundef %c) #0 {
+  entry:
+    %va = load <2 x i64>, ptr %a, align 16
+    %vb = load <2 x i64>, ptr %b, align 16
+    %vc = load <2 x i64>, ptr %c, align 16
+    %tmp1 = or <2 x i64> %va, %vb
+    %tmp2 = xor <2 x i64> %tmp1, %vc
+    %call = call noundef zeroext i1 @_Z11any_nonzeroDv2_x(<2 x i64> noundef %tmp2)
+    ret i1 %call
+  }
+
+  ; Function Attrs: mustprogress noinline uwtable
+  define dso_local noundef zeroext i1 @_Z20and_or_xor_test_simdPKiS0_S0_S0_(ptr noundef %a, ptr noundef %b, ptr noundef %c, ptr noundef %d) #0 {
+  entry:
+    %va = load <2 x i64>, ptr %a, align 16
+    %vb = load <2 x i64>, ptr %b, align 16
+    %vc = load <2 x i64>, ptr %c, align 16
+    %vd = load <2 x i64>, ptr %d, align 16
+    %tmp1 = and <2 x i64> %va, %vb
+    %tmp2 = or <2 x i64> %tmp1, %vc
+    %tmp3 = xor <2 x i64> %tmp2, %vd
+    %call = call noundef zeroext i1 @_Z11any_nonzeroDv2_x(<2 x i64> noundef %tmp3)
+    ret i1 %call
+  }
+
+  ; Function Attrs: nocallback nofree nosync nounwind willreturn memory(none)
+  declare i32 @llvm.x86.sse41.ptestz(<2 x i64>, <2 x i64>) #1
+
+  attributes #0 = { mustprogress noinline uwtable "frame-pointer"="all" "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "tune-cpu"="generic" }
+  attributes #1 = { nocallback nofree nosync nounwind willreturn memory(none) }
+
+...
+---
+name:            _Z11any_nonzeroDv2_x
+body:             |
+  bb.0.entry:
+    liveins: $xmm0
+    ; Этот тест не затрагивается проходом, CHECK'и остаются прежними
+    ; CHECK-LABEL: name: _Z11any_nonzeroDv2_x
+    ; CHECK:       %0:vr128 = COPY $xmm0
+    ; CHECK-NEXT:  PTESTrr %0, %0, implicit-def $eflags
+    ; CHECK-NEXT:  %1:gr8 = SETCCr 5, implicit $eflags
+    ; CHECK-NEXT:  $al = COPY %1
+    ; CHECK-NEXT:  RET 0, $al
+    %0:vr128 = COPY $xmm0
+    PTESTrr %0, %0, implicit-def $eflags
+    %1:gr8 = SETCCr 5, implicit $eflags
+    $al = COPY %1
+    RET 0, $al
+
+...
+---
+name:            _Z16and_or_test_simdPKiS0_S0_
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx
+
+    ; CHECK-LABEL: name: _Z16and_or_test_simdPKiS0_S0_
+    ; CHECK:       %0:gr64 = COPY $rdi
+    ; CHECK-NEXT:  %1:gr64 = COPY $rsi
+    ; CHECK-NEXT:  %2:gr64 = COPY $rdx
+    ; CHECK-NEXT:  %3:vr128 = MOVUPSrm %0, 1, $noreg, 0, $noreg
+    ; CHECK-NEXT:  %4:vr128 = MOVUPSrm %1, 1, $noreg, 0, $noreg
+    ; CHECK-NEXT:  %5:vr128 = MOVUPSrm %2, 1, $noreg, 0, $noreg
+    ; CHECK-NEXT:  [[TMP_REG:%[0-9]+]]:vr128 = VPANDrr %3, %4
+    ; CHECK-NEXT:  %7:vr128 = VPORrr [[TMP_REG]], %5
+    ; CHECK-NEXT:  ADJCALLSTACKDOWN
+    ; CHECK-NEXT:  $xmm0 = COPY %7
+    ; CHECK-NEXT:  CALL64pcrel32
+    ; CHECK-NEXT:  ADJCALLSTACKUP
+    ; CHECK-NEXT:  RET 0, $al
+
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:vr128 = MOVUPSrm %0, 1, $noreg, 0, $noreg :: (load (s128) from %ir.a)
+    %4:vr128 = MOVUPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.b)
+    %5:vr128 = MOVUPSrm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.c)
+    %6:vr128 = PANDrr %3, %4
+    %7:vr128 = PORrr %6, %5
+    ADJCALLSTACKDOWN64 0, 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
+    $xmm0 = COPY %7
+    CALL64pcrel32 @_Z11any_nonzeroDv2_x, csr_64, implicit $rsp, implicit $ssp, implicit $xmm0, implicit-def $rsp, implicit-def $ssp, implicit-def $al
+    ADJCALLSTACKUP64 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
+    %8:gr8 = COPY $al
+    $al = COPY %8
+    RET 0, $al
+
+...
+---
+name:            _Z16or_xor_test_simdPKiS0_S0_
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx
+
+    ; Этот тест не должен меняться, так как он проверяет OR + XOR, а не AND + OR
+    ; CHECK-LABEL: name: _Z16or_xor_test_simdPKiS0_S0_
+    ; CHECK:       %6:vr128 = PORrr %3, %4
+    ; CHECK-NEXT:  %7:vr128 = PXORrr %6, %5
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:vr128 = MOVUPSrm %0, 1, $noreg, 0, $noreg :: (load (s128) from %ir.a)
+    %4:vr128 = MOVUPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.b)
+    %5:vr128 = MOVUPSrm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.c)
+    %6:vr128 = PORrr %3, %4
+    %7:vr128 = PXORrr %6, %5
+    ADJCALLSTACKDOWN64 0, 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
+    $xmm0 = COPY %7
+    CALL64pcrel32 @_Z11any_nonzeroDv2_x, csr_64, implicit $rsp, implicit $ssp, implicit $xmm0, implicit-def $rsp, implicit-def $ssp, implicit-def $al
+    ADJCALLSTACKUP64 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
+    %8:gr8 = COPY $al
+    $al = COPY %8
+    RET 0, $al
+
+...
+---
+name:            _Z20and_or_xor_test_simdPKiS0_S0_S0_
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $rsi, $rdx, $rcx
+
+    ; CHECK-LABEL: name: _Z20and_or_xor_test_simdPKiS0_S0_S0_
+    ; CHECK:       [[TMP_REG:%[0-9]+]]:vr128 = VPANDrr %4, %5
+    ; CHECK-NEXT:  %9:vr128 = VPORrr [[TMP_REG]], %6
+    ; CHECK-NEXT:  %10:vr128 = PXORrr %9, %7
+
+    %0:gr64 = COPY $rdi
+    %1:gr64 = COPY $rsi
+    %2:gr64 = COPY $rdx
+    %3:gr64 = COPY $rcx
+    %4:vr128 = MOVUPSrm %0, 1, $noreg, 0, $noreg :: (load (s128) from %ir.a)
+    %5:vr128 = MOVUPSrm %1, 1, $noreg, 0, $noreg :: (load (s128) from %ir.b)
+    %6:vr128 = MOVUPSrm %2, 1, $noreg, 0, $noreg :: (load (s128) from %ir.c)
+    %7:vr128 = MOVUPSrm %3, 1, $noreg, 0, $noreg :: (load (s128) from %ir.d)
+    %8:vr128 = PANDrr %4, %5
+    %9:vr128 = PORrr %8, %6
+    %10:vr128 = PXORrr %9, %7
+    ADJCALLSTACKDOWN64 0, 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
+    $xmm0 = COPY %10
+    CALL64pcrel32 @_Z11any_nonzeroDv2_x, csr_64, implicit $rsp, implicit $ssp, implicit $xmm0, implicit-def $rsp, implicit-def $ssp, implicit-def $al
+    ADJCALLSTACKUP64 0, 0, implicit-def dead $rsp, implicit-def dead $eflags, implicit-def dead $ssp, implicit $rsp, implicit $ssp
+    %11:gr8 = COPY $al
+    $al = COPY %11
+    RET 0, $al
+...
