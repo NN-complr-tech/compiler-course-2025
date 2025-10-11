@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/DataTypePlugin_Somov%pluginext -plugin data_type_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/DataType_SomovIvan_FIIT1_ClangAST%pluginext -plugin data_type_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 //CHECK: Human
 //CHECK-NEXT: |_Fields
