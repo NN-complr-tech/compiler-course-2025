@@ -88,7 +88,6 @@ private:
       out << "| |_ " << M->getNameAsString() << " ("
           << M->getReturnType().getAsString() << "(";
 
-      // Параметры через interleaveComma, выводим типы параметров
       llvm::interleaveComma(M->parameters(), out,
                             [](const clang::ParmVarDecl *P) {
                               llvm::outs() << P->getType().getAsString();
@@ -150,7 +149,6 @@ public:
 
   bool ParseArgs(const clang::CompilerInstance &CI,
                  const std::vector<std::string> &args) override {
-    // Плагин не ожидает аргументов — всегда успешно.
     (void)CI;
     (void)args;
     return true;
