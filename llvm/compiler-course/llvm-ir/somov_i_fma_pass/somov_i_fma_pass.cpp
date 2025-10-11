@@ -10,8 +10,9 @@
 namespace {
 struct FMARewriterPass : llvm::PassInfoMixin<FMARewriterPass> {
 private:
-  bool tryToFuseFMA(llvm::Instruction &addInstruction,
-                    llvm::SmallVector<llvm::Instruction *, 4> &obsoleteInstructions) {
+  bool tryToFuseFMA(
+      llvm::Instruction &addInstruction,
+      llvm::SmallVector<llvm::Instruction *, 4> &obsoleteInstructions) {
     if (addInstruction.getOpcode() != llvm::Instruction::FAdd) {
       return false;
     }
@@ -22,12 +23,14 @@ private:
     auto *mulInstruction = llvm::dyn_cast<llvm::Instruction>(leftOperand);
     llvm::Value *addend = rightOperand;
 
-    if (!mulInstruction || mulInstruction->getOpcode() != llvm::Instruction::FMul) {
+    if (!mulInstruction ||
+        mulInstruction->getOpcode() != llvm::Instruction::FMul) {
       mulInstruction = llvm::dyn_cast<llvm::Instruction>(rightOperand);
       addend = leftOperand;
     }
 
-    if (!mulInstruction || mulInstruction->getOpcode() != llvm::Instruction::FMul) {
+    if (!mulInstruction ||
+        mulInstruction->getOpcode() != llvm::Instruction::FMul) {
       return false;
     }
 
@@ -41,10 +44,11 @@ private:
     llvm::IRBuilder<> builder(&addInstruction);
 
     llvm::Function *fmaIntrinsic = llvm::Intrinsic::getDeclaration(
-        addInstruction.getModule(), llvm::Intrinsic::fmuladd, addInstruction.getType());
+        addInstruction.getModule(), llvm::Intrinsic::fmuladd,
+        addInstruction.getType());
 
-    llvm::Value *fmaCall =
-        builder.CreateCall(fmaIntrinsic, {multiplicand1, multiplicand2, addend});
+    llvm::Value *fmaCall = builder.CreateCall(
+        fmaIntrinsic, {multiplicand1, multiplicand2, addend});
 
     addInstruction.replaceAllUsesWith(fmaCall);
 
