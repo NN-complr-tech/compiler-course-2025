@@ -41,6 +41,7 @@ public:
     func->isOverloadedOperator() ||
     func->getName().empty()) {
     return true;
+    }
 
     currentFunction = func->getNameInfo().getName().getAsString();
     if (conversions.find(currentFunction) == conversions.end()) {
