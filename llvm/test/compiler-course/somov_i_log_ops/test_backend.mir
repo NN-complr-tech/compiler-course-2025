@@ -1,4 +1,4 @@
-# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/LogicalCombinerPass_Sozonov_Ilya_FIIT3_BACKEND%shlibext \
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/LogicalOperationsPass_Somov_Ivan_FIIT1_BACKEND%shlibext \
 # RUN: -run-pass=x86-and-or-fusion %s -o - | FileCheck %s
 
 --- |
