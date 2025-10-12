@@ -37,7 +37,8 @@ bool X86AndOrFusionPass::runOnMachineFunction(MachineFunction &MachineFunc) {
       unsigned FirstOpcode = AndCandidate.getOpcode();
 
       const bool isAndOp =
-          (FirstOpcode == X86::ANDPSrr || FirstOpcode == X86::VPANDrr);
+          (FirstOpcode == X86::ANDPSrr || FirstOpcode == X86::VPANDrr ||
+           FirstOpcode == X86::PANDrr);
       if (!isAndOp) {
         ++InstrIter;
         continue;
@@ -64,7 +65,8 @@ bool X86AndOrFusionPass::runOnMachineFunction(MachineFunction &MachineFunc) {
       unsigned SecondOpcode = OrCandidate.getOpcode();
 
       const bool isOrOp =
-          (SecondOpcode == X86::ORPSrr || SecondOpcode == X86::VPORrr);
+          (SecondOpcode == X86::ORPSrr || SecondOpcode == X86::VPORrr ||
+           SecondOpcode == X86::PORrr);
       if (!isOrOp) {
         ++InstrIter;
         continue;
