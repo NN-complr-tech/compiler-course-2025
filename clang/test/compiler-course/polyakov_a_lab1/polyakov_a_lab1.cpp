@@ -4,7 +4,7 @@
 // CHECK-NEXT: float -> double: 1
 // CHECK-NEXT: int -> float: 1
 double sum(int a, float b) {
-    return a + b; // 'a' (int) -> 'b' (float) -> 'double'
+    return a + b; 
 }
 
 // CHECK: Function: mul
@@ -15,8 +15,8 @@ int mul(float a, float b) {
     return a + sum(a, b);
 }
 
-// CHECK: Function createX
-// CHECK-NEXT: int -> class X: 1
+// CHECK: Function: createX
+// CHECK-NEXT: int -> X: 1
 
 class X {
     int x;
@@ -35,7 +35,7 @@ bool make_bool() {
   return 55;
 }
 
-// CHECK: Function test_bool_cond
+// CHECK: Function: test_bool_cond
 // CHECK-NEXT: int -> bool: 1
 
 void test_bool_cond() {
@@ -43,7 +43,7 @@ void test_bool_cond() {
     if (x) {}  
 }
 
-// CHECK: Function test_char_int
+// CHECK: Function: test_char_int
 // CHECK-NEXT: char -> int: 1
 
 int test_char_int() {

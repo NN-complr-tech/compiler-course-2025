@@ -25,7 +25,7 @@ class ImplicitConvVisitor final : public clang::RecursiveASTVisitor<ImplicitConv
     for (auto &entry : convList) {
       if (entry.first == conversion) {
         entry.second++;
-        break;
+        return;
       }
     }
 
