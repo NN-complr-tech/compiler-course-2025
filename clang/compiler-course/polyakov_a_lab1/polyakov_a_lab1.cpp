@@ -36,6 +36,12 @@ public:
   explicit ImplicitConvVisitor(clang::ASTContext *context) : Context(context) {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *func) {
+    if (llvm::isa<clang::CXXConstructorDecl>(func) ||
+    llvm::isa<clang::CXXDestructorDecl>(func) ||
+    func->isOverloadedOperator() ||
+    func->getName().empty()) {
+    return true;
+
     currentFunction = func->getNameInfo().getName().getAsString();
     if (conversions.find(currentFunction) == conversions.end()) {
       functionOrder.push_back(currentFunction);
