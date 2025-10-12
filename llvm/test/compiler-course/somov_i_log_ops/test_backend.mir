@@ -99,7 +99,7 @@ body:             |
     ; CHECK-NEXT:  $xmm0 = COPY %7
     ; CHECK-NEXT:  CALL64pcrel32
     ; CHECK-NEXT:  ADJCALLSTACKUP
-    ; CHECK-NEXT:  RET 0, $al
+    ; CHECK:  RET 0, $al
 
     %0:gr64 = COPY $rdi
     %1:gr64 = COPY $rsi
