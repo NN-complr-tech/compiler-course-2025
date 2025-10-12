@@ -1,4 +1,4 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/FmulFaddPass_Sozonov_Ilya_FIIT3_LLVM_IR%pluginext -passes=FMARewriterPass -S %s | FileCheck %s
+; RUN: opt -load-pass-plugin %llvmshlibdir/FmaPass_Somov_Ivan_FIIT1_LLVM_IR%pluginext -passes=FMARewriterPass -S %s | FileCheck %s
 
 ; Test 1: (a * b) + c - should be replaced with llvm.fmuladd(a, b, c)
 ; CHECK-LABEL: @fmul_fadd_ab_c
