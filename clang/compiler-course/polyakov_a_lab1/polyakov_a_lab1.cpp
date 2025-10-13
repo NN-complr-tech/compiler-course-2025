@@ -8,8 +8,10 @@
 #include <vector>
 
 namespace {
-class ImplicitConvVisitor final : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
-  void handleTypeConversion(const clang::QualType &fromType, const clang::QualType &toType) {
+class ImplicitConvVisitor final
+    : public clang::RecursiveASTVisitor<ImplicitConvVisitor> {
+  void handleTypeConversion(const clang::QualType &fromType,
+                            const clang::QualType &toType) {
     std::string fromTypeStr = fromType.getAsString();
     std::string toTypeStr = toType.getAsString();
 
@@ -37,10 +39,9 @@ public:
 
   bool VisitFunctionDecl(clang::FunctionDecl *func) {
     if (llvm::isa<clang::CXXConstructorDecl>(func) ||
-    llvm::isa<clang::CXXDestructorDecl>(func) ||
-    func->isOverloadedOperator() ||
-    func->getName().empty()) {
-    return true;
+        llvm::isa<clang::CXXDestructorDecl>(func) ||
+        func->isOverloadedOperator() || func->getName().empty()) {
+      return true;
     }
 
     currentFunction = func->getNameInfo().getName().getAsString();
@@ -82,8 +83,6 @@ public:
   }
 
 private:
-
-  clang::ASTContext *Context;
   std::string currentFunction;
   std::vector<std::string> functionOrder;
   std::map<std::string, std::vector<std::pair<std::string, int>>> conversions;
@@ -109,7 +108,8 @@ public:
     return std::make_unique<ConversionConsumer>(&ci.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci, const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &ci,
+                 const std::vector<std::string> &args) override {
     return true;
   }
 };
