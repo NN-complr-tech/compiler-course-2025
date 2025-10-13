@@ -83,6 +83,7 @@ public:
   }
 
 private:
+  clang::ASTContext *Context;
   std::string currentFunction;
   std::vector<std::string> functionOrder;
   std::map<std::string, std::vector<std::pair<std::string, int>>> conversions;
