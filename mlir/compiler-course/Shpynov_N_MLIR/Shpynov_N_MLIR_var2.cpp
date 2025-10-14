@@ -33,7 +33,7 @@ struct AnnotatorPass
           forOp.getLowerBound().getDefiningOp<arith::ConstantIndexOp>();
       auto upperConst =
           forOp.getUpperBound().getDefiningOp<arith::ConstantIndexOp>();
-// If any of the bounds or step are unknown, skip this loop
+      // If any of the bounds or step are unknown, skip this loop
       if (!stepConst || !lowerConst || !upperConst)
         return;
 
@@ -47,11 +47,11 @@ struct AnnotatorPass
 
         // Compute trip count depending on the step direction
         if (step > 0 && lower < upper) {
-            // Positive step, from lower to upper
+          // Positive step, from lower to upper
           tripCount = (upper - lower + step - 1) / step;
 
         } else if (step < 0 && lower > upper) {
-            // Negative step, from upper to lower
+          // Negative step, from upper to lower
           tripCount = (lower - upper - step - 1) / (-step);
         }
         // Attach the attribute if trip count is non-negative
