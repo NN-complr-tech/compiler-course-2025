@@ -26,15 +26,14 @@ struct CeilToNegFloorPattern : public OpRewritePattern<math::CeilOp> {
   }
 };
 
-class ReplaceMathCeil : public PassWrapper<ReplaceMathCeil, OperationPass<ModuleOp>> {
+class ReplaceMathCeil
+    : public PassWrapper<ReplaceMathCeil, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final {
     return "ReplaceMathCeil_Polyakov_Alexey_FIIT2_MLIR";
   }
 
-  StringRef getDescription() const final {
-    return "Replace math.ceil";
-  }
+  StringRef getDescription() const final { return "Replace math.ceil"; }
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
