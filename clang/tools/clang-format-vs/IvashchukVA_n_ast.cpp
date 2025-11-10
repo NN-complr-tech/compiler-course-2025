@@ -5,7 +5,7 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
-
+// fix clang
 using namespace clang;
 
 namespace {
