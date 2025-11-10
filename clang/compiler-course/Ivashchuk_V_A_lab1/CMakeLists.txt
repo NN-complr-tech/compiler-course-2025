@@ -1,5 +1,6 @@
 add_llvm_library(IvashchukVA_lab1 MODULE
-  IvashchukVA_lab1.cpp
+  
+IvashchukVA_lab1.cpp
   
   PLUGIN_TOOL
   clang
