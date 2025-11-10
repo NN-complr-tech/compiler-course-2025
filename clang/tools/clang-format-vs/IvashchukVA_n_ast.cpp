@@ -5,79 +5,73 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
-// fix clang
+
 using namespace clang;
 
 namespace {
 
-class MaybeUnusedVisitor final : public RecursiveASTVisitor &lt;
-MaybeUnusedVisitor & gt;
-{
+class MaybeUnusedVisitor final
+    : public RecursiveASTVisitor<MaybeUnusedVisitor> {
 public:
-  explicit MaybeUnusedVisitor(ASTContext * Context, Rewriter & amp; R)
+  explicit MaybeUnusedVisitor(ASTContext *Context, Rewriter &R)
       : Context(Context), TheRewriter(R) {}
 
-  bool VisitFunctionDecl(FunctionDecl * FuncDecl) {
-    if (!FuncDecl - &gt; hasBody() || FuncDecl - &gt; isImplicit())
+  bool VisitFunctionDecl(FunctionDecl *FuncDecl) {
+    if (!FuncDecl->hasBody() || FuncDecl->isImplicit())
       return true;
 
-    for (unsigned i = 0, e = FuncDecl - &gt; getNumParams(); i & lt; e; ++i) {
-      ParmVarDecl *Param = FuncDecl - &gt;
-      getParamDecl(i);
-      if (Param & amp; &amp; Param - &gt; getName() == "unused" & amp; &amp;
-          !Param - &gt; hasAttr & lt; UnusedAttr & gt; ()) {
-        const SourceLocation Loc = Param - &gt;
-        getBeginLoc();
+    for (unsigned i = 0, e = FuncDecl->getNumParams(); i < e; ++i) {
+      ParmVarDecl *Param = FuncDecl->getParamDecl(i);
+      if (Param && Param->getName() == "unused" &&
+          !Param->hasAttr<UnusedAttr>()) {
+        const SourceLocation Loc = Param->getBeginLoc();
         if (Loc.isValid()) {
           TheRewriter.InsertText(Loc, "[[maybe_unused]] ",
-                                 /*InsertBefore=*/true);
+                                 /*InsertAfter=*/false);
         }
       }
     }
 
-    if (Stmt *Body = FuncDecl - &gt; getBody())
+    if (Stmt *Body = FuncDecl->getBody())
       ProcessLocalVariables(Body);
 
     return true;
   }
 
 private:
-  void ProcessLocalVariables(Stmt * S) {
+  void ProcessLocalVariables(Stmt *S) {
     if (!S)
       return;
 
-    if (auto *DS = dyn_cast & lt; DeclStmt & gt; (S)) {
-      for (auto *D : DS - &gt; decls()) {
-        if (auto *VD = dyn_cast & lt; VarDecl & gt; (D)) {
-          if (VD - &gt; isLocalVarDecl() & amp; &amp; !VD - &gt;
-              isImplicit() & amp; &amp; VD - &gt; getName() == "unused" & amp;
-              &amp; !VD - &gt; hasAttr & lt; UnusedAttr & gt; ()) {
-            const SourceLocation Loc = VD - &gt;
-            getBeginLoc();
+    if (auto *DS = dyn_cast<DeclStmt>(S)) {
+      for (auto *D : DS->decls()) {
+        if (auto *VD = dyn_cast<VarDecl>(D)) {
+          if (VD->isLocalVarDecl() && !VD->isImplicit() &&
+              VD->getName() == "unused" && !VD->hasAttr<UnusedAttr>()) {
+            const SourceLocation Loc = VD->getBeginLoc();
             if (Loc.isValid())
               TheRewriter.InsertText(Loc, "[[maybe_unused]] ",
-                                     /*InsertBefore=*/true);
+                                     /*InsertAfter=*/false);
           }
         }
       }
     } else {
-      for (Stmt *Child : S - &gt; children()) {
+      for (Stmt *Child : S->children()) {
         ProcessLocalVariables(Child);
       }
     }
   }
 
   ASTContext *const Context;
-  Rewriter & amp;
-  TheRewriter;
+  Rewriter &TheRewriter;
 };
 
 class MaybeUnusedConsumer : public ASTConsumer {
 public:
-  explicit MaybeUnusedConsumer(ASTContext *Context, Rewriter &amp; Rewrite)
+  explicit MaybeUnusedConsumer(ASTContext *Context, Rewriter &Rewrite)
       : Visitor(Context, Rewrite) {}
 
-  void HandleTranslationUnit(ASTContext &amp; Context) override {
+  void HandleTranslationUnit(ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
@@ -87,23 +81,20 @@ private:
 
 class MaybeUnusedAction : public PluginASTAction {
 public:
-  std::unique_ptr &lt;
-  ASTConsumer &gt;
-  CreateASTConsumer(CompilerInstance &amp; CI, llvm::StringRef) override {
+  std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
+                                                 llvm::StringRef) override {
     TheRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-    return std::make_unique & lt;
-    MaybeUnusedConsumer & gt;
-    (&amp; CI.getASTContext(), TheRewriter);
+    return std::make_unique<MaybeUnusedConsumer>(&CI.getASTContext(),
+                                                 TheRewriter);
   }
 
-  bool ParseArgs(const CompilerInstance &amp; CI, const std::vector &lt;
-                 std::string & gt; &amp; Args) override {
+  bool ParseArgs(const CompilerInstance &CI,
+                 const std::vector<std::string> &Args) override {
     return true;
   }
 
   void EndSourceFileAction() override {
-    const auto &amp;
-    SM = TheRewriter.getSourceMgr();
+    const auto &SM = TheRewriter.getSourceMgr();
     TheRewriter.getEditBuffer(SM.getMainFileID()).write(llvm::outs());
   }
 
@@ -113,7 +104,6 @@ private:
 
 } // namespace
 
-static FrontendPluginRegistry::Add &lt;
-MaybeUnusedAction & gt;
-X("IvashchukVA_lab1_2var",
-  "Marks unused parameters/variables with [[maybe_unused]] attribute");
+static FrontendPluginRegistry::Add<MaybeUnusedAction>
+    X("IvashchukVA_lab1_2var",
+      "Marks unused parameters/variables with [[maybe_unused]] attribute");
