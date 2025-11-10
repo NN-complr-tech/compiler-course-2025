@@ -43,7 +43,7 @@ struct MarkPureFunctionsPass : public PassInfoMixin<MarkPureFunctionsPass> {
   }
 };
 
-} // end anonymous namespace
+} // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
