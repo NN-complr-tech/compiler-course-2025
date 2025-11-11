@@ -10,12 +10,12 @@ using namespace clang;
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
-  Rewriter &Rewriter;
+  Rewriter &TheRewriter;
   ASTContext *Context;
 
 public:
   explicit AddMaybeUnusedVisitor(Rewriter &R, ASTContext *Ctx)
-      : Rewriter(R), Context(Ctx) {}
+      : TheRewriter(R), Context(Ctx) {}
 
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
@@ -26,7 +26,7 @@ public:
     if (Name.contains("unused")) {
       SourceLocation Loc = VD->getBeginLoc();
       if (Loc.isValid()) {
-        Rewriter.InsertText(Loc, "[[maybe_unused]] ");
+        TheRewriter.InsertText(Loc, "[[maybe_unused]] ");
       }
     }
 
@@ -36,25 +36,25 @@ public:
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
 private:
-  Rewriter Rewriter;
+  Rewriter TheRewriter;
   AddMaybeUnusedVisitor Visitor;
 
 public:
   explicit AddMaybeUnusedConsumer(CompilerInstance &CI)
-      : Rewriter(CI.getSourceManager(), CI.getLangOpts()),
-        Visitor(Rewriter, &CI.getASTContext()) {}
+      : TheRewriter(CI.getSourceManager(), CI.getLangOpts()),
+        Visitor(TheRewriter, &CI.getASTContext()) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
 
-    if (Rewriter.getNumModifications() > 0) {
+    if (TheRewriter.getNumModifications() > 0) {
       std::error_code EC;
       llvm::raw_fd_ostream OS(
-          Rewriter.getSourceMgr()
-              .getFileEntryForID(Rewriter.getSourceMgr().getMainFileID())
+          TheRewriter.getSourceMgr()
+              .getFileEntryForID(TheRewriter.getSourceMgr().getMainFileID())
               ->getName(),
           EC, llvm::sys::fs::OF_Text);
-      Rewriter.getEditBuffer(Rewriter.getSourceMgr().getMainFileID()).write(OS);
+      TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID()).write(OS);
     }
   }
 };
