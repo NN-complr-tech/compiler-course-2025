@@ -43,7 +43,7 @@ struct MarkPureFunctionsPass : public PassInfoMixin<MarkPureFunctionsPass> {
     }
 
     if (IsPure) {
-      F.setDoesNotAccessMemory(true);
+      F.setDoesNotAccessMemory();  // ← ИСПРАВЛЕННАЯ СТРОКА (убран параметр true)
     }
 
     return PreservedAnalyses::all();
