@@ -1,4 +1,4 @@
-; RUN: opt -passes=vector-counter -S %s | FileCheck %s
+; RUN: opt -passes=VectorCounterPass_IvashchukVA_FIIT2_BACKEND -S %s | FileCheck %s
 
 define void @test_vector_ops(<4 x float> %a, <4 x float> %b) {
 entry:
