@@ -7,7 +7,8 @@
 
 using namespace clang;
 
-class AddMaybeUnusedVisitor : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
+class AddMaybeUnusedVisitor
+    : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
   Rewriter &Rewriter;
   ASTContext *Context;
@@ -49,11 +50,11 @@ public:
     if (Rewriter.getNumModifications() > 0) {
       std::error_code EC;
       llvm::raw_fd_ostream OS(
-          Rewriter.getSourceMgr().getFileEntryForID(
-              Rewriter.getSourceMgr().getMainFileID())->getName(),
+          Rewriter.getSourceMgr()
+              .getFileEntryForID(Rewriter.getSourceMgr().getMainFileID())
+              ->getName(),
           EC, llvm::sys::fs::OF_Text);
-      Rewriter.getEditBuffer(Rewriter.getSourceMgr().getMainFileID())
-          .write(OS);
+      Rewriter.getEditBuffer(Rewriter.getSourceMgr().getMainFileID()).write(OS);
     }
   }
 };
@@ -76,4 +77,5 @@ public:
 };
 
 static FrontendPluginRegistry::Add<AddMaybeUnusedAction>
-    X("lab1_IvashchukVA_FIIT2_ClangAST", "Adds [[maybe_unused]] to variables containing 'unused'");
+    X("lab1_IvashchukVA_FIIT2_ClangAST",
+      "Adds [[maybe_unused]] to variables containing 'unused'");
