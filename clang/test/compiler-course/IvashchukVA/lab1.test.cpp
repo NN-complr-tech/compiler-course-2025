@@ -2,7 +2,7 @@
 
 int main() {
   int unused_var = 42;
-  // CHECK: remark: Found variable with 'unused': 'unused_var'
+  // CHECK: FOUND: unused_var
   int used_var = 43;
   return 0;
 }
