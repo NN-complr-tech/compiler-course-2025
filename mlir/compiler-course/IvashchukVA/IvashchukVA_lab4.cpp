@@ -30,10 +30,9 @@ struct CallCounterPass
       });
 
       if (callCount > 0) {
-        func->setAttr(
-            "call_count",
-            IntegerAttr::get(IntegerType::get(module.getContext(), 64),
-                             callCount));
+        func->setAttr("call_count",
+                      IntegerAttr::get(IntegerType::get(module.getContext(), 64),
+                                       callCount));
       }
     }
   }
@@ -41,3 +40,8 @@ struct CallCounterPass
 } // namespace
 
 void registerCallCounterPass() { PassRegistration<CallCounterPass>(); }
+
+extern "C" MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
+extern "C" LLVM_ATTRIBUTE_WEAK void mlirRegisterPasses() {
+  registerCallCounterPass();
+}
