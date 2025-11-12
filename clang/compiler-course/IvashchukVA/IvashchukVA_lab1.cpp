@@ -46,16 +46,9 @@ public:
   void HandleTranslationUnit(ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
 
-    std::error_code EC;
-    SourceManager &SM = TheRewriter.getSourceMgr();
-    FileID MainFileID = SM.getMainFileID();
-
-    StringRef Filename = SM.getFilename(SM.getLocForStartOfFile(MainFileID));
-
-    llvm::raw_fd_ostream OS(Filename, EC, llvm::sys::fs::OF_Text);
-    if (!EC) {
-      TheRewriter.getEditBuffer(MainFileID).write(OS);
-    }
+    // ИСПРАВЛЕНИЕ: вывод в stdout вместо записи в файл
+    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
+        .write(llvm::outs());
   }
 };
 
