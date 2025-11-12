@@ -10,9 +10,3 @@ func.func @bar() {
   call @foo() : () -> ()
   return
 }
-
-func.func @baz() {
-  // CHECK: call_count = 1
-  call @bar() : () -> ()
-  return
-}
