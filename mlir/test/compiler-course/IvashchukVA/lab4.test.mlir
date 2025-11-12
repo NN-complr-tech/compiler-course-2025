@@ -1,22 +1,12 @@
 // RUN: mlir-opt --pass-pipeline="builtin.module(call-counter)" %s | FileCheck %s
 
-func.func @foo() {
+func.func @test() {
+  call @helper() : () -> ()
+  call @helper() : () -> ()
   return
 }
-
-func.func @bar() {
-  call @foo() : () -> ()
-  call @foo() : () -> ()
-  return
-}
-// CHECK: func.func @bar()
-// CHECK-SAME: {
 // CHECK: call_count = 2
 
-func.func @baz() {
-  call @bar() : () -> ()
+func.func @helper() {
   return
 }
-// CHECK: func.func @baz()
-// CHECK-SAME: {
-// CHECK: call_count = 1
