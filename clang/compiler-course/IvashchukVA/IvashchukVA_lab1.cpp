@@ -47,10 +47,8 @@ public:
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
 
     std::error_code EC;
-    StringRef Filename =
-        TheRewriter.getSourceMgr()
-            .getFileEntryForID(TheRewriter.getSourceMgr().getMainFileID())
-            ->getName();
+    StringRef Filename = TheRewriter.getSourceMgr()
+                             .getFilename(TheRewriter.getSourceMgr().getMainFileID());
 
     llvm::raw_fd_ostream OS(Filename, EC, llvm::sys::fs::OF_Text);
     if (!EC) {
