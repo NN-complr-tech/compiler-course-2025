@@ -1,4 +1,4 @@
-; RUN: opt -passes=mark-pure-functions -S %s | FileCheck %s
+; RUN: opt -load-pass-plugin=%llvmshlibdir/PureFunctionsPass_IvashchukVA_FIIT2_LLVM_IR%shlibext -passes=mark-pure-functions -S %s | FileCheck %s
 
 define void @pure_function() {
 ; CHECK: define void @pure_function() #0
