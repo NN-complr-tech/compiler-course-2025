@@ -2,6 +2,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
@@ -9,10 +10,11 @@ using namespace clang;
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
-  ASTContext *Context;
+  Rewriter &TheRewriter;
 
 public:
-  explicit AddMaybeUnusedVisitor(ASTContext *Ctx) : Context(Ctx) {}
+  explicit AddMaybeUnusedVisitor(Rewriter &R, ASTContext *Ctx)
+      : TheRewriter(R) {}
 
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
@@ -21,7 +23,10 @@ public:
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      llvm::outs() << "Found variable with 'unused': " << Name << "\n";
+      SourceLocation Loc = VD->getBeginLoc();
+      if (Loc.isValid()) {
+        TheRewriter.InsertText(Loc, "[[maybe_unused]] ");
+      }
     }
 
     return true;
@@ -30,14 +35,18 @@ public:
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
 private:
+  Rewriter TheRewriter;
   AddMaybeUnusedVisitor Visitor;
 
 public:
   explicit AddMaybeUnusedConsumer(CompilerInstance &CI)
-      : Visitor(&CI.getASTContext()) {}
+      : TheRewriter(CI.getSourceManager(), CI.getLangOpts()),
+        Visitor(TheRewriter, &CI.getASTContext()) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
+        .write(llvm::outs());
   }
 };
 
