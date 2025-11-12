@@ -30,16 +30,13 @@ struct CallCounterPass
       });
 
       if (callCount > 0) {
-        func->setAttr(
-            "call_count",
-            IntegerAttr::get(IntegerType::get(module.getContext(), 64),
-                             callCount));
+        func->setAttr("call_count",
+                      IntegerAttr::get(IntegerType::get(module.getContext(), 64),
+                                       callCount));
       }
     }
   }
 };
 } // namespace
 
-void registerCallCounterPass() {
-  PassRegistration<CallCounterPass>();
-}
+void registerCallCounterPass() { PassRegistration<CallCounterPass>(); }
