@@ -5,16 +5,16 @@ func.func @foo() {
 }
 
 func.func @bar() {
-  // CHECK: func.func @bar()
-  // CHECK-SAME: attributes {call_count = 2}
   call @foo() : () -> ()
   call @foo() : () -> ()
   return
 }
+// CHECK: func.func @bar()
+// CHECK-SAME: attributes {call_count = 2}
 
 func.func @baz() {
-  // CHECK: func.func @baz()
-  // CHECK-SAME: attributes {call_count = 1}
   call @bar() : () -> ()
   return
 }
+// CHECK: func.func @baz()
+// CHECK-SAME: attributes {call_count = 1}
