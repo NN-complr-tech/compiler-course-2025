@@ -2,7 +2,7 @@
 
 int main() {
   int unused_var = 42;
-  // CHECK: Found variable: unused_var
+  // CHECK: [[maybe_unused]] int unused_var = 42;
   int used_var = 43;
   return 0;
 }
