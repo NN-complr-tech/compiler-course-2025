@@ -37,6 +37,6 @@ struct CallCounterPass
     }
   }
 };
-} // namespace
+} // namespac
 
 void registerCallCounterPass() { PassRegistration<CallCounterPass>(); }
