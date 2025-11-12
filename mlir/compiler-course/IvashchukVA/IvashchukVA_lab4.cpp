@@ -1,45 +1,37 @@
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Interfaces/CallInterfaces.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/Pass/Pass.h"
-#include "llvm/ADT/StringMap.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Pass/PassRegistry.h"
 
 using namespace mlir;
 
 namespace {
-class GenericCallCounter
-    : public PassWrapper<GenericCallCounter, OperationPass<ModuleOp>> {
-public:
-  StringRef getArgument() const final {
-    return "generic-call-counter-IvashchukVA";
-  }
-
-  StringRef getDescription() const final { return "Count function calls"; }
+struct CallCounterPass : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
-
-    llvm::StringMap<int64_t> callCounts;
-    module.walk([&](CallOpInterface callOp) {
-      if (auto symCall =
-              callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>()) {
-        callCounts[symCall.getRootReference()]++;
+    
+    for (auto func : module.getOps<func::FuncOp>()) {
+      int callCount = 0;
+      
+      func.walk([&](Operation *op) {
+        if (isa<func::CallOp>(op)) {
+          callCount++;
+        }
+      });
+      
+      if (callCount > 0) {
+        func->setAttr("call_count", IntegerAttr::get(
+            IntegerType::get(module.getContext(), 64), callCount));
       }
-    });
-
-    OpBuilder builder(module.getContext());
-    module.walk([&](CallOpInterface callOp) {
-      if (auto symCall =
-              callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>()) {
-        int64_t count = callCounts.lookup(symCall.getRootReference());
-        callOp->setAttr("call_count", builder.getIndexAttr(count));
-      }
-    });
+    }
   }
 };
 } // namespace
 
-void registerGenericCallCounter() { PassRegistration<GenericCallCounter>(); }
-
-extern "C" void mlirRegisterPasses() { registerGenericCallCounter(); }
+void registerCallCounterPass() {
+  PassRegistration<CallCounterPass>("CallCounterPass_IvashchukVA_FIIT2_MLIR",
+                                    "Count function calls in MLIR");
+}
