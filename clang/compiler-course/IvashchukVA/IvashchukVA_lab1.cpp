@@ -49,13 +49,8 @@ public:
     std::error_code EC;
     SourceManager &SM = TheRewriter.getSourceMgr();
     FileID MainFileID = SM.getMainFileID();
-    
-    const FileEntry *FileEntry = SM.getFileEntryForID(MainFileID);
-    if (!FileEntry) {
-      return;
-    }
-    
-    StringRef Filename = FileEntry->getName();
+
+    StringRef Filename = SM.getFilename(SM.getLocForStartOfFile(MainFileID));
 
     llvm::raw_fd_ostream OS(Filename, EC, llvm::sys::fs::OF_Text);
     if (!EC) {
