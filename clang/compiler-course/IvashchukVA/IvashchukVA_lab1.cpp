@@ -44,11 +44,8 @@ public:
 
   void HandleTranslationUnit(ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
-    
-    // Выводим только измененные части
-    for (auto &Buffer : TheRewriter.getRewriteBuffers()) {
-      Buffer.second.write(llvm::outs());
-    }
+    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
+        .write(llvm::outs());
   }
 };
 
