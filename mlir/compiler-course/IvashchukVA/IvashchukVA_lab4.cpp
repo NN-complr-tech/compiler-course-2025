@@ -42,6 +42,6 @@ struct CallCounterPass
 };
 } // namespace
 
-void registerCallCounterPass() {
-  PassRegistration<CallCounterPass>();
-}
+static mlir::PassRegistration<CallCounterPass> unused(
+    "CallCounterPass_IvashchukVA_FIIT2_MLIR",
+    "Count function calls in MLIR");
