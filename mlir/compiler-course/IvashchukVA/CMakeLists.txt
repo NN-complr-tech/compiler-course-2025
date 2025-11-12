@@ -5,16 +5,15 @@ set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 
-# ИСПРАВЛЕНИЕ: используем add_mlir_library вместо add_mlir_pass_plugin
+# ИСПРАВЛЕНИЕ: правильные зависимости для MLIR
 add_mlir_library(${TARGET_NAME}
   ${SOURCES}
   
   DEPENDS
-  MLIRFuncDialect
-  MLIRPass
+  mlir-headers
   
   LINK_LIBS PUBLIC
-  MLIRFunc
+  MLIRFuncDialect
   MLIRPass
   MLIRIR
 )
