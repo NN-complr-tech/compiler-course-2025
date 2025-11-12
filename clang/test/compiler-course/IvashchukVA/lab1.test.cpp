@@ -1,8 +1,8 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/lab1_IvashchukVA_FIIT2_ClangAST%pluginext -plugin lab1_IvashchukVA_FIIT2_ClangAST %s | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/lab1_IvashchukVA_FIIT2_ClangAST%pluginext -plugin lab1_IvashchukVA_FIIT2_ClangAST %s 2>&1 | FileCheck %s
 
 int main() {
   int unused_var = 42;
-  // CHECK: [[maybe_unused]] int unused_var = 42;
+  // CHECK: remark: Found variable with 'unused': 'unused_var'
   int used_var = 43;
   return 0;
 }
