@@ -4,13 +4,13 @@ define void @test_vector() {
 ; CHECK-LABEL: @test_vector
   %vec1 = add <4 x i32> zeroinitializer, zeroinitializer
 ; CHECK: load i64, ptr @vector_instructions_counter
-; CHECK: add i64
-; CHECK: store i64
+; CHECK: add i64 {{.*}}, 1
+; CHECK: store i64 {{.*}}, ptr @vector_instructions_counter
   %vec2 = fadd <2 x double> zeroinitializer, zeroinitializer
 ; CHECK: load i64, ptr @vector_instructions_counter
-; CHECK: add i64
-; CHECK: store i64
+; CHECK: add i64 {{.*}}, 1
+; CHECK: store i64 {{.*}}, ptr @vector_instructions_counter
   ret void
 }
 
-; CHECK: @vector_instructions_counter = global i64 0
+; CHECK: @vector_instructions_counter = external global i64
