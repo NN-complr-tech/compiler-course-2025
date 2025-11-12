@@ -8,12 +8,7 @@ using namespace clang;
 
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
-private:
-  DiagnosticsEngine &Diag;
-
 public:
-  explicit AddMaybeUnusedVisitor(DiagnosticsEngine &D) : Diag(D) {}
-
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
       return true;
@@ -21,6 +16,39 @@ public:
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      Diag.Report(VD->getLocation(), Diag.getCustomDiagID(
-                                         DiagnosticsEngine::Remark,
-                                         "Found variable with 'un
+      llvm::errs() << "FOUND: " << Name << "\n";
+    }
+    return true;
+  }
+};
+
+class AddMaybeUnusedConsumer : public ASTConsumer {
+private:
+  AddMaybeUnusedVisitor Visitor;
+
+public:
+  void HandleTranslationUnit(ASTContext &Context) override {
+    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+  }
+};
+
+class AddMaybeUnusedAction : public PluginASTAction {
+public:
+  std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
+                                                 StringRef InFile) override {
+    return std::make_unique<AddMaybeUnusedConsumer>();
+  }
+
+  bool ParseArgs(const CompilerInstance &CI,
+                 const std::vector<std::string> &Args) override {
+    return true;
+  }
+
+  PluginASTAction::ActionType getActionType() override {
+    return AddAfterMainAction;
+  }
+};
+
+static FrontendPluginRegistry::Add<AddMaybeUnusedAction>
+    X("lab1_IvashchukVA_FIIT2_ClangAST",
+      "Adds [[maybe_unused]] to variables containing 'unused'");
