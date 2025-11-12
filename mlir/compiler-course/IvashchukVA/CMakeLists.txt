@@ -5,7 +5,6 @@ set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 
-# Используем add_mlir_library с правильными зависимостями
 add_mlir_library(${TARGET_NAME}
   ${SOURCES}
   
