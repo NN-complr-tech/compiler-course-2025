@@ -10,11 +10,13 @@ func.func @bar() {
   return
 }
 // CHECK: func.func @bar()
-// CHECK-SAME: attributes {call_count = 2}
+// CHECK-SAME: {
+// CHECK: call_count = 2
 
 func.func @baz() {
   call @bar() : () -> ()
   return
 }
 // CHECK: func.func @baz()
-// CHECK-SAME: attributes {call_count = 1}
+// CHECK-SAME: {
+// CHECK: call_count = 1
