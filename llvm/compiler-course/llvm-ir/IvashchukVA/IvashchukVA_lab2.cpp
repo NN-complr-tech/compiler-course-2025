@@ -54,7 +54,8 @@ struct MarkPureFunctionsPass : public PassInfoMixin<MarkPureFunctionsPass> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "PureFunctionsPass_IvashchukVA_FIIT2_LLVM_IR", LLVM_VERSION_STRING,
+  return {LLVM_PLUGIN_API_VERSION,
+          "PureFunctionsPass_IvashchukVA_FIIT2_LLVM_IR", LLVM_VERSION_STRING,
           [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](StringRef Name, FunctionPassManager &FPM,
