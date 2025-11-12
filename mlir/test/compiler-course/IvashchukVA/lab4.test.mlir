@@ -1,4 +1,4 @@
-// RUN: mlir-opt --call-counter-IvashchukVA-FIIT2 %s | FileCheck %s
+// RUN: mlir-opt --pass-pipeline="builtin.module(func.func(call-counter-IvashchukVA-FIIT2))" %s | FileCheck %s
 
 func.func @foo() {
   return
