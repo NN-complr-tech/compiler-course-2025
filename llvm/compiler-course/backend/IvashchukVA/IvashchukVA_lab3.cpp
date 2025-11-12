@@ -18,10 +18,10 @@ struct VectorCounterPass : public PassInfoMixin<VectorCounterPass> {
 
     GlobalVariable *Counter = M->getNamedGlobal("vector_instructions_counter");
     if (!Counter) {
-      Counter = new GlobalVariable(*M, Type::getInt64Ty(Context), false,
-                                   GlobalValue::ExternalLinkage,
-                                   ConstantInt::get(Type::getInt64Ty(Context), 0),
-                                   "vector_instructions_counter");
+      Counter = new GlobalVariable(
+          *M, Type::getInt64Ty(Context), false, GlobalValue::ExternalLinkage,
+          ConstantInt::get(Type::getInt64Ty(Context), 0),
+          "vector_instructions_counter");
     }
 
     for (auto &BB : F) {
