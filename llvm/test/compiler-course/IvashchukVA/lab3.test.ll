@@ -13,4 +13,4 @@ define void @test_vector() {
   ret void
 }
 
-; CHECK: @vector_instructions_counter = external global i64
+; CHECK-DAG: @vector_instructions_counter = global i64 0
