@@ -9,10 +9,14 @@ func.func @bar() {
   call @foo() : () -> ()
   return
 }
-// CHECK: func.func @bar() {{.*}} {call_count = 2}
+// CHECK: func.func @bar()
+// CHECK-SAME: {
+// CHECK-SAME: call_count = 2
 
 func.func @baz() {
   call @bar() : () -> ()
   return
 }
-// CHECK: func.func @baz() {{.*}} {call_count = 1}
+// CHECK: func.func @baz()
+// CHECK-SAME: {
+// CHECK-SAME: call_count = 1
