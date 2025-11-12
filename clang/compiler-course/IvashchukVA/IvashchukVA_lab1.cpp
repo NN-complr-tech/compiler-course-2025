@@ -47,16 +47,15 @@ public:
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
 
     std::error_code EC;
-    const FileEntry *File = TheRewriter.getSourceMgr().getFileEntryForID(
-        TheRewriter.getSourceMgr().getMainFileID());
+    StringRef Filename = TheRewriter.getSourceMgr()
+                             .getFileEntryForID(
+                                 TheRewriter.getSourceMgr().getMainFileID())
+                             ->getName();
 
-    if (File) {
-      StringRef Filename = File->getName();
-      llvm::raw_fd_ostream OS(Filename, EC, llvm::sys::fs::OF_Text);
-      if (!EC) {
-        TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
-            .write(OS);
-      }
+    llvm::raw_fd_ostream OS(Filename, EC, llvm::sys::fs::OF_Text);
+    if (!EC) {
+      TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
+          .write(OS);
     }
   }
 };
