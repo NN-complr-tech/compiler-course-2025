@@ -11,7 +11,7 @@ struct CallCounterPass
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
 
   StringRef getArgument() const final {
-    return "call-counter-IvashchukVA-FIIT2";
+    return "call-counter";
   }
   StringRef getDescription() const final {
     return "Count function calls in MLIR";
@@ -38,10 +38,3 @@ struct CallCounterPass
   }
 };
 } // namespace
-
-void registerCallCounterPass() { PassRegistration<CallCounterPass>(); }
-
-extern "C" MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
-extern "C" LLVM_ATTRIBUTE_WEAK void mlirRegisterPasses() {
-  registerCallCounterPass();
-}
