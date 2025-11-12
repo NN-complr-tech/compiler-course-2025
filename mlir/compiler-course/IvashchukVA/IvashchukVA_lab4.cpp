@@ -10,9 +10,7 @@ struct CallCounterPass
     : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
 
-  StringRef getArgument() const final {
-    return "call-counter";
-  }
+  StringRef getArgument() const final { return "call-counter"; }
   StringRef getDescription() const final {
     return "Count function calls in MLIR";
   }
