@@ -10,10 +10,9 @@ func.func @bar() {
 
 func.func @main() {
   call @foo()
-  call @foo() 
+  call @foo()
   call @bar()
   return
 }
 
-// CHECK: func.func @main()
-// CHECK-SAME: {call_count = 3}
+// CHECK: func.func @main() attributes {call_count = 3}
