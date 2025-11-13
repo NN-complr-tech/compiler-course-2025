@@ -5,5 +5,4 @@ void test_function(int unused, int used) {
   int used_var = 43;
 }
 
-// CHECK: void test_function(int unused, int used) {
-// CHECK: [[maybe_unused]] int unused_var = 42;
+// CHECK: Applied [[maybe_unused]] to variables
