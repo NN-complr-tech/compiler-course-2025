@@ -16,7 +16,7 @@ private:
   bool &Modified;
 
 public:
-  explicit AddMaybeUnusedVisitor(Rewriter &R, bool &M) 
+  explicit AddMaybeUnusedVisitor(Rewriter &R, bool &M)
       : RewriterRef(R), Modified(M) {}
 
   bool VisitVarDecl(VarDecl *VD) {
@@ -43,8 +43,7 @@ private:
 
 public:
   explicit AddMaybeUnusedConsumer(CompilerInstance &CI)
-      : TheRewriter(CI.getSourceManager(), CI.getLangOpts()),
-        Modified(false) {}
+      : TheRewriter(CI.getSourceManager(), CI.getLangOpts()), Modified(false) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
     AddMaybeUnusedVisitor Visitor(TheRewriter, Modified);
