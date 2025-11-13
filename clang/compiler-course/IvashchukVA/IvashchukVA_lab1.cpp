@@ -13,9 +13,11 @@ class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
   Rewriter &RewriterRef;
+  bool &Modified;
 
 public:
-  explicit AddMaybeUnusedVisitor(Rewriter &R) : RewriterRef(R) {}
+  explicit AddMaybeUnusedVisitor(Rewriter &R, bool &M) 
+      : RewriterRef(R), Modified(M) {}
 
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
@@ -27,6 +29,7 @@ public:
       SourceLocation Loc = VD->getBeginLoc();
       if (Loc.isValid()) {
         RewriterRef.InsertText(Loc, "[[maybe_unused]] ");
+        Modified = true;
       }
     }
     return true;
@@ -36,15 +39,20 @@ public:
 class AddMaybeUnusedConsumer : public ASTConsumer {
 private:
   Rewriter TheRewriter;
-  AddMaybeUnusedVisitor Visitor;
+  bool Modified;
 
 public:
   explicit AddMaybeUnusedConsumer(CompilerInstance &CI)
       : TheRewriter(CI.getSourceManager(), CI.getLangOpts()),
-        Visitor(TheRewriter) {}
+        Modified(false) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
+    AddMaybeUnusedVisitor Visitor(TheRewriter, Modified);
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+
+    if (Modified) {
+      llvm::errs() << "Applied [[maybe_unused]] to variables\n";
+    }
   }
 };
 
