@@ -13,11 +13,9 @@ class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
   Rewriter &RewriterRef;
-  ASTContext *ContextPtr;
 
 public:
-  explicit AddMaybeUnusedVisitor(Rewriter &R, ASTContext *Ctx)
-      : RewriterRef(R), ContextPtr(Ctx) {}
+  explicit AddMaybeUnusedVisitor(Rewriter &R) : RewriterRef(R) {}
 
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
@@ -31,7 +29,6 @@ public:
         RewriterRef.InsertText(Loc, "[[maybe_unused]] ");
       }
     }
-
     return true;
   }
 };
@@ -44,21 +41,10 @@ private:
 public:
   explicit AddMaybeUnusedConsumer(CompilerInstance &CI)
       : TheRewriter(CI.getSourceManager(), CI.getLangOpts()),
-        Visitor(TheRewriter, &CI.getASTContext()) {}
+        Visitor(TheRewriter) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
-
-    if (TheRewriter.getNumModifications() > 0) {
-      std::error_code EC;
-      llvm::raw_fd_ostream OS(
-          TheRewriter.getSourceMgr().getMainFileID().getName(),
-          EC, llvm::sys::fs::OF_Text);
-      if (!EC) {
-        TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
-            .write(OS);
-      }
-    }
   }
 };
 
