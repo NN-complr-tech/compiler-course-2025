@@ -8,9 +8,6 @@ file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 add_mlir_library(${TARGET_NAME}
   ${SOURCES}
 
-  DEPENDS
-  intrinsics_gen
-
   LINK_LIBS PUBLIC
   MLIRFuncDialect
   MLIRIR
