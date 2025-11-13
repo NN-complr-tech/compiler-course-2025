@@ -1,38 +1,37 @@
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/Operation.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
+using namespace mlir;
+
 namespace {
-struct CallCounterPass
-    : public mlir::PassWrapper<CallCounterPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
+struct CallCounterPass : public PassWrapper<CallCounterPass,
+                                           OperationPass<ModuleOp>> {
+
+  StringRef getArgument() const final { return "call-counter"; }
+  StringRef getDescription() const final { return "Count function calls"; }
 
   void runOnOperation() override {
-    mlir::ModuleOp module = getOperation();
-
-    module.walk([&](mlir::func::FuncOp func) {
-      int callCount = 0;
-
-      func.walk([&](mlir::Operation *op) {
-        if (llvm::isa<mlir::func::CallOp>(op)) {
-          callCount++;
+    ModuleOp module = getOperation();
+    
+    for (auto func : module.getOps<func::FuncOp>()) {
+      int count = 0;
+      func.walk([&](Operation *op) {
+        if (isa<func::CallOp>(op)) {
+          count++;
         }
       });
-
-      if (callCount > 0) {
-        func->setAttr("call_count",
-                      mlir::IntegerAttr::get(
-                          mlir::IntegerType::get(func.getContext(), 64),
-                          callCount));
+      
+      if (count > 0) {
+        func->setAttr("call_count", 
+                     IntegerAttr::get(IntegerType::get(&getContext(), 64), 
+                                     count));
       }
-    });
+    }
   }
 };
 } // namespace
 
 void registerCallCounterPass() {
-  mlir::PassRegistration<CallCounterPass>(
-      "call-counter", "Count function calls and add call_count attribute");
+  PassRegistration<CallCounterPass>();
 }
