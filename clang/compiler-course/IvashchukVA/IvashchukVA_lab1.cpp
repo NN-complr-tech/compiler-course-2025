@@ -11,9 +11,7 @@ namespace {
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 public:
-  bool VisitVarDecl(VarDecl *VD) {
-    return true;
-  }
+  bool VisitVarDecl(VarDecl *VD) { return true; }
 };
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
