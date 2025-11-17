@@ -1,7 +1,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassRegistry.h"
+#include "mlir/Tools/Plugins/PassPlugin.h"
 
 using namespace mlir;
 
@@ -34,6 +34,15 @@ struct CallCounterPass
 };
 } // namespace
 
-extern "C" void registerCallCounterPass() {
-  PassRegistration<CallCounterPass>();
+MLIR_DECLARE_EXPLICIT_TYPE_ID(CallCounterPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(CallCounterPass)
+
+mlir::PassPluginLibraryInfo getCallCounterPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "CallCounterPass", "1.0",
+          []() { PassRegistration<CallCounterPass>(); }};
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
+mlirGetPassPluginInfo() {
+  return getCallCounterPluginInfo();
 }
