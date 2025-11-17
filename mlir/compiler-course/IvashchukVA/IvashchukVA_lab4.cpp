@@ -1,12 +1,14 @@
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 
 using namespace mlir;
 
 namespace {
-struct CallCounterPass : public PassWrapper<CallCounterPass,
-                                           OperationPass<ModuleOp>> {
+struct CallCounterPass
+    : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
+
   StringRef getArgument() const final { return "call-counter"; }
   StringRef getDescription() const final { return "Count function calls"; }
 
@@ -22,15 +24,16 @@ struct CallCounterPass : public PassWrapper<CallCounterPass,
       });
 
       if (count > 0) {
-        func->setAttr("call_count",
-                      IntegerAttr::get(IntegerType::get(&getContext(), 64),
-                                       count));
+        func->setAttr(
+            "call_count",
+            IntegerAttr::get(IntegerType::get(&getContext(), 64), count));
       }
     }
   }
 };
 } // namespace
 
-void registerCallCounterPass() {
-  PassRegistration<CallCounterPass>();
-}
+void registerCallCounterPass() { PassRegistration<CallCounterPass>(); }
+
+extern "C" MLIR_DECLARE_EXPLICIT_TYPE_ID(CallCounterPass)
+extern "C" MLIR_DEFINE_EXPLICIT_TYPE_ID(CallCounterPass)
