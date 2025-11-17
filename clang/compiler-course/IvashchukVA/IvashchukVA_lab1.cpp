@@ -8,7 +8,8 @@ using namespace clang;
 
 namespace {
 
-class AddMaybeUnusedVisitor : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
+class AddMaybeUnusedVisitor
+    : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 public:
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
