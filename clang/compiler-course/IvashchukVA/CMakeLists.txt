@@ -5,10 +5,14 @@ set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 
-add_llvm_library(${TARGET_NAME} MODULE ${SOURCES} PLUGIN_TOOL clang)
+add_llvm_library(${TARGET_NAME} MODULE ${SOURCES}
+    PLUGIN_TOOL clang
+    BUILDTREE_ONLY
+)
 
-if(NOT WIN32 AND NOT CYGWIN)
-    target_link_libraries(${TARGET_NAME} PRIVATE
+if(WIN32 OR CYGWIN)
+    set(LLVM_LINK_COMPONENTS Support)
+    clang_target_link_libraries(${TARGET_NAME} PRIVATE
         clangAST
         clangBasic
         clangFrontend
