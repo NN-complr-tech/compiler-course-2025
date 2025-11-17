@@ -20,16 +20,11 @@ public:
 
   bool ParseArgs(const CompilerInstance &CI,
                  const std::vector<std::string> &Args) override {
-    for (const auto &Arg : Args) {
-      if (Arg == "-help") {
-        return false;
-      }
-    }
     return true;
   }
 
   PluginASTAction::ActionType getActionType() override {
-    return CmdlineBeforeMainAction;
+    return AddAfterMainAction;
   }
 };
 
