@@ -12,14 +12,7 @@ class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 public:
   bool VisitVarDecl(VarDecl *VD) {
-    if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
-      return true;
-    }
-
-    StringRef Name = VD->getName();
-    if (Name.contains("unused")) {
-      llvm::outs() << "Found variable with 'unused' in name: " << Name << "\n";
-    }
+    llvm::outs() << "Visiting variable: " << VD->getName() << "\n";
     return true;
   }
 };
@@ -27,8 +20,10 @@ public:
 class AddMaybeUnusedConsumer : public ASTConsumer {
 public:
   void HandleTranslationUnit(ASTContext &Context) override {
+    llvm::outs() << "Lab1 plugin started\n";
     AddMaybeUnusedVisitor Visitor;
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    llvm::outs() << "Lab1 plugin finished\n";
   }
 };
 
