@@ -33,10 +33,6 @@ struct CallCounterPass
 };
 } // namespace
 
-void registerCallCounterPass() {
-  PassRegistration<CallCounterPass>();
-}
+void registerCallCounterPass() { PassRegistration<CallCounterPass>(); }
 
-extern "C" void registerCallCounterPassExternal() {
-  registerCallCounterPass();
-}
+extern "C" void registerCallCounterPassExternal() { registerCallCounterPass(); }
