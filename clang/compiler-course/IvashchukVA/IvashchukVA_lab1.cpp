@@ -8,9 +8,7 @@ namespace {
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
 public:
-  void HandleTranslationUnit(ASTContext &Context) override {
-    // Ничего не делаем, просто успешно завершаем
-  }
+  void HandleTranslationUnit(ASTContext &Context) override {}
 };
 
 class AddMaybeUnusedAction : public PluginASTAction {
@@ -22,11 +20,16 @@ public:
 
   bool ParseArgs(const CompilerInstance &CI,
                  const std::vector<std::string> &Args) override {
+    for (const auto &Arg : Args) {
+      if (Arg == "-help") {
+        return false;
+      }
+    }
     return true;
   }
 
   PluginASTAction::ActionType getActionType() override {
-    return AddAfterMainAction;
+    return CmdlineBeforeMainAction;
   }
 };
 
