@@ -8,8 +8,7 @@ using namespace clang;
 
 namespace {
 
-class AddMaybeUnusedVisitor
-    : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
+class AddMaybeUnusedVisitor : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 public:
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
@@ -18,8 +17,13 @@ public:
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      llvm::outs() << "Found unused variable: " << Name << "\n";
+      llvm::outs() << "[[maybe_unused]] ";
     }
+    llvm::outs() << "int " << Name << " = ";
+    if (auto *Init = VD->getInit()) {
+      Init->printPretty(llvm::outs(), nullptr, PrintingPolicy(LangOptions()));
+    }
+    llvm::outs() << ";\n";
     return true;
   }
 };
@@ -29,7 +33,6 @@ public:
   void HandleTranslationUnit(ASTContext &Context) override {
     AddMaybeUnusedVisitor Visitor;
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
-    llvm::outs() << "Lab1 plugin executed\n";
   }
 };
 
