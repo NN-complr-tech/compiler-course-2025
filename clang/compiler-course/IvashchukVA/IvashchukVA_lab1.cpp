@@ -18,13 +18,8 @@ public:
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      llvm::outs() << "[[maybe_unused]] ";
+      llvm::outs() << "Found unused variable: " << Name << "\n";
     }
-    llvm::outs() << "int " << Name << " = ";
-    if (auto *Init = VD->getInit()) {
-      Init->printPretty(llvm::outs(), nullptr, PrintingPolicy(LangOptions()));
-    }
-    llvm::outs() << ";\n";
     return true;
   }
 };
@@ -34,6 +29,7 @@ public:
   void HandleTranslationUnit(ASTContext &Context) override {
     AddMaybeUnusedVisitor Visitor;
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    llvm::outs() << "Lab1 plugin completed\n";
   }
 };
 
