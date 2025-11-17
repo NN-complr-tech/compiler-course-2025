@@ -5,16 +5,12 @@ set(TARGET_NAME "${Title}_${Student}_${Group}_MLIR")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 
-add_mlir_library(${TARGET_NAME}
-  ${SOURCES}
-
-  LINK_LIBS PUBLIC
-  MLIRFuncDialect
-  MLIRIR
-  MLIRPass
-
-  PLUGIN_TOOL
-  mlir-opt
+add_llvm_pass_plugin(${TARGET_NAME}
+    ${SOURCES}
+    DEPENDS
+    intrinsics_gen
+    MLIRBuiltinLocationAttributesIncGen
+    BUILDTREE_ONLY
 )
 
 set(MLIR_TEST_DEPENDS ${TARGET_NAME} ${MLIR_TEST_DEPENDS} PARENT_SCOPE)
