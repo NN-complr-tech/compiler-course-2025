@@ -34,6 +34,3 @@ struct CallCounterPass
 } // namespace
 
 void registerCallCounterPass() { PassRegistration<CallCounterPass>(); }
-
-extern "C" MLIR_DECLARE_EXPLICIT_TYPE_ID(CallCounterPass)
-extern "C" MLIR_DEFINE_EXPLICIT_TYPE_ID(CallCounterPass)
