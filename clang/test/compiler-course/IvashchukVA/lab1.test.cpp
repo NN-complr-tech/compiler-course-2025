@@ -2,7 +2,8 @@
 
 int main() {
   int unused_var = 42;
-  // CHECK: [[maybe_unused]] int unused_var;
+  // CHECK: int main() {
+  // CHECK: [[maybe_unused]] int unused_var = 42;
   int used_var = 43;
   return 0;
 }
