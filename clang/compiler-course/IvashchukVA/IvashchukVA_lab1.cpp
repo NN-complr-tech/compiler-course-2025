@@ -1,21 +1,14 @@
-#include "clang/AST/ASTConsumer.h"
-#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 
 using namespace clang;
 
 namespace {
 
-class AddMaybeUnusedConsumer : public ASTConsumer {
-public:
-  void HandleTranslationUnit(ASTContext &Context) override {}
-};
-
 class AddMaybeUnusedAction : public PluginASTAction {
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override {
-    return std::make_unique<AddMaybeUnusedConsumer>();
+    return std::make_unique<ASTConsumer>();
   }
 
   bool ParseArgs(const CompilerInstance &CI,
