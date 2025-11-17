@@ -18,7 +18,7 @@ public:
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      llvm::outs() << "Found variable with 'unused': " << Name << "\n";
+      llvm::errs() << "Found variable with 'unused': " << Name << "\n";
     }
     return true;
   }
