@@ -9,9 +9,9 @@ func.func @bar() {
 }
 
 func.func @main() {
-  call @foo()
-  call @foo()
-  call @bar()
+  func.call @foo()
+  func.call @foo()
+  func.call @bar()
   return
 }
 
