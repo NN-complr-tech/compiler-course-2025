@@ -1,4 +1,4 @@
-// RUN: mlir-opt --call-counter %s | FileCheck %s
+// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/CallCounterPass_IvashchukVA_FIIT2_MLIR%shlibext --pass-pipeline="builtin.module(call-counter)" %s | FileCheck %s
 
 func.func @foo() -> () {
   return
