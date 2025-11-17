@@ -10,6 +10,4 @@ add_llvm_library(${TARGET_NAME} MODULE ${SOURCES}
     BUILDTREE_ONLY
 )
 
-# target_link_libraries(${TARGET_NAME} PRIVATE ...)
-
 set(CLANG_TEST_DEPS "${TARGET_NAME}" ${CLANG_TEST_DEPS} PARENT_SCOPE)
