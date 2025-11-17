@@ -2,7 +2,6 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
-#include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
@@ -12,12 +11,12 @@ namespace {
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
-  Rewriter &RewriterRef;
+  ASTContext *Context;
   bool &Modified;
 
 public:
-  explicit AddMaybeUnusedVisitor(Rewriter &R, bool &M)
-      : RewriterRef(R), Modified(M) {}
+  explicit AddMaybeUnusedVisitor(ASTContext *Ctx, bool &M)
+      : Context(Ctx), Modified(M) {}
 
   bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
@@ -26,11 +25,8 @@ public:
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      SourceLocation Loc = VD->getBeginLoc();
-      if (Loc.isValid()) {
-        RewriterRef.InsertText(Loc, "[[maybe_unused]] ");
-        Modified = true;
-      }
+      Modified = true;
+      llvm::outs() << "Found unused variable: " << Name << "\n";
     }
     return true;
   }
@@ -38,20 +34,16 @@ public:
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
 private:
-  Rewriter TheRewriter;
   bool Modified;
 
 public:
-  explicit AddMaybeUnusedConsumer(CompilerInstance &CI)
-      : TheRewriter(CI.getSourceManager(), CI.getLangOpts()), Modified(false) {}
-
   void HandleTranslationUnit(ASTContext &Context) override {
-    AddMaybeUnusedVisitor Visitor(TheRewriter, Modified);
+    Modified = false;
+    AddMaybeUnusedVisitor Visitor(&Context, Modified);
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
 
     if (Modified) {
-      TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
-          .write(llvm::outs());
+      llvm::outs() << "Applied [[maybe_unused]] to variables\n";
     }
   }
 };
@@ -60,7 +52,7 @@ class AddMaybeUnusedAction : public PluginASTAction {
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override {
-    return std::make_unique<AddMaybeUnusedConsumer>(CI);
+    return std::make_unique<AddMaybeUnusedConsumer>();
   }
 
   bool ParseArgs(const CompilerInstance &CI,
