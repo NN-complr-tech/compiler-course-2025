@@ -11,7 +11,17 @@ namespace {
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 public:
-  bool VisitVarDecl(VarDecl *VD) { return true; }
+  bool VisitVarDecl(VarDecl *VD) {
+    if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
+      return true;
+    }
+
+    StringRef Name = VD->getName();
+    if (Name.contains("unused")) {
+      llvm::outs() << "Found variable with 'unused': " << Name << "\n";
+    }
+    return true;
+  }
 };
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
