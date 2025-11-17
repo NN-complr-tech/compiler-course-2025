@@ -4,6 +4,7 @@ set(Group "FIIT2")
 set(TARGET_NAME "${Title}_${Student}_${Group}_ClangAST")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
+
 add_llvm_library(${TARGET_NAME} MODULE ${SOURCES} PLUGIN_TOOL clang)
 
 if(WIN32 OR CYGWIN)
