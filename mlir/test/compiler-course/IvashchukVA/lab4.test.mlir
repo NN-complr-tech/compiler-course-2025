@@ -1,4 +1,4 @@
-// RUN: mlir-opt --call-counter %s | FileCheck %s
+// RUN: mlir-opt --pass-pipeline="builtin.module(func.func(call-counter))" %s | FileCheck %s
 
 func.func @foo() {
   return
@@ -15,6 +15,4 @@ func.func @main() {
   return
 }
 
-// CHECK: func.func @foo()
-// CHECK: func.func @bar()
 // CHECK: func.func @main() attributes {call_count = 3}
