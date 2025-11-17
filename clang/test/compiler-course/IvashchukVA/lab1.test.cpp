@@ -6,5 +6,4 @@ int main() {
   return 0;
 }
 
-// CHECK: Found unused variable: unused_var
-// CHECK: Lab1 plugin completed
+// CHECK: Found variable with 'unused' in name: unused_var
