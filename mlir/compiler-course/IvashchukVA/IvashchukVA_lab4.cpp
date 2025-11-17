@@ -6,7 +6,8 @@
 using namespace mlir;
 
 namespace {
-struct CallCounterPass : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
+struct CallCounterPass
+    : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
 
   StringRef getArgument() const final { return "call-counter"; }
@@ -24,7 +25,9 @@ struct CallCounterPass : public PassWrapper<CallCounterPass, OperationPass<Modul
       });
 
       if (count > 0) {
-        func->setAttr("call_count", IntegerAttr::get(IntegerType::get(&getContext(), 64), count));
+        func->setAttr(
+            "call_count",
+            IntegerAttr::get(IntegerType::get(&getContext(), 64), count));
       }
     }
   }
