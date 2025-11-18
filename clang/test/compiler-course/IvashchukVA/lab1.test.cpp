@@ -6,4 +6,4 @@ int main() {
   return 0;
 }
 
-// CHECK: [[maybe_unused]] int unused_var = 42;
+// CHECK: {{\[\[}}maybe_unused{{\]\]}} int unused_var = 42;
