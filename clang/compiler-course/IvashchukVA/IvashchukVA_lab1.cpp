@@ -18,7 +18,8 @@ public:
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      llvm::errs() << "Found: " << Name << "\n";
+      llvm::outs() << "FOUND:" << Name << "\n";
+      llvm::outs().flush();
     }
     return true;
   }
@@ -27,8 +28,12 @@ public:
 class AddMaybeUnusedConsumer : public ASTConsumer {
 public:
   void HandleTranslationUnit(ASTContext &Context) override {
+    llvm::outs() << "START\n";
+    llvm::outs().flush();
     AddMaybeUnusedVisitor Visitor;
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    llvm::outs() << "END\n";
+    llvm::outs().flush();
   }
 };
 
