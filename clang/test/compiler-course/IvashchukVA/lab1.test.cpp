@@ -6,4 +6,6 @@ int main() {
   return 0;
 }
 
-// CHECK: Found: unused_var
+// CHECK: START
+// CHECK: FOUND:unused_var
+// CHECK: END
