@@ -1,25 +1,39 @@
 #include "clang/AST/ASTConsumer.h"
-#include "clang/Basic/LLVM.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 
 namespace {
 
+class AddMaybeUnusedVisitor
+    : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
+public:
+  bool VisitVarDecl(VarDecl *VD) {
+    if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
+      return true;
+    }
+
+    StringRef Name = VD->getName();
+    if (Name.contains("unused")) {
+      llvm::errs() << "Found: " << Name << "\n";
+    }
+    return true;
+  }
+};
+
 class AddMaybeUnusedConsumer : public ASTConsumer {
 public:
-  AddMaybeUnusedConsumer() = default;
-  ~AddMaybeUnusedConsumer() override = default;
-  
-  void HandleTranslationUnit(ASTContext &Context) override {}
+  void HandleTranslationUnit(ASTContext &Context) override {
+    AddMaybeUnusedVisitor Visitor;
+    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+  }
 };
 
 class AddMaybeUnusedAction : public PluginASTAction {
 public:
-  AddMaybeUnusedAction() = default;
-  ~AddMaybeUnusedAction() override = default;
-  
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override {
     return std::make_unique<AddMaybeUnusedConsumer>();
@@ -31,11 +45,12 @@ public:
   }
 
   PluginASTAction::ActionType getActionType() override {
-    return CmdlineBeforeMainAction;
+    return AddAfterMainAction;
   }
 };
 
 } // namespace
 
 static FrontendPluginRegistry::Add<AddMaybeUnusedAction>
-    X("lab1_IvashchukVA_FIIT2_ClangAST", "Lab1 plugin");
+    X("lab1_IvashchukVA_FIIT2_ClangAST",
+      "Adds [[maybe_unused]] to variables containing 'unused'");
