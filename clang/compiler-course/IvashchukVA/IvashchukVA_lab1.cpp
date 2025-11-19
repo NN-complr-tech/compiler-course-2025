@@ -9,7 +9,8 @@ using namespace clang;
 
 namespace {
 
-class AddMaybeUnusedVisitor : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
+class AddMaybeUnusedVisitor
+    : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
   Rewriter &rewriter;
 
