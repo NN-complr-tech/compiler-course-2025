@@ -12,21 +12,21 @@ namespace {
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
-  Rewriter &Rewriter;
+  Rewriter &rewriter;
 
 public:
-  explicit AddMaybeUnusedVisitor(Rewriter &RW) : Rewriter(RW) {}
+  explicit AddMaybeUnusedVisitor(Rewriter &RW) : rewriter(RW) {}
 
-  bool visitVarDecl(VarDecl *VD) {
+  bool VisitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
       return true;
     }
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      SourceLocation Loc = VD->getBeginLoc();
-      if (Loc.isValid()) {
-        Rewriter.InsertTextBefore(Loc, "[[maybe_unused]] ");
+      SourceLocation loc = VD->getBeginLoc();
+      if (loc.isValid()) {
+        rewriter.InsertTextBefore(loc, "[[maybe_unused]] ");
       }
     }
     return true;
@@ -35,34 +35,34 @@ public:
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
 private:
-  AddMaybeUnusedVisitor Visitor;
+  AddMaybeUnusedVisitor visitor;
 
 public:
-  explicit AddMaybeUnusedConsumer(Rewriter &R) : Visitor(R) {}
+  explicit AddMaybeUnusedConsumer(Rewriter &R) : visitor(R) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
-    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 };
 
 class AddMaybeUnusedAction : public PluginASTAction {
 private:
-  Rewriter Rewriter;
+  Rewriter rewriter;
 
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override {
-    Rewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-    return std::make_unique<AddMaybeUnusedConsumer>(Rewriter);
+    rewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
+    return std::make_unique<AddMaybeUnusedConsumer>(rewriter);
   }
 
   bool ParseArgs(const CompilerInstance &CI,
-                 const std::vector<std::string> &Args) override {
+                 const std::vector<std::string> &args) override {
     return true;
   }
 
   void EndSourceFileAction() override {
-    Rewriter.getEditBuffer(Rewriter.getSourceMgr().getMainFileID())
+    rewriter.getEditBuffer(rewriter.getSourceMgr().getMainFileID())
         .write(llvm::outs());
   }
 };
