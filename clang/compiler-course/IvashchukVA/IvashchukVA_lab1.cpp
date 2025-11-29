@@ -12,21 +12,21 @@ namespace {
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
-  Rewriter &rewriter;
+  Rewriter &Rewriter;
 
 public:
-  explicit AddMaybeUnusedVisitor(Rewriter &RW) : rewriter(RW) {}
+  explicit AddMaybeUnusedVisitor(Rewriter &RW) : Rewriter(RW) {}
 
-  bool VisitVarDecl(VarDecl *VD) {
+  bool visitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
       return true;
     }
 
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
-      SourceLocation loc = VD->getBeginLoc();
-      if (loc.isValid()) {
-        rewriter.InsertTextBefore(loc, "[[maybe_unused]] ");
+      SourceLocation Loc = VD->getBeginLoc();
+      if (Loc.isValid()) {
+        Rewriter.InsertTextBefore(Loc, "[[maybe_unused]] ");
       }
     }
     return true;
@@ -35,25 +35,25 @@ public:
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
 private:
-  AddMaybeUnusedVisitor visitor;
+  AddMaybeUnusedVisitor Visitor;
 
 public:
-  explicit AddMaybeUnusedConsumer(Rewriter &R) : visitor(R) {}
+  explicit AddMaybeUnusedConsumer(Rewriter &R) : Visitor(R) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
-    visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 };
 
 class AddMaybeUnusedAction : public PluginASTAction {
 private:
-  Rewriter rewriter;
+  Rewriter Rewriter;
 
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override {
-    rewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-    return std::make_unique<AddMaybeUnusedConsumer>(rewriter);
+    Rewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
+    return std::make_unique<AddMaybeUnusedConsumer>(Rewriter);
   }
 
   bool ParseArgs(const CompilerInstance &CI,
@@ -62,7 +62,7 @@ public:
   }
 
   void EndSourceFileAction() override {
-    rewriter.getEditBuffer(rewriter.getSourceMgr().getMainFileID())
+    Rewriter.getEditBuffer(Rewriter.getSourceMgr().getMainFileID())
         .write(llvm::outs());
   }
 };
