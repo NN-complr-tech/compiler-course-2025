@@ -14,16 +14,16 @@ define void @impure_external_call() {
 }
 
 ; Тест 3: Функция с доступом к памяти (нечистая)
-define i32 @impure_memory_read(i32* %ptr) {
-; CHECK: define i32 @impure_memory_read(i32* %ptr) {
-  %val = load i32, i32* %ptr
+define i32 @impure_memory_read(ptr %ptr) {
+; CHECK: define i32 @impure_memory_read(ptr %ptr) {
+  %val = load i32, ptr %ptr
   ret i32 %val
 }
 
 ; Тест 4: Функция с записью в память (нечистая)
-define void @impure_memory_write(i32* %ptr, i32 %val) {
-; CHECK: define void @impure_memory_write(i32* %ptr, i32 %val) {
-  store i32 %val, i32* %ptr
+define void @impure_memory_write(ptr %ptr, i32 %val) {
+; CHECK: define void @impure_memory_write(ptr %ptr, i32 %val) {
+  store i32 %val, ptr %ptr
   ret void
 }
 
@@ -35,10 +35,10 @@ define double @pure_intrinsic(double %x) {
 }
 
 ; Тест 6: Функция только с чтением памяти (нечистая)
-define i32 @impure_only_read(i32* %ptr1, i32* %ptr2) {
-; CHECK: define i32 @impure_only_read(i32* %ptr1, i32* %ptr2) {
-  %a = load i32, i32* %ptr1
-  %b = load i32, i32* %ptr2
+define i32 @impure_only_read(ptr %ptr1, ptr %ptr2) {
+; CHECK: define i32 @impure_only_read(ptr %ptr1, ptr %ptr2) {
+  %a = load i32, ptr %ptr1
+  %b = load i32, ptr %ptr2
   %sum = add i32 %a, %b
   ret i32 %sum
 }
@@ -103,13 +103,13 @@ define i32 @main() {
   call void @impure_external_call()
   
   %ptr = alloca i32
-  store i32 42, i32* %ptr
+  store i32 42, ptr %ptr
   
-  %val1 = call i32 @impure_memory_read(i32* %ptr)
-  call void @impure_memory_write(i32* %ptr, i32 %val1)
+  %val1 = call i32 @impure_memory_read(ptr %ptr)
+  call void @impure_memory_write(ptr %ptr, i32 %val1)
   
   %sqrt_val = call double @pure_intrinsic(double 4.0)
-  %val2 = call i32 @impure_only_read(i32* %ptr, i32* %ptr)
+  %val2 = call i32 @impure_only_read(ptr %ptr, ptr %ptr)
   
   %fact = call i32 @pure_recursive_factorial(i32 5)
   %max_val = call i32 @pure_branching_max(i32 10, i32 20)
