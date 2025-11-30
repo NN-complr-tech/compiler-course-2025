@@ -9,7 +9,7 @@ define void @test_vector_add() {
 ; Тест 2: Несколько векторных инструкций разных типов
 define void @test_multiple_vector_ops() {
   %vec1 = add <4 x i32> zeroinitializer, zeroinitializer
-  %vec2 = mul <2 x double> zeroinitializer, zeroinitializer
+  %vec2 = mul <2 x i64> zeroinitializer, zeroinitializer
   %vec3 = fadd <8 x float> zeroinitializer, zeroinitializer
   ret void
 }
@@ -52,6 +52,9 @@ exit:
 ; CHECK: store i64 {{.*}}, ptr @vector_instructions_counter
 
 ; Должно быть несколько инкрементов счетчика
+; CHECK: load i64, ptr @vector_instructions_counter
+; CHECK: add i64 {{.*}}, 1
+; CHECK: store i64 {{.*}}, ptr @vector_instructions_counter
 ; CHECK: load i64, ptr @vector_instructions_counter
 ; CHECK: add i64 {{.*}}, 1
 ; CHECK: store i64 {{.*}}, ptr @vector_instructions_counter
