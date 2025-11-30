@@ -14,24 +14,24 @@ struct CallCounterPass
   StringRef getDescription() const final { return "Count function calls"; }
 
   void runOnOperation() override {
-    ModuleOp module = getOperation();
+    ModuleOp Module = getOperation();
 
     // Считаем вызовы для каждой функции
-    llvm::StringMap<int> callCounts;
+    llvm::StringMap<int> CallCounts;
 
-    module.walk([&](func::CallOp callOp) {
-      StringRef callee = callOp.getCallee();
-      callCounts[callee]++;
+    Module.walk([&](func::CallOp CallOp) {
+      StringRef Callee = CallOp.getCallee();
+      CallCounts[Callee]++;
     });
 
     // Добавляем атрибуты к операциям вызова
-    module.walk([&](func::CallOp callOp) {
-      StringRef callee = callOp.getCallee();
-      auto count = callCounts[callee];
-      if (count > 0) {
-        callOp->setAttr(
+    Module.walk([&](func::CallOp CallOp) {
+      StringRef Callee = CallOp.getCallee();
+      auto Count = CallCounts[Callee];
+      if (Count > 0) {
+        CallOp->setAttr(
             "call_count",
-            IntegerAttr::get(IntegerType::get(&getContext(), 64), count));
+            IntegerAttr::get(IntegerType::get(&getContext(), 64), Count));
       }
     });
   }
@@ -41,7 +41,7 @@ struct CallCounterPass
 MLIR_DECLARE_EXPLICIT_TYPE_ID(CallCounterPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(CallCounterPass)
 
-mlir::PassPluginLibraryInfo getCallCounterPluginInfo() {
+static mlir::PassPluginLibraryInfo getCallCounterPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "CallCounterPass", "1.0",
           []() { PassRegistration<CallCounterPass>(); }};
 }
