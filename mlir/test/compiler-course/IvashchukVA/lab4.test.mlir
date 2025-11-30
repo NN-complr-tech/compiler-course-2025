@@ -16,7 +16,7 @@ func.func @main() {
   return
 }
 
-// CHECK: func.func @main() {
+// CHECK-LABEL: func.func @main()
 // CHECK: call @function1() {call_count = 2 : i64} : () -> ()
 // CHECK: call @function1() {call_count = 2 : i64} : () -> ()
 // CHECK: call @function2() {call_count = 1 : i64} : () -> ()
@@ -36,7 +36,7 @@ func.func @simple_recursive(%arg0: i32) -> i32 {
   return %result : i32
 }
 
-// CHECK: func.func @simple_recursive(%{{.*}} : i32) -> i32 {
+// CHECK-LABEL: func.func @simple_recursive(
 // CHECK: call @simple_recursive(%{{.*}}) {call_count = 1 : i64} : (i32) -> i32
 
 // Тест 3: Вложенные вызовы
@@ -55,7 +55,7 @@ func.func @outer() {
   return
 }
 
-// CHECK: func.func @outer() {
+// CHECK-LABEL: func.func @outer()
 // CHECK: call @middle() {call_count = 1 : i64} : () -> ()
 // CHECK: call @inner() {call_count = 2 : i64} : () -> ()
 
@@ -75,7 +75,7 @@ func.func @test_calls() {
   return
 }
 
-// CHECK: func.func @test_calls() {
+// CHECK-LABEL: func.func @test_calls()
 // CHECK: call @called_once() {call_count = 1 : i64} : () -> ()
 // CHECK: call @called_twice() {call_count = 2 : i64} : () -> ()
 // CHECK: call @called_twice() {call_count = 2 : i64} : () -> ()
