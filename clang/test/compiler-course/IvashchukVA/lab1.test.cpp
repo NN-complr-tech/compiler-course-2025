@@ -63,7 +63,7 @@ static void differentTypes() {
 // CHECK-NEXT: }
 
 // Вызовы функций чтобы избежать warnings
-void callAllTestFunctions() {
+static void callAllTestFunctions() {
   multipleUnused();
   testConst();
   differentTypes();
