@@ -16,20 +16,24 @@ struct CallCounterPass
   void runOnOperation() override {
     ModuleOp module = getOperation();
 
-    for (auto func : module.getOps<func::FuncOp>()) {
-      int count = 0;
-      func.walk([&](Operation *op) {
-        if (isa<func::CallOp>(op)) {
-          count++;
-        }
-      });
+    // Считаем вызовы для каждой функции
+    llvm::StringMap<int> callCounts;
 
+    module.walk([&](func::CallOp callOp) {
+      StringRef callee = callOp.getCallee();
+      callCounts[callee]++;
+    });
+
+    // Добавляем атрибуты к операциям вызова
+    module.walk([&](func::CallOp callOp) {
+      StringRef callee = callOp.getCallee();
+      auto count = callCounts[callee];
       if (count > 0) {
-        func->setAttr(
+        callOp->setAttr(
             "call_count",
             IntegerAttr::get(IntegerType::get(&getContext(), 64), count));
       }
-    }
+    });
   }
 };
 } // namespace
