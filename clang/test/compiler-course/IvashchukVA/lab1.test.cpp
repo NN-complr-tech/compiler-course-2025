@@ -19,6 +19,7 @@ static void multiple_unused() {
   int normal_var = 2;
   int unused_second = 3;
   int sum = normal_var;
+  (void)sum;
 }
 
 // CHECK: static void multiple_unused() {
@@ -26,6 +27,7 @@ static void multiple_unused() {
 // CHECK-NEXT: int normal_var = 2;
 // CHECK-NEXT: {{\[\[}}maybe_unused{{\]\]}} int unused_second = 3;
 // CHECK-NEXT: int sum = normal_var;
+// CHECK-NEXT: (void)sum;
 // CHECK-NEXT: }
 
 // Тест 3: Const переменные
@@ -33,12 +35,14 @@ static void test_const() {
   const int unused_const = 100;
   const int normal_const = 200;
   int total = normal_const;
+  (void)total;
 }
 
 // CHECK: static void test_const() {
 // CHECK-NEXT: {{\[\[}}maybe_unused{{\]\]}} const int unused_const = 100;
 // CHECK-NEXT: const int normal_const = 200;
 // CHECK-NEXT: int total = normal_const;
+// CHECK-NEXT: (void)total;
 // CHECK-NEXT: }
 
 // Тест 4: Разные типы данных
@@ -47,6 +51,7 @@ static void different_types() {
   char unused_char = 'a';
   float normal_float = 2.71f;
   int result = (int)normal_float;
+  (void)result;
 }
 
 // CHECK: static void different_types() {
@@ -54,4 +59,5 @@ static void different_types() {
 // CHECK-NEXT: {{\[\[}}maybe_unused{{\]\]}} char unused_char = 'a';
 // CHECK-NEXT: float normal_float = 2.71f;
 // CHECK-NEXT: int result = (int)normal_float;
+// CHECK-NEXT: (void)result;
 // CHECK-NEXT: }
