@@ -21,19 +21,21 @@ func.func @main() {
 // CHECK: call @function1() {call_count = 2 : i64} : () -> ()
 // CHECK: call @function2() {call_count = 1 : i64} : () -> ()
 
-// Тест 2: Рекурсивные вызовы
-func.func @factorial(%n : i32) -> i32 {
-  %cond = arith.cmpi slt, %n, %c2 : i32
-  cond_br %cond, ^bb1, ^bb2
+// Тест 2: Рекурсивные вызовы (исправленный)
+func.func @factorial(%arg0: i32) -> i32 {
+  %c1_i32 = arith.constant 1 : i32
+  %c2_i32 = arith.constant 2 : i32
+  %0 = arith.cmpi slt, %arg0, %c2_i32 : i32
+  cf.cond_br %0, ^bb1, ^bb2
 
 ^bb1:
-  return %c1 : i32
+  return %c1_i32 : i32
 
 ^bb2:
-  %n_minus_1 = arith.subi %n, %c1 : i32
-  %recursive_result = call @factorial(%n_minus_1) : (i32) -> i32
-  %result = arith.muli %n, %recursive_result : i32
-  return %result : i32
+  %1 = arith.subi %arg0, %c1_i32 : i32
+  %2 = call @factorial(%1) : (i32) -> i32
+  %3 = arith.muli %arg0, %2 : i32
+  return %3 : i32
 }
 
 // CHECK: func.func @factorial(%{{.*}} : i32) -> i32 {
@@ -83,4 +85,6 @@ func.func @test_calls() {
 }
 
 // CHECK: func.func @test_calls() {
-// CHECK: call
+// CHECK: call @called_once() {call_count = 1 : i64} : () -> ()
+// CHECK: call @called_twice() {call_count = 2 : i64} : () -> ()
+// CHECK: call @called_twice() {call_count = 2 : i64} : () -> ()
