@@ -2,8 +2,8 @@
 
 // Тест 1: Основной тест
 int main() {
-  int unused_var = 42;
-  int used_var = 43;
+  int unused_var = 42; // NOLINT
+  int used_var = 43; // NOLINT
   return used_var;
 }
 
@@ -15,10 +15,10 @@ int main() {
 
 // Тест 2: Несколько unused переменных
 static void multipleUnused() {
-  int unused_first = 1;
-  int normal_var = 2;
-  int unused_second = 3;
-  int sum = normal_var;
+  int unused_first = 1; // NOLINT
+  int normal_var = 2; // NOLINT
+  int unused_second = 3; // NOLINT
+  int sum = normal_var; // NOLINT
   (void)sum;
 }
 
@@ -32,9 +32,9 @@ static void multipleUnused() {
 
 // Тест 3: Const переменные
 static void testConst() {
-  const int unused_const = 100;
-  const int normal_const = 200;
-  int total = normal_const;
+  const int unused_const = 100; // NOLINT
+  const int normal_const = 200; // NOLINT
+  int total = normal_const; // NOLINT
   (void)total;
 }
 
@@ -47,10 +47,10 @@ static void testConst() {
 
 // Тест 4: Разные типы данных
 static void differentTypes() {
-  double unused_double = 3.14;
-  char unused_char = 'a';
-  float normal_float = 2.71f;
-  int result = (int)normal_float;
+  double unused_double = 3.14; // NOLINT
+  char unused_char = 'a'; // NOLINT
+  float normal_float = 2.71f; // NOLINT
+  int result = (int)normal_float; // NOLINT
   (void)result;
 }
 
