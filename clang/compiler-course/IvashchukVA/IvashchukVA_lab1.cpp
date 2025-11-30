@@ -17,12 +17,8 @@ private:
 public:
   explicit AddMaybeUnusedVisitor(Rewriter &RW) : TheRewriter(RW) {}
 
-  bool visitVarDecl(VarDecl *VD) {
-    // Убираем лишние проверки которые могут блокировать добавление атрибута
-    if (VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
-      return true;
-    }
-
+  bool VisitVarDecl(VarDecl *VD) {
+    // Минимальная проверка - только имя переменной
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
       SourceLocation Loc = VD->getBeginLoc();
