@@ -18,7 +18,6 @@ public:
   explicit AddMaybeUnusedVisitor(Rewriter &RW) : TheRewriter(RW) {}
 
   bool VisitVarDecl(VarDecl *VD) {
-    // Минимальная проверка - только имя переменной
     StringRef Name = VD->getName();
     if (Name.contains("unused")) {
       SourceLocation Loc = VD->getBeginLoc();
