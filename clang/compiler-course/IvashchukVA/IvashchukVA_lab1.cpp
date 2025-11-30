@@ -18,7 +18,8 @@ public:
   explicit AddMaybeUnusedVisitor(Rewriter &RW) : TheRewriter(RW) {}
 
   bool visitVarDecl(VarDecl *VD) {
-    if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
+    // Убираем лишние проверки которые могут блокировать добавление атрибута
+    if (VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
       return true;
     }
 
