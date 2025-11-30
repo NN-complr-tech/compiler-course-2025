@@ -29,12 +29,12 @@ define void @test_mixed_instructions() {
   ret void
 }
 
-; Тест 4: Векторные инструкции в циклах
+; Тест 4: Векторные инструкции в циклах (исправленный)
 define void @test_vector_in_loop() {
   br label %loop
 
 loop:
-  %i = phi i32 [ 0, %entry ], [ %i.next, %loop ]
+  %i = phi i32 [ 0, %0 ], [ %i.next, %loop ]
   %vec = mul <4 x i32> zeroinitializer, zeroinitializer
   %i.next = add i32 %i, 1
   %cond = icmp slt i32 %i.next, 10
