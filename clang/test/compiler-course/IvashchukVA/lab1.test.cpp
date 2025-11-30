@@ -61,3 +61,10 @@ static void differentTypes() {
 // CHECK-NEXT: int result = (int)normal_float;
 // CHECK-NEXT: (void)result;
 // CHECK-NEXT: }
+
+// Вызовы функций чтобы избежать warnings
+void callAllTestFunctions() {
+  multipleUnused();
+  testConst();
+  differentTypes();
+}
