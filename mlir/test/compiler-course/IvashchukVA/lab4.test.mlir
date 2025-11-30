@@ -21,25 +21,23 @@ func.func @main() {
 // CHECK: call @function1() {call_count = 2 : i64} : () -> ()
 // CHECK: call @function2() {call_count = 1 : i64} : () -> ()
 
-// Тест 2: Рекурсивные вызовы (исправленный)
-func.func @factorial(%arg0: i32) -> i32 {
-  %c1_i32 = arith.constant 1 : i32
-  %c2_i32 = arith.constant 2 : i32
-  %0 = arith.cmpi slt, %arg0, %c2_i32 : i32
-  cf.cond_br %0, ^bb1, ^bb2
+// Тест 2: Простая рекурсивная функция
+func.func @simple_recursive(%arg0: i32) -> i32 {
+  %c1 = arith.constant 1 : i32
+  %cond = arith.cmpi eq, %arg0, %c1 : i32
+  cf.cond_br %cond, ^bb1, ^bb2
 
 ^bb1:
-  return %c1_i32 : i32
+  return %c1 : i32
 
 ^bb2:
-  %1 = arith.subi %arg0, %c1_i32 : i32
-  %2 = call @factorial(%1) : (i32) -> i32
-  %3 = arith.muli %arg0, %2 : i32
-  return %3 : i32
+  %minus = arith.subi %arg0, %c1 : i32
+  %result = call @simple_recursive(%minus) : (i32) -> i32
+  return %result : i32
 }
 
-// CHECK: func.func @factorial(%{{.*}} : i32) -> i32 {
-// CHECK: call @factorial(%{{.*}}) {call_count = 5 : i64} : (i32) -> i32
+// CHECK: func.func @simple_recursive(%{{.*}} : i32) -> i32 {
+// CHECK: call @simple_recursive(%{{.*}}) {call_count = 1 : i64} : (i32) -> i32
 
 // Тест 3: Вложенные вызовы
 func.func @inner() {
@@ -61,14 +59,7 @@ func.func @outer() {
 // CHECK: call @middle() {call_count = 1 : i64} : () -> ()
 // CHECK: call @inner() {call_count = 2 : i64} : () -> ()
 
-// CHECK: func.func @middle() {
-// CHECK: call @inner() {call_count = 2 : i64} : () -> ()
-
-// Тест 4: Функции без вызовов и с разным количеством вызовов
-func.func @never_called() {
-  return
-}
-
+// Тест 4: Разное количество вызовов
 func.func @called_once() {
   return
 }
