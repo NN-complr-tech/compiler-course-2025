@@ -25,12 +25,12 @@ struct MarkPureFunctionsPass : public PassInfoMixin<MarkPureFunctionsPass> {
       for (auto &I : BB) {
         if (auto *Call = dyn_cast<CallBase>(&I)) {
           Function *Callee = Call->getCalledFunction();
-          
+
           // Рекурсивные вызовы считаем чистыми
           if (Callee == &F) {
             continue; // Рекурсивный вызов - пропускаем
           }
-          
+
           if (Callee && !Callee->isIntrinsic() &&
               !Callee->doesNotAccessMemory()) {
             IsPure = false;
