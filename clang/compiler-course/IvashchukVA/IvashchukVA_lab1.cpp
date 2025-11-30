@@ -12,10 +12,10 @@ namespace {
 class AddMaybeUnusedVisitor
     : public RecursiveASTVisitor<AddMaybeUnusedVisitor> {
 private:
-  Rewriter &Rewriter;
+  Rewriter &TheRewriter;
 
 public:
-  explicit AddMaybeUnusedVisitor(Rewriter &RW) : Rewriter(RW) {}
+  explicit AddMaybeUnusedVisitor(Rewriter &RW) : TheRewriter(RW) {}
 
   bool visitVarDecl(VarDecl *VD) {
     if (!VD->hasInit() || VD->isImplicit() || VD->isFunctionOrMethodVarDecl()) {
@@ -26,7 +26,7 @@ public:
     if (Name.contains("unused")) {
       SourceLocation Loc = VD->getBeginLoc();
       if (Loc.isValid()) {
-        Rewriter.InsertTextBefore(Loc, "[[maybe_unused]] ");
+        TheRewriter.InsertTextBefore(Loc, "[[maybe_unused]] ");
       }
     }
     return true;
@@ -35,25 +35,25 @@ public:
 
 class AddMaybeUnusedConsumer : public ASTConsumer {
 private:
-  AddMaybeUnusedVisitor Visitor;
+  AddMaybeUnusedVisitor TheVisitor;
 
 public:
-  explicit AddMaybeUnusedConsumer(Rewriter &R) : Visitor(R) {}
+  explicit AddMaybeUnusedConsumer(Rewriter &R) : TheVisitor(R) {}
 
   void HandleTranslationUnit(ASTContext &Context) override {
-    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    TheVisitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 };
 
 class AddMaybeUnusedAction : public PluginASTAction {
 private:
-  Rewriter Rewriter;
+  Rewriter TheRewriter;
 
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override {
-    Rewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-    return std::make_unique<AddMaybeUnusedConsumer>(Rewriter);
+    TheRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
+    return std::make_unique<AddMaybeUnusedConsumer>(TheRewriter);
   }
 
   bool ParseArgs(const CompilerInstance &CI,
@@ -62,7 +62,7 @@ public:
   }
 
   void EndSourceFileAction() override {
-    Rewriter.getEditBuffer(Rewriter.getSourceMgr().getMainFileID())
+    TheRewriter.getEditBuffer(TheRewriter.getSourceMgr().getMainFileID())
         .write(llvm::outs());
   }
 };
