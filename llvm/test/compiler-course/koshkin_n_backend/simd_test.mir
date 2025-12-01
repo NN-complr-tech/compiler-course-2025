@@ -1,0 +1,314 @@
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu -mattr=+avx \
+# RUN:     --load=%llvmshlibdir/InstrumentSimdPass_KoshkinNikita_FIIT3_BACKEND%shlibext \
+# RUN:     -run-pass=instrument-simd-x86 %s -o - | FileCheck %s
+
+
+# test.cpp
+
+# #include <immintrin.h>
+
+# extern "C" {
+
+# float simd_add(const float *a, const float *b) {
+#     __m128 va = _mm_loadu_ps(a);
+#     __m128 vb = _mm_loadu_ps(b);
+#     __m128 vsum = _mm_add_ps(va, vb);
+#     float sum[4];
+#     _mm_storeu_ps(sum, vsum);
+#     return sum[0];
+# }
+# 
+# int simd_paddd(const int *a, const int *b) {
+#     __m128i va = _mm_loadu_si128((const __m128i*)a);
+#     __m128i vb = _mm_loadu_si128((const __m128i*)b);
+#     __m128i vsum = _mm_add_epi32(va, vb);
+#     int sum[4];
+#     _mm_storeu_si128((__m128i*)sum, vsum);
+#     return sum[0];
+# }
+
+# float simd_mul(const float *a, const float *b) {
+#     __m128 va = _mm_loadu_ps(a);
+#     __m128 vb = _mm_loadu_ps(b);
+#     __m128 vmul = _mm_mul_ps(va, vb);
+#     float prod[4];
+#     _mm_storeu_ps(prod, vmul);
+#     return prod[0];
+# }
+# 
+# }
+
+
+
+
+--- |
+  ; ModuleID = 'simd_test.ll'
+  source_filename = "koshkin_n_backend_test.cpp"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+  target triple = "x86_64-pc-linux-gnu"
+  
+  ; Function Attrs: mustprogress nofree nosync nounwind willreturn memory(read) uwtable
+  define dso_local float @simd_add(ptr nocapture noundef readonly %0, ptr nocapture noundef readonly %1) local_unnamed_addr #0 {
+    %3 = bitcast ptr %0 to ptr
+    %4 = load <4 x float>, ptr %3, align 1, !tbaa !5
+    %5 = bitcast ptr %1 to ptr
+    %6 = load <4 x float>, ptr %5, align 1, !tbaa !5
+    %7 = extractelement <4 x float> %4, i64 0
+    %8 = extractelement <4 x float> %6, i64 0
+    %9 = fadd float %7, %8
+    ret float %9
+  }
+  
+  ; Function Attrs: mustprogress nofree nosync nounwind willreturn memory(read) uwtable
+  define dso_local i32 @simd_paddd(ptr nocapture noundef readonly %0, ptr nocapture noundef readonly %1) local_unnamed_addr #0 {
+    %3 = load i32, ptr %1, align 1
+    %4 = load i32, ptr %0, align 1
+    %5 = add i32 %3, %4
+    ret i32 %5
+  }
+  
+  ; Function Attrs: mustprogress nofree nosync nounwind willreturn memory(read) uwtable
+  define dso_local float @simd_mul(ptr nocapture noundef readonly %0, ptr nocapture noundef readonly %1) local_unnamed_addr #0 {
+    %3 = bitcast ptr %0 to ptr
+    %4 = load <4 x float>, ptr %3, align 1, !tbaa !5
+    %5 = bitcast ptr %1 to ptr
+    %6 = load <4 x float>, ptr %5, align 1, !tbaa !5
+    %7 = extractelement <4 x float> %4, i64 0
+    %8 = extractelement <4 x float> %6, i64 0
+    %9 = fmul float %7, %8
+    ret float %9
+  }
+  
+  attributes #0 = { mustprogress nofree nosync nounwind willreturn memory(read) uwtable "frame-pointer"="none" "min-legal-vector-width"="128" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+  
+  !llvm.module.flags = !{!0, !1, !2, !3}
+  !llvm.ident = !{!4}
+  
+  !0 = !{i32 1, !"wchar_size", i32 4}
+  !1 = !{i32 8, !"PIC Level", i32 2}
+  !2 = !{i32 7, !"PIE Level", i32 2}
+  !3 = !{i32 7, !"uwtable", i32 1}
+  !4 = !{!"Ubuntu clang version 14.0.0-1ubuntu1.1"}
+  !5 = !{!6, !6, i64 0}
+  !6 = !{!"omnipotent char", !7, i64 0}
+  !7 = !{!"Simple C++ TBAA"}
+
+...
+---
+name:            simd_add
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: fr32, preferred-register: '' }
+  - { id: 3, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  ; CHECK-LABEL: name:            simd_add
+  bb.0 (%ir-block.2):
+    liveins: $rdi, $rsi
+  
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %2:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.3, align 1, !tbaa !5)
+    %3:fr32 = nofpexcept ADDSSrm %2, %1, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s32) from %ir.5, align 1, !tbaa !5)
+  ; CHECK: ADDSS
+  ; CHECK: MOV64rm {{.*}}simd_counter
+  ; CHECK-NEXT: ADD64ri32
+  ; CHECK-NEXT: MOV64mr {{.*}}simd_counter
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
+---
+name:            simd_paddd
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: gr32, preferred-register: '' }
+  - { id: 3, class: gr32, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  ; CHECK-LABEL: name:            simd_paddd
+  bb.0 (%ir-block.2):
+    liveins: $rdi, $rsi
+  
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %2:gr32 = MOV32rm %1, 1, $noreg, 0, $noreg :: (load (s32) from %ir.1, align 1)
+    %3:gr32 = ADD32rm %2, %0, 1, $noreg, 0, $noreg, implicit-def dead $eflags :: (load (s32) from %ir.0, align 1)
+    $eax = COPY %3
+    RET 0, $eax
+
+...
+---
+name:            simd_mul
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHCatchret:   false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: false
+registers:
+  - { id: 0, class: gr64, preferred-register: '' }
+  - { id: 1, class: gr64, preferred-register: '' }
+  - { id: 2, class: fr32, preferred-register: '' }
+  - { id: 3, class: fr32, preferred-register: '' }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+  - { reg: '$rsi', virtual-reg: '%1' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 4294967295
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  ; CHECK-LABEL: name:            simd_mul
+  bb.0 (%ir-block.2):
+    liveins: $rdi, $rsi
+  
+    %1:gr64 = COPY $rsi
+    %0:gr64 = COPY $rdi
+    %2:fr32 = MOVSSrm_alt %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.3, align 1, !tbaa !5)
+    %3:fr32 = nofpexcept MULSSrm %2, %1, 1, $noreg, 0, $noreg, implicit $mxcsr :: (load (s32) from %ir.5, align 1, !tbaa !5)
+  ; CHECK: MULSS
+  ; CHECK: MOV64rm {{.*}}simd_counter
+  ; CHECK-NEXT: ADD64ri32
+  ; CHECK-NEXT: MOV64mr {{.*}}simd_counter
+    $xmm0 = COPY %3
+    RET 0, $xmm0
+
+...
